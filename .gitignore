@@ -1,0 +1,45 @@
+# =============================================================================
+# .gitignore — Protège les secrets et fichiers locaux
+# =============================================================================
+
+# --- Secrets et variables d'environnement ------------------------------------
+# On ignore TOUS les fichiers .env...
+.env
+.env.*
+*.env
+
+# ...SAUF le template public de documentation
+!.env.example
+
+# --- Clés, certificats et identifiants ---------------------------------------
+*.pem
+*.key
+*.ppk
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+*credentials*
+*secret*
+*secrets*
+*.token
+
+# --- Fichiers système --------------------------------------------------------
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- Dépendances et builds (pour les projets SaaS) ---------------------------
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Logs et temporaires -----------------------------------------------------
+*.log
+*.tmp
+tmp/
+.cache/
