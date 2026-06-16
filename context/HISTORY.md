@@ -7,6 +7,25 @@
 
 ---
 
+## 2026-06-16
+
+### Mise en place de l'organisation des livrables
+- Création du dossier `livrables/` avec 4 sous-dossiers thématiques : `site-web/`, `application/`, `youtube/`, `cabinet-conseil/`
+- Un `README.md` dans chaque dossier (et un README racine) décrivant le contenu et le lien avec les objectifs
+
+### Gestion des secrets et clés d'API
+- Ajout d'un template public `.env.example` à la racine pour documenter les variables d'environnement (VAPI, Retell, Make, n8n, Anthropic, DeepSeek, cloud SSH, base de données, SMTP)
+- Ajout d'un `.gitignore` protégeant les secrets (ignore tous les `.env` sauf le template, plus clés/certificats, fichiers système, dépendances, logs)
+
+### Initialisation git et connexion GitHub
+- Workspace transformé en dépôt git (branche `main`), premier commit créé
+- Compte GitHub `Bigseph71` reconnecté (jeton CLI précédent expiré, ré-authentification via Git Credential Manager)
+- Création du dépôt distant privé `Bigseph71/jarvis-workspace` et push initial réussi
+- Vérification : aucun secret poussé, seul `.env.example` est versionné
+
+### Point d'attention identifié
+- Le workspace est situé dans OneDrive (Bureau redirigé par Windows). OneDrive synchronise tout, y compris un futur `.env`. Décision : laisser tel quel pour l'instant, mais ne jamais stocker de secrets en clair dans ce dossier
+
 ## 2026-06-13
 
 ### Installation initiale du Jarvis
