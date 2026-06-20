@@ -1,0 +1,485 @@
+{
+  "name": "JHN2 - Lead-Qualifizierung (AI Factory)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "to:info@jhn2.de subject:Kontaktformular"
+        },
+        "options": {}
+      },
+      "id": "311a8612-4682-4c75-87dc-8f974c2c317f",
+      "name": "Neue Anfrage (Gmail)",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        400
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_GMAIL",
+          "name": "Gmail - info@jhn2.de"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\nlet body = item.text || item.textPlain || item.snippet || '';\nif (!body && item.html) { body = String(item.html).replace(/<[^>]+>/g, ' '); }\nbody = String(body).replace(/\\r/g, '');\n\nfunction grab(labels) {\n  for (const label of labels) {\n    const re = new RegExp(label + '\\\\s*[:\\\\-]?\\\\s*(.+)', 'i');\n    const m = body.match(re);\n    if (m && m[1].trim()) return m[1].trim();\n  }\n  return '';\n}\n\nconst name = grab(['Name']);\nconst email = grab(['E-?Mail', 'Email']);\nconst telefon = grab(['Telefon(?:nummer)?', 'Phone']);\nlet branche = grab(['Branche']);\n\nlet anliegen = '';\nconst am = body.match(/Anliegen\\s*[:\\-]?\\s*([\\s\\S]+)/i);\nif (am) anliegen = am[1].trim();\n\nconst bl = branche.toLowerCase();\nif (bl.includes('gastro')) branche = 'Gastronomie';\nelse if (bl.includes('handwerk')) branche = 'Handwerk';\nelse if (bl.includes('gesund') || bl.includes('beauty')) branche = 'Gesundheit & Beauty';\n\nreturn [{ json: { name, email, telefon, branche, anliegen } }];\n"
+      },
+      "id": "bf4c5ffb-2353-4fea-8881-3714c5fd38c4",
+      "name": "Formularfelder extrahieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 500, system: \"Du bist ein Vertriebs-Qualifizierungsassistent fuer JHN2 - AI Factory, einen Anbieter von KI-Telefonassistenten (KI Voice Agents) fuer die Branchen Gastronomie, Handwerk sowie Gesundheit & Beauty.\\n\\nBewerte die eingehende Kontaktanfrage und gib AUSSCHLIESSLICH ein JSON-Objekt zurueck. Kein Markdown, keine Code-Bloecke, kein Erklaertext. Exakt dieses Format:\\n{\\\"urgenz\\\": <1-5>, \\\"potenzial\\\": <1-5>, \\\"serioes\\\": <true|false>, \\\"kategorie\\\": \\\"<Hoch|Mittel|Niedrig|Pruefen>\\\", \\\"begruendung\\\": \\\"<kurze Begruendung auf Deutsch>\\\"}\\n\\nRegeln:\\n- Die Branche stammt aus einem Dropdown (Gastronomie, Handwerk, Gesundheit & Beauty) und ist immer ein gueltiges Zielsegment. Den Fit NICHT erneut bewerten.\\n- serioes = false NUR wenn die Anfrage offensichtlich Kaltakquise, eine Agentur / ein Dienstleister, ein Wettbewerber, Spam oder eine Privatperson ohne beruflichen Kontext ist.\\n- urgenz (1-5): Zeitdruck, verlorene Anrufe/Kunden, baldiger Start, akuter Bedarf.\\n- potenzial (1-5): Groesse/Volumen, mehrere Standorte, hohes Anrufvolumen, Interesse an erweiterten Funktionen (mehrsprachig, CRM-Integration, Rueckrufkampagnen).\\n- Kategorisierung: serioes=false => Niedrig; sonst score = urgenz + potenzial: score>=8 => Hoch, 4-7 => Mittel. Wenn das Anliegen zu vage ist, um es zu bewerten => Pruefen.\\nGib nur das JSON zurueck.\", messages: [{ role: 'user', content: 'Name: ' + $json.name + '\\n' + 'E-Mail: ' + $json.email + '\\n' + 'Telefon: ' + $json.telefon + '\\n' + 'Branche: ' + $json.branche + '\\n' + 'Anliegen: ' + $json.anliegen } ] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "74473874-49e0-4c99-906c-dc459f09a59e",
+      "name": "Qualifizierung durch Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        400
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "anthropicApi": {
+          "id": "REPLACE_ANTHROPIC",
+          "name": "Anthropic - JHN2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst lead = $('Formularfelder extrahieren').first().json;\nconst resp = $input.first().json;\n\nlet raw = '';\ntry {\n  if (resp && Array.isArray(resp.content)) {\n    raw = resp.content.map(c => c.text || '').join('');\n  } else if (typeof resp === 'string') {\n    raw = resp;\n  } else if (resp && typeof resp.text === 'string') {\n    raw = resp.text;\n  }\n} catch (e) { raw = ''; }\n\nlet parsed = null;\ntry {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  if (match) parsed = JSON.parse(match[0]);\n} catch (e) { parsed = null; }\n\nlet urgenz = 0, potenzial = 0, serioes = false, kategorie = 'Pruefen', begruendung = '';\n\nif (parsed && typeof parsed === 'object') {\n  urgenz = Math.min(5, Math.max(0, Number(parsed.urgenz) || 0));\n  potenzial = Math.min(5, Math.max(0, Number(parsed.potenzial) || 0));\n  serioes = parsed.serioes === true || parsed.serioes === 'true';\n  begruendung = parsed.begruendung || '';\n  const sc = urgenz + potenzial;\n  if (!serioes) kategorie = 'Niedrig';\n  else if (parsed.kategorie === 'Pruefen') kategorie = 'Pruefen';\n  else if (sc >= 8) kategorie = 'Hoch';\n  else kategorie = 'Mittel';\n} else {\n  kategorie = 'Pruefen';\n  begruendung = 'Claude-Antwort war kein auswertbares JSON - automatisch zur menschlichen Pruefung markiert.';\n}\n\nconst score = urgenz + potenzial;\n\nreturn [{ json: {\n  zeitstempel: new Date().toISOString(),\n  name: lead.name || '',\n  email: lead.email || '',\n  telefon: lead.telefon || '',\n  branche: lead.branche || '',\n  anliegen: lead.anliegen || '',\n  urgenz, potenzial, serioes, score, kategorie, begruendung\n} }];\n"
+      },
+      "id": "f6339e3f-dced-47f8-a185-2ed463e94d63",
+      "name": "Claude-Antwort auswerten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "schema": [],
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "bfe94aac-c710-48e9-ab42-41c02f1ad9e4",
+      "name": "Im CRM speichern (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_SHEETS",
+          "name": "Google Sheets - JHN2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8298e120-60a7-423e-9cd2-73179648a464",
+                    "leftValue": "={{ $json.kategorie }}",
+                    "rightValue": "Hoch",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Hoch"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "eb3b5e12-c76d-4ee0-9c0b-c60074f62063",
+                    "leftValue": "={{ $json.kategorie }}",
+                    "rightValue": "Mittel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mittel"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a111bb7c-21ab-4e89-b3d1-772cc5360694",
+                    "leftValue": "={{ $json.kategorie }}",
+                    "rightValue": "Niedrig",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Niedrig"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9939645a-838c-43f8-8e48-7a350744d1fd",
+                    "leftValue": "={{ $json.kategorie }}",
+                    "rightValue": "Pruefen",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Pruefen"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "63bbf23f-565b-4971-8efb-e15a756e9d53",
+      "name": "Nach Kategorie sortieren",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1340,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Claude-Antwort auswerten').item.json.email }}",
+        "subject": "=Ihre Anfrage bei JHN2 - AI Factory: Termin buchen",
+        "emailType": "text",
+        "message": "=Guten Tag {{ $('Claude-Antwort auswerten').item.json.name }},\n\nvielen Dank fuer Ihre Anfrage zu unseren KI-Telefonassistenten fuer die Branche {{ $('Claude-Antwort auswerten').item.json.branche }}.\n\nIhr Anliegen passt sehr gut zu dem, was wir umsetzen. Lassen Sie uns die Details in einem kurzen Gespraech klaeren.\n\nBuchen Sie hier direkt einen Termin, der Ihnen passt:\nhttps://cal.com/joseph-nje-njock-yjqw88/jhn2-ai-factory\n\nIch freue mich auf das Gespraech.\n\nBeste Gruesse\nJoseph Njock\nJHN2 - AI Factory\ninfo@jhn2.de",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "JHN2 - AI Factory"
+        }
+      },
+      "id": "c20ddc0d-ba55-4f7e-8c19-78ccf80ae036",
+      "name": "Bestaetigung + Terminlink (Hoch)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1580,
+        120
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_GMAIL",
+          "name": "Gmail - info@jhn2.de"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "info@jhn2.de",
+        "subject": "=HOCH-Lead: {{ $('Claude-Antwort auswerten').item.json.name }} ({{ $('Claude-Antwort auswerten').item.json.branche }})",
+        "emailType": "text",
+        "message": "=NEUER HOCH-LEAD\n\nName: {{ $('Claude-Antwort auswerten').item.json.name }}\nE-Mail: {{ $('Claude-Antwort auswerten').item.json.email }}\nTelefon: {{ $('Claude-Antwort auswerten').item.json.telefon }}\nBranche: {{ $('Claude-Antwort auswerten').item.json.branche }}\nAnliegen: {{ $('Claude-Antwort auswerten').item.json.anliegen }}\n\nUrgenz: {{ $('Claude-Antwort auswerten').item.json.urgenz }}/5 | Potenzial: {{ $('Claude-Antwort auswerten').item.json.potenzial }}/5 | Score: {{ $('Claude-Antwort auswerten').item.json.score }}\nBegruendung: {{ $('Claude-Antwort auswerten').item.json.begruendung }}\n\nTerminlink wurde dem Interessenten bereits zugesendet.",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "JHN2 - AI Factory"
+        }
+      },
+      "id": "07e2d0dc-52a2-4d39-b916-a2b3175dcd14",
+      "name": "Interne Info: Hoch-Lead",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1580,
+        280
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_GMAIL",
+          "name": "Gmail - info@jhn2.de"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Claude-Antwort auswerten').item.json.email }}",
+        "subject": "=Ihre Anfrage bei JHN2 - AI Factory: ein paar Rueckfragen",
+        "emailType": "text",
+        "message": "=Guten Tag {{ $('Claude-Antwort auswerten').item.json.name }},\n\nvielen Dank fuer Ihre Anfrage zu unseren KI-Telefonassistenten fuer die Branche {{ $('Claude-Antwort auswerten').item.json.branche }}.\n\nDamit ich Ihnen eine passende Loesung vorschlagen kann, haette ich noch ein paar kurze Rueckfragen:\n\n1. Wie viele Anrufe erhalten Sie taeglich ungefaehr - und wie viele davon bleiben unbeantwortet?\n2. Welche Aufgaben soll der KI-Assistent uebernehmen? (z. B. Reservierungen, Terminvereinbarung, Notfaelle weiterleiten, Angebote, Rueckrufe)\n3. Welche Tools nutzen Sie aktuell? (Kalender, CRM, Reservierungs- oder Buchungssystem)\n4. Bis wann moechten Sie idealerweise starten?\n\nAntworten Sie einfach direkt auf diese E-Mail - ich melde mich dann zeitnah mit konkreten Vorschlaegen.\n\nBeste Gruesse\nJoseph Njock\nJHN2 - AI Factory\ninfo@jhn2.de",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "JHN2 - AI Factory"
+        }
+      },
+      "id": "8f0db04c-b0c4-4ae4-83c5-e61db6285593",
+      "name": "Rueckfragen (Mittel)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1580,
+        440
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_GMAIL",
+          "name": "Gmail - info@jhn2.de"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Claude-Antwort auswerten').item.json.email }}",
+        "subject": "=Ihre Anfrage bei JHN2 - AI Factory",
+        "emailType": "text",
+        "message": "=Guten Tag {{ $('Claude-Antwort auswerten').item.json.name }},\n\nvielen Dank fuer Ihr Interesse an JHN2 - AI Factory und Ihre Anfrage.\n\nAktuell koennen wir Ihrem Anliegen leider nicht weiter nachgehen. Wir moechten Sie nicht unnoetig warten lassen und sagen Ihnen daher offen, dass es derzeit nicht zu einer Zusammenarbeit kommt.\n\nSollte sich Ihre Situation aendern, melden Sie sich gerne jederzeit erneut.\n\nBeste Gruesse\nJoseph Njock\nJHN2 - AI Factory\ninfo@jhn2.de",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "JHN2 - AI Factory"
+        }
+      },
+      "id": "a23b3641-e4e9-4d2f-82d6-927daf4dccb9",
+      "name": "Hoefliche Absage (Niedrig)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1580,
+        600
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_GMAIL",
+          "name": "Gmail - info@jhn2.de"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "info@jhn2.de",
+        "subject": "=Lead zur Pruefung: {{ $('Claude-Antwort auswerten').item.json.name }} ({{ $('Claude-Antwort auswerten').item.json.branche }})",
+        "emailType": "text",
+        "message": "=LEAD ZUR MANUELLEN PRUEFUNG\n\nName: {{ $('Claude-Antwort auswerten').item.json.name }}\nE-Mail: {{ $('Claude-Antwort auswerten').item.json.email }}\nTelefon: {{ $('Claude-Antwort auswerten').item.json.telefon }}\nBranche: {{ $('Claude-Antwort auswerten').item.json.branche }}\nAnliegen: {{ $('Claude-Antwort auswerten').item.json.anliegen }}\n\nUrgenz: {{ $('Claude-Antwort auswerten').item.json.urgenz }}/5 | Potenzial: {{ $('Claude-Antwort auswerten').item.json.potenzial }}/5 | Score: {{ $('Claude-Antwort auswerten').item.json.score }}\nBegruendung: {{ $('Claude-Antwort auswerten').item.json.begruendung }}\n\nEs wurde KEINE automatische E-Mail an den Interessenten gesendet. Bitte manuell pruefen.",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "JHN2 - AI Factory"
+        }
+      },
+      "id": "771b62b0-54be-4335-b69b-17e97cadf07c",
+      "name": "Interne Info: Pruefen",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1580,
+        760
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_GMAIL",
+          "name": "Gmail - info@jhn2.de"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Neue Anfrage (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Formularfelder extrahieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formularfelder extrahieren": {
+      "main": [
+        [
+          {
+            "node": "Qualifizierung durch Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qualifizierung durch Claude": {
+      "main": [
+        [
+          {
+            "node": "Claude-Antwort auswerten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude-Antwort auswerten": {
+      "main": [
+        [
+          {
+            "node": "Im CRM speichern (Google Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Im CRM speichern (Google Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Nach Kategorie sortieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nach Kategorie sortieren": {
+      "main": [
+        [
+          {
+            "node": "Bestaetigung + Terminlink (Hoch)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Interne Info: Hoch-Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rueckfragen (Mittel)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hoefliche Absage (Niedrig)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Interne Info: Pruefen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateId": "jhn2-lead-qualification"
+  },
+  "tags": []
+}

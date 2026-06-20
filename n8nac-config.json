@@ -1,0 +1,24 @@
+{
+  "version": 4,
+  "activeEnvironmentId": "remote-2",
+  "environmentTargets": [
+    {
+      "id": "remote",
+      "name": "Remote",
+      "kind": "external-instance",
+      "url": "https://n8n-automation.gambi-consulting.de"
+    }
+  ],
+  "environments": [
+    {
+      "id": "remote-2",
+      "name": "Remote",
+      "syncSlug": "remote",
+      "environmentTargetId": "remote",
+      "projectId": "personal",
+      "projectName": "Personal",
+      "workflowsPath": "workflows/remote",
+      "folderSync": false
+    }
+  ]
+}

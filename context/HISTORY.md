@@ -7,6 +7,27 @@
 
 ---
 
+## 2026-06-20
+
+### Connexion à l'instance n8n établie et vérifiée
+- Instance n8n distante de Gambi Consulting connectée : `https://n8n-automation.gambi-consulting.de`
+- Création du fichier `.env` réel (cloné depuis `.env.example`, ignoré par git) avec `N8N_BASE_URL` et `N8N_API_KEY`
+- Tests de connectivité réussis : instance joignable (HTTP 200), `/healthz` OK, API REST activée, authentification par clé API validée (HTTP 200)
+- 8 workflows récupérés via l'API (4 actifs) :
+  - Actifs : Klaus WF8 (Formulaire → Réponse IA + Booking), Klaus 5 (Confirmation RDV & Calendrier), Klaus 4 (Génération créneaux & lien RDV), Physical Therapy Clinic
+  - Inactifs : Klaus 1 (Qualification leads), Klaus 2 (Réactivation devis dormants), Klaus 3 (Chat IA), Klaus WF6 (VAPI Receiver)
+
+### Mise à jour de Node.js et configuration du CLI n8nac
+- **Node.js mis à jour de v18.20.8 vers v24.17.0** (via `winget install OpenJS.NodeJS.LTS`, élévation UAC), npm v11.13.0. Le CLI `n8nac` exigeait Node ≥ 20
+- Cause réelle du crash initial identifiée : cache npx corrompu (paquet `rxjs` manquant, installation partielle faite sous Node 18). Purge du cache `_npx` + réinstall propre sur Node 24
+- **Environnement n8nac `Remote` configuré et activé** : `env add` (base-url + workflows-path `workflows/remote`), `env auth set` (clé via stdin), `env use`
+- Validation : `n8nac env status` OK, `n8nac list` récupère les 8 workflows distants (marqués `EXIST_ONLY_REMOTELY`, pas encore tirés en local)
+- Workflow « as code » désormais possible : `npx n8nac pull <id>` pour télécharger les `.workflow.ts` dans `workflows/remote/` et les versionner dans Git
+- Note : l'API Projects de l'instance n'est pas exposée (fallback projet « Personal »), sans impact
+
+### Points d'attention
+- **Sécurité** : la clé API a transité par le chat lors de la configuration. À régénérer côté n8n si besoin de rigueur. Elle est isolée dans `.env` (non versionné) et dans la config locale n8nac
+
 ## 2026-06-16
 
 ### Mise en place de l'organisation des livrables
