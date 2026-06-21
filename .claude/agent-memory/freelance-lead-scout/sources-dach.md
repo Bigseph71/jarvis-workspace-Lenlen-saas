@@ -58,3 +58,11 @@ Joseph a imposé une règle de fraîcheur stricte basée sur la date de PUBLICAT
 **Limite persistante** : freelancermap.de et SOLCOM n'exposent toujours AUCUNE date de publication exploitable (ni en listing ni en fiche individuelle, vérifié à nouveau le 2026-06-20). Le gain de fraîcheur ne s'applique donc qu'à freelance.de pour l'instant. Pour freelancermap/SOLCOM, soit écarter systématiquement par manque de preuve de fraîcheur, soit recommander les alertes email natives à Joseph (déjà suggéré, toujours pas mis en place à cette date).
 
 **Résultat 5e session** : sur 23 candidats avec date de publication établie sur freelance.de (Testmanager + IT-Projektleiter + Schweiz), 9 dans la fenêtre ≤7j, 4 retenus après dédoublonnage (lot Ephesus Softwaretest = 5 missions quasi-identiques publiées le même jour, 1 seule retenue) et filtrage géo (Suisse : aucun résultat Test/PM dans la fenêtre, que des rôles dev/ingénieur hors cible).
+
+## Session du 2026-06-22 (6e exécution) : Gmail vérifié vide, nouveaux listings freelance.de testés
+
+**Gmail** : recherche `from:linkedin.com newer_than:3d` et alertes spécifiques (`jobalerts-noreply`, `jobs-noreply`, `messaging-digest-noreply` `newer_than:7d`) → 0 résultat. Joseph n'a pas (encore) d'alertes LinkedIn actives dans sa boîte Gmail. Tant que ce n'est pas configuré, la source "alertes email LinkedIn" prioritaire du protocole reste vide à chaque session — recommandation à réitérer à Joseph en synthèse de chaque rapport jusqu'à mise en place.
+
+**Nouveaux listings freelance.de testés avec succès (timestamps exploitables confirmés)** : `/Scrum-Master-Projekte` et `/IT-Manager-Projekte`, en plus des listings déjà connus (Testmanager-Projekte, IT-Projektleiter-Projekte, Schweiz-Projekte). Tous affichent les timestamps "Projekt Insights" de façon fiable. À inclure systématiquement dans le balayage futur — bonne couverture complémentaire pour l'axe Scrum Master qui n'était pas balayé spécifiquement avant.
+
+**Point de vigilance ajouté** : le client "Ephesus Softwaretest" (Nürnberg) publie en lot de 5-8 missions quasi-identiques (Testmanager, Quality-Testmanager, Senior-Tester x3, Scrum-Master x2, UX Designer) le même jour ou sur 2 jours consécutifs. Limiter à 1-2 leads par lot Ephesus par session pour éviter la sur-représentation d'un seul client, même si plusieurs rôles sont individuellement valides.
