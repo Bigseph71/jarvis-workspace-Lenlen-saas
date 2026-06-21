@@ -121,6 +121,29 @@ Joseph a posé une règle ferme et définitive : seule la date de publication co
 
 Axe IA : 5e confirmation d'infructuosité (requête testée : `site:linkedin.com/posts KI Automatisierung KMU Mittelstand "suche" OR "gesucht" Berater freelance Juni 2026`), uniquement du contenu institutionnel/marketing daté d'années antérieures. Voir [[constat-axe-ia]].
 
+## Session du 2026-06-22 (6e exécution, contrôle strict fraîcheur ≤7j + vérification Gmail)
+
+Date du jour : 2026-06-22. Coupure fraîcheur appliquée : publication ≥ 2026-06-15. Gmail interrogé (`from:linkedin.com newer_than:3d` et alertes job/messaging digest `newer_than:7d`) : **aucun résultat, 0 email LinkedIn dans la boîte**. Confirme qu'aucune alerte LinkedIn n'est configurée côté Joseph à ce jour — recommandation réitérée de mettre en place des recherches sauvegardées LinkedIn avec notification email pour débloquer cette source prioritaire.
+
+Méthode freelance.de (timestamps "Projekt Insights") réutilisée sur les listings Testmanager-Projekte, IT-Projektleiter-Projekte, Scrum-Master-Projekte, IT-Manager-Projekte, Schweiz-Projekte. freelancermap.de/.ch toujours sans date de publication exploitable (confirmé une 6e fois, WebSearch ne remonte que pages de catégorie/profils).
+
+**4 leads livrés ce jour** (tous date de publication confirmée ≤7j via freelance.de "Projekt Insights", liens directs vérifiés par fetch) :
+
+1. Client non identifié (org. publique-privée, IT-Koordination/Agile) — INTERIM SCRUM Master (m/w/d), Großraum Düsseldorf DE, remote (présentiel 1x/trimestre), ASAP, juillet-décembre 2026 + option prolongation, ~60h/mois, publié 18.06.2026 15:00. URL: https://www.freelance.de/projekte/projekt-1276441-INTERIM-SCRUM-Master-m-w-d-gesucht
+2. Client non identifié (équipe DevOps/automatisation de tests) — FREELANCE Senior Scrum Master:in gesucht (Langzeitprojekt, Sinnstiftend), Großraum Berlin DE, 100% remote, début juillet 2026, ~10 mois jusqu'à mai 2027, publié 19.06.2026 10:18. URL: https://www.freelance.de/projekte/projekt-1276560-FREELANCE-Senior-Scrum-Master-in-gesucht-Langzeit-Sinnstiftend
+3. Ephesus Softwaretest (client final non identifié) — Testmanager, Enterprise (m/w/d), Nürnberg DE, remote (présentiel possible), début août 2026, 6 mois + option, publié 15.06.2026 15:45. URL: https://www.freelance.de/projekte/projekt-1275663-Ephesus-Softwaretest-Testmanager-Enterprise-m-w-d
+4. Ephesus Softwaretest (même client/lot que #3) — Quality- und Testmanager (m/w/d), Nürnberg DE, remote (présentiel possible), début août 2026, 6 mois + option, publié 15.06.2026 15:45. URL: https://www.freelance.de/projekte/projekt-1275662-Ephesus-Softwaretest-Quality-und-Testmanager-m-w-d — NOTE : même client qu'un lead déjà livré le 2026-06-20 (Test-Manager Barrierefreiheit 1275636) ; livré malgré tout car rôle différent (pilotage QA vs accessibilité), mais à surveiller pour éviter la sur-représentation d'un seul client lors des prochaines sessions.
+
+**Écartés pour date de publication > 7j (déjà vus, reconfirmés hors fenêtre)** : ServiceNow x2 (1267359/1267474), Testmanager 1271600, SAP Testmanager 1260736, QA Manager/Testmanager 1270000, Testmanager Mobile 1275175 (12.06, 3j hors fenêtre), Testmanager ANÜ 1273850, Testmanager Bremen 1273280, Testmanager Salesforce 1275229, Google Cloud 1275160, Experte SAP Testing 1265499, IT-leiter Infrastruktur 1269944, SAP DM Projektleiter 1274312, Projektleiter Softwareprojekte ÖS 1275402 (12.06, hors fenêtre), SAP RAR/IFRS15 1274776, Software Projektleiter Karlsruhe 1271224, Senior Scrum Master Bern 1272682 (28.05).
+
+**Écartés pour doublon avec lot déjà représenté (Ephesus, publiés 15-16.06)** : Senior-Tester Barrierefreiheit (1275640, 1275637 — rôle testeur exécutant pur, hors cible Test Manager), Senior-Tester Agile (1275639 — idem), Test-Manager Barrierefreiheit (1275636, déjà livré 2026-06-20), Testmanager Salesforce-Erfahrung (1275541, déjà livré 2026-06-20), IT Project Manager Programmsteuerung Düsseldorf (1275682, déjà livré 2026-06-20), Testmanagement SAFe (1276606, déjà livré 2026-06-20), Ephesus Scrum-Master x2 (1275690, 1275664 — même lot Nürnberg, non retenus pour limiter la concentration sur un seul client), Ephesus UX Designer (1275719, hors cible), Bergkristall Method Master (1275744, rôle flou hors cœur de cible).
+
+**Suisse** : aucun rôle Test Manager/Scrum Master/IT-PM publié dans la fenêtre ≤7j sur freelance.de/Schweiz-Projekte (20 annonces passées en revue, toutes dev/ingénieur/SAP/accounting hors cible, ou Scrum Master Bern 1272682 publié 28.05 hors fenêtre). freelancermap.ch toujours sans date exploitable.
+
+**IT-Manager-Projekte (nouveau listing testé)** : 9 projets, aucun Test Manager/PM IT pertinent dans la fenêtre (PMO écarté par consigne, Programm Manager/IT Strategy Manager hors fenêtre ou rôles trop éloignés du profil).
+
+Axe IA : 6e confirmation d'infructuosité. Testé `site:linkedin.com/posts "KI" Automatisierung KMU Mittelstand Telefon Empfang gesucht Berater 2026` et recherche Reddit r/de+r/Mittelstand sur douleur "Anrufe verpasst/Telefon Handwerk" : uniquement contenu marketing/institutionnel (Mittelstand-Digital Zentrum Handwerk, posts d'agences IA), zéro résultat Reddit direct, zéro signal de demande PME exploitable. Voir [[constat-axe-ia]] pour la 6e confirmation consécutive.
+
 ## Leads écartés (vérifiés mais rejetés)
 
 - **Hays / freelancermap.de** — Testmanager (m/w/d) Magdeburg : annonce datée février 2023, obsolète. URL: https://www.freelancermap.de/projekt/hays-projektangebot-testmanager-m-w-d
