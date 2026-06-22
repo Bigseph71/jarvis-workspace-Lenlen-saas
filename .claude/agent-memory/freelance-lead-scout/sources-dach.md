@@ -66,3 +66,22 @@ Joseph a imposé une règle de fraîcheur stricte basée sur la date de PUBLICAT
 **Nouveaux listings freelance.de testés avec succès (timestamps exploitables confirmés)** : `/Scrum-Master-Projekte` et `/IT-Manager-Projekte`, en plus des listings déjà connus (Testmanager-Projekte, IT-Projektleiter-Projekte, Schweiz-Projekte). Tous affichent les timestamps "Projekt Insights" de façon fiable. À inclure systématiquement dans le balayage futur — bonne couverture complémentaire pour l'axe Scrum Master qui n'était pas balayé spécifiquement avant.
 
 **Point de vigilance ajouté** : le client "Ephesus Softwaretest" (Nürnberg) publie en lot de 5-8 missions quasi-identiques (Testmanager, Quality-Testmanager, Senior-Tester x3, Scrum-Master x2, UX Designer) le même jour ou sur 2 jours consécutifs. Limiter à 1-2 leads par lot Ephesus par session pour éviter la sur-représentation d'un seul client, même si plusieurs rôles sont individuellement valides.
+
+## Session du 2026-06-22 (7e exécution) : fenêtre stricte 3 jours, nouveau listing QA-Projekte testé
+
+**Changement de règle important** : la fenêtre de fraîcheur est passée de ≤7 jours (5e/6e session) à ≤3 jours stricte (7e session), coupure 2026-06-19. Cela réduit fortement le nombre de candidats éligibles par session : sur les 5 listings habituels + 1 nouveau (Testmanager, IT-Projektleiter, Scrum-Master, IT-Manager, Schweiz, QA), seuls 8 projets au total étaient publiés ≥19.06, et tous se sont révélés doublons ou hors cible. **Avec une fenêtre de 3 jours, il faut s'attendre à des sessions à 0 lead plus fréquentes** sur freelance.de seul — la productivité de cette source dépend du volume de publications quotidiennes, qui ne couvre pas toujours le cœur de cible (Test Manager/Scrum Master/IT-PM hors PMO) chaque jour.
+
+**Nouveau listing testé : `/QA-Projekte`** — fonctionne bien (timestamps exploitables, 20/50 projets visibles sur la première page). A inclure dans le balayage systématique futur. Cette session a donné un QA Manager Basel (1276617, publié 19.06 12:35) mais écarté car QA pharmaceutique/GMP (audits, déviances réglementaires), pas qualité logicielle IT — à filtrer systématiquement : le mot "QA" sur freelance.de couvre large (pharma, ingénierie, logiciel), vérifier le secteur avant de qualifier.
+
+**Recommandation à formaliser avec Joseph** : vu la fenêtre stricte de 3 jours, envisager (a) d'élargir le nombre de listings balayés à chaque session (ajouter pagination sur QA-Projekte, tester d'autres catégories comme Projektmanager-Projekte ou Qualitätsmanagement-Projekte), ou (b) d'accepter des sessions à 0 lead comme normales plutôt que symptomatiques d'un problème de méthode, ou (c) prioriser la mise en place d'alertes email LinkedIn/freelance.de qui donneraient une couverture en temps réel meilleure qu'un balayage manuel ponctuel.
+
+## CORRECTION Joseph (2026-06-22) : freelancermap EST productif, ne plus l'écarter
+
+Joseph a vérifié manuellement freelancermap et y a trouvé plusieurs offres pertinentes. **Cela INVALIDE les conclusions des sessions précédentes** (« freelancermap n'expose aucune date exploitable », « écarter par défaut »). Ces conclusions venaient d'un fetch des pages de liste (rendu JS, contenu non rendu en fetch statique), PAS des fiches projet individuelles.
+
+Règle qui prime désormais :
+- **Ne jamais écarter freelancermap sans avoir ouvert des fiches projet individuelles.** La date de publication y est visible (« eingestellt: vor X Tagen / Stunden », « heute », « gestern »).
+- Si le fetch direct d'une page de liste échoue (JS), passer par une recherche web `site:freelancermap.de` (et `.ch`) sur les mots-clés métier pour faire remonter les fiches indexées, puis les ouvrir une par une.
+- Toujours combiner avec les mots-clés métier ajoutés au prompt : testing, ISTQB / ISTQB Advanced Level, Test Manager, Testmanager, Scrum / Scrum Master.
+
+Si une future session ne trouve toujours rien sur freelancermap, documenter précisément ce qui a été tenté (URLs ouvertes, requêtes) avant de conclure, au lieu d'écarter la source en bloc.

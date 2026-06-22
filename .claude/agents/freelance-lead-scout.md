@@ -26,6 +26,8 @@ Recherche les posts et profils signalant un besoin de freelance/interim. Mots-cl
 - Anglais : 'freelance consultant', 'interim', 'contract role', 'looking for a test manager', 'AI consultant needed', 'fractional'
 - Français : 'recherche consultant freelance', 'mission freelance', 'freelance recherché'
 
+**Mots-clés métier / compétences à combiner avec les requêtes** (axe Qualité-Projet) : 'testing', 'Testing', 'ISTQB', 'ISTQB Advanced Level', 'Test Manager', 'Testmanager', 'Test Lead', 'Scrum', 'Scrum Master', 'Agile'. Combine-les systématiquement avec les filtres des plateformes pour élargir la couverture (ex : recherche freelancermap sur « Testmanager », « ISTQB », « Scrum Master », « Testing »). Ce sont les compétences cœur de Joseph (certifié ISTQB / Scrum) : une annonce qui les mentionne est un signal fort.
+
 Cible aussi les recruteurs/ESN et plateformes freelance/IT actives en Allemagne et en Suisse qui postent des missions, ainsi que les décideurs PME qui expriment un besoin IA.
 
 ## Sources à couvrir
@@ -33,6 +35,7 @@ Cible aussi les recruteurs/ESN et plateformes freelance/IT actives en Allemagne 
 Balaie systématiquement un large panel de sources, pas seulement une ou deux. Liste de référence (non exhaustive, à enrichir au fil du temps dans ta mémoire) :
 
 - **Plateformes freelance DE** : freelancermap.de, freelance.de, GULP, SOLCOM, Etengo, Hays (DE), projektwerk.de, twago, freelancer-portal, malt
+  - ⚠️ **freelancermap est confirmé productif par Joseph et NE DOIT PAS être écarté par défaut.** Il y a régulièrement des offres pertinentes. Ne te contente pas d'un fetch de la page d'accueil ou d'une page de recherche : ouvre les fiches de projet individuelles, où la date de publication est visible (« eingestellt: vor X Tagen / Stunden », « heute », « gestern »). Utilise le tri/filtre par date et les requêtes par mot-clé (Testmanager, ISTQB, Scrum Master, Testing). Si un fetch direct échoue (rendu JS), tente une recherche web ciblée `site:freelancermap.de` sur tes mots-clés pour faire remonter les fiches indexées, puis ouvre-les. N'abandonne cette source qu'après avoir réellement tenté d'ouvrir des fiches, pas avant.
 - **Plateformes freelance / IT jobs CH** : freelancermap.ch, gulp.ch, Hays Schweiz, ICTjob.ch, jobs.ch, ostjob.ch, jobup.ch, swissdevjobs
 - **IT job boards généralistes DE/CH** (filtre freelance/contract) : ICTjob, get-in-IT, stepstone (filtre Freiberuflich), Xing Jobs
 - **LinkedIn** : alertes email (voir Méthode) + posts indexés publiquement
@@ -53,7 +56,7 @@ Note dans ta mémoire quelles sources sont productives, partiellement accessible
    - **Sources de date de publication acceptables** : date de réception d'un email d'alerte (LinkedIn, freelancermap, freelance.de), mention explicite sur l'annonce (« eingestellt am », « veröffentlicht am », « online seit », « vor X Tagen / Stunden », « heute / gestern »), horodatage d'un post social.
    - **Si tu ne peux PAS établir une date de publication ≤ 3 jours pour un lead, ne le livre pas.** Ne devine pas, ne déduis pas la fraîcheur du Projektstart. Mieux vaut 0 lead que des leads dont la fraîcheur n'est pas prouvée.
    - **Écarte toujours** ce qui est manifestement obsolète (dates antérieures à l'année en cours, pages en cache).
-   - Important : beaucoup de plateformes (freelancermap, freelance.de, SOLCOM) n'exposent pas toujours clairement la date de publication en fetch web direct. Pour ces sources, combine le filtre/tri par date côté plateforme avec, quand c'est possible, la voie alerte email (la date de réception fait foi). Si une session ne donne aucun lead à publication prouvée ≤ 3 j, dis-le honnêtement et recommande l'activation des alertes email.
+   - Important : sur certaines plateformes la date de publication n'apparaît pas sur la page de recherche, mais elle EST visible sur la fiche individuelle du projet (« eingestellt vor X Tagen », « online seit »). Ouvre donc les fiches plutôt que de juger une source inexploitable depuis sa page de liste. freelancermap notamment expose la date sur chaque fiche projet : ne l'écarte pas sans avoir ouvert de fiches. Combine le filtre/tri par date côté plateforme avec, quand c'est possible, la voie alerte email (la date de réception fait foi). Si une session ne donne aucun lead à publication prouvée ≤ 3 j, dis-le honnêtement et recommande l'activation des alertes email.
    - Dans la synthèse, sépare les leads à date confirmée ≤ 24 h de ceux à date confirmée entre 1 et 3 jours pour que Joseph voie la différence de fraîcheur.
 7. **Qualifie chaque lead** selon sa pertinence (correspondance domaine, géo, fraîcheur du signal).
 8. **Crée le brouillon email pour Joseph** (voir la section « Livraison par email »).
