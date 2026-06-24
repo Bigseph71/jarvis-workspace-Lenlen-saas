@@ -144,6 +144,81 @@ Méthode freelance.de (timestamps "Projekt Insights") réutilisée sur les listi
 
 Axe IA : 6e confirmation d'infructuosité. Testé `site:linkedin.com/posts "KI" Automatisierung KMU Mittelstand Telefon Empfang gesucht Berater 2026` et recherche Reddit r/de+r/Mittelstand sur douleur "Anrufe verpasst/Telefon Handwerk" : uniquement contenu marketing/institutionnel (Mittelstand-Digital Zentrum Handwerk, posts d'agences IA), zéro résultat Reddit direct, zéro signal de demande PME exploitable. Voir [[constat-axe-ia]] pour la 6e confirmation consécutive.
 
+## Session du 2026-06-22 (8e exécution, 3e session du jour, freelancermap re-testé en profondeur après correction de Joseph)
+
+Date du jour : 2026-06-22. Coupure fraîcheur appliquée : publication >= 2026-06-19 (fenêtre stricte 3 jours, héritée de la 7e session). Gmail revérifié (`from:linkedin.com newer_than:3d` + alertes job/messaging digest `newer_than:4d`) : **0 résultat, 3e vérification consécutive ce jour, toujours aucune alerte LinkedIn configurée**.
+
+**1 seul lead livré ce jour** :
+
+1. Client non identifié (visible membres EXPERT freelance.de uniquement) — Test Manager (m/w/d) Agile Quality Management im SAFe-Umfeld, Hannover DE, 100% remote, publié 22.06.2026 05:24 (le jour même), Projektstart 01.07.2026, 6 mois, contrat ANÜ, réf JO-2606-14373. URL: https://www.freelance.de/projekte/projekt-1276325-Test-Manager-m-w-d-Agile-Quality-Management-im
+
+**freelancermap.de/.ch — test approfondi suite à la correction de Joseph** : 12 fiches individuelles ouvertes par WebFetch cette session (testmanager-m-w-d-fuer-softwareentwicklung-branche-automotive, testmanager-m-w-d-remote-gr-frankfurt-april-2026-36-monate, testmanager-und-quality-coach-qa-manager..., testmanager-m-w-d-ank14239-constaff-gmbh, eu-aml-testmanager-m-w-x-9585, scrum-master-m-w-d-cha13993-constaff-gmbh, scrum-master-m-w-d-gesucht-2877310, gesucht-scrum-master-m-w-d-im-rahmen-der-arbeitsnehmerueberlassung-anue, software-test-engineer-m-w-d-oeffentlicher-dienst, freelancermap.ch/leiter-in-testmanagement-m-w-d-id-26400-3, freelancermap.ch/agile-coach-scrum-master-80-prozent-vor-ort, scrum-master-agile-coach-w-m-d-heidelberg-remote). **AUCUNE ne montre de date de publication exploitable** (« eingestellt vor X Tagen », « heute », « gestern ») dans le contenu récupéré par WebFetch. Confirmation technique : voir [[sources-dach]] pour le détail (probable injection JS côté client invisible au fetch HTML statique). Plusieurs candidats étaient par ailleurs disqualifiables pour d'autres raisons (Projektstart passé, poste salarié non-freelance, géo Autriche obsolète).
+
+**Lead non retenu mais à fort potentiel géographique** : Scrum Master / Agile Coach (w/m/d), Heidelberg + remote — 1st solution consulting gmbh, 40% remote (3j/sem Heidelberg + 2j remote), ASAP, 6 mois+. URL: https://www.freelancermap.de/projekt/scrum-master-agile-coach-w-m-d-heidelberg-remote — écarté uniquement par absence de preuve de date de publication ≤3j (mission à Heidelberg même, donc à resurveiller si la méthode de détection de fraîcheur freelancermap s'améliore).
+
+**freelance.de — 6 listings balayés** (Testmanager, IT-Projektleiter, Scrum-Master, IT-Manager, QA, Schweiz) : candidats dans la fenêtre ≥19.06 tous déjà livrés (Testmanagement SAFe 1276606, Senior Scrum Master Berlin 1276560, INTERIM Scrum Master Düsseldorf 1276441) ou hors cible :
+- QA Manager (m/w/d) Basel CH (1276617, publié 19.06 12:35) : confirmé pharma/GMP (Deviations, CAPAs, audits réglementaires) — écarté.
+- Senior QA Experte für Medientechnik (1276721, Frankfurt, publié 19.06 17:36) : audiovisuel/broadcast, pas QA logiciel — écarté.
+- QA Engineer Agentic Framework (1275404, Frankfurt, publié 19.06 11:08) : rôle ingénieur exécutant (orchestration agents IA, pas de management) — écarté.
+- Qualitätsmanagement Infrastruktur-Großprojekt (1276317, Bayreuth, publié 18.06 08:19) : BTP/transition énergétique, Projektstart 07/2027 — écarté.
+
+**Suisse** : aucun nouveau rôle Test/Scrum/IT-PM dans la fenêtre ≤3j sur freelance.de/Schweiz-Projekte (20 annonces, toutes dev/ingénieur/SAP/accounting hors cible).
+
+Axe IA : 7e confirmation d'infructuosité. Testé `"KI-Beratung" OR "KI-Berater" Mittelstand Heidelberg OR Rhein-Neckar OR Mannheim gesucht 2026` : uniquement des agences qui vendent de l'IA (KI Lab Rhein-Neckar, botschaft.digital/neura7, dahoam.ai, Franklin&Partners, IBS), zéro PME exprimant un besoin. Voir [[constat-axe-ia]].
+
+## Session du 2026-06-23 (9e exécution, fenêtre stricte ≤3j, coupure publication ≥2026-06-20)
+
+Gmail revérifié (`from:linkedin.com newer_than:3d`) : **0 résultat**, toujours aucune alerte LinkedIn configurée côté Joseph (4e vérification consécutive à blanc).
+
+freelance.de balayé sur 6 listings (Testmanager, IT-Projektleiter, Scrum-Master, IT-Manager, QA, Schweiz). Seuls 2 nouveaux candidats publiés ≥20.06 et non déjà livrés :
+
+**1 lead livré ce jour** :
+1. Client non identifié (visible membres EXPERT uniquement) — IT Projektleiter (m/w/d) ID 30435, Großraum Ravensburg DE, 100% remote, publié 22.06.2026 16:39, Projektstart 07/2026 à 07/2027 (12 mois), rôle structuration projet/jalons/priorités + appui Scrum-Master. URL: https://www.freelance.de/projekte/projekt-1276929-IT-leiter-m-w-d-ID-30435
+
+**Écarté pour incohérence temporelle (Projektstart déjà passé malgré publication récente)** :
+- Scrum Master / Agile Coach – 40%, St. Gallen/Basel/remote CH (1276822), publié 22.06.2026 12:00 mais Projektstart juillet 2025 / fin janvier 2026 (période entièrement passée) — annonce probablement republiée sans mise à jour, écartée par prudence.
+
+**Doublon avec lead déjà livré le 2026-06-22** : FREELANCE Senior Scrum Master:in gesucht (1276560, Berlin, publié 22.06.2026 05:39) — déjà dans le lot du 2026-06-22, non re-livré.
+
+**Écartés pour absence de preuve de date de publication ≤3j (freelancermap.de/.ch, freelancermap.com)** :
+- Senior Spezialist/in Test-Management Verschlüsselung Chips/PKI, Bern CH (Stoiber Informatik GmbH) — Projektstart janvier 2025, annonce manifestement obsolète malgré indexation actuelle.
+- Test Manager - Germany - Remote (Infoplus Technologies GmbH), Hesse DE, 100% remote, ASAP — aucune date de publication trouvable sur freelancermap.com.
+- ITech Consult AG — Testmanager ISTQB/Hermes/SAP/ALM-QC, Bern CH — Projektstart 01.08.2025, obsolète.
+- jobs.ch : la quasi-totalité des résultats Testmanager/Test Manager sont des CDI (Stellenangebot), pas du freelance ; non creusé davantage.
+
+**Confirmation persistante** : freelancermap.de/.ch ne livre toujours aucune date de publication via WebSearch/WebFetch (9e session sans avancée technique sur ce point, cf. [[sources-dach]] 8e session pour le diagnostic définitif : injection JS côté client invisible au fetch statique).
+
+Axe IA : 9e confirmation d'infructuosité. Testé `"Anrufe verpasst" OR "Telefon ständig besetzt" Handwerk/Praxis/Kanzlei KMU Heidelberg/Mannheim/Karlsruhe 2026` (a remonté des stats généralistes et blogs d'agences IA, ex. DigitalRezeption, voicefleet.ai, ruflab.com, telfo.ai, agentino.de — toujours côté offre) et `Xing "KI Agent" OR "Voice Bot" Mittelstand "wir suchen" Berater Telefonie Empfang 2026` (zéro résultat Xing direct, que des comparatifs d'outils). Voir [[constat-axe-ia]] pour la 9e confirmation.
+
+## Lead remonté manuellement par Joseph le 2026-06-23 (preuve directe que freelancermap publie des dates visibles à l'œil humain)
+
+Joseph a relevé manuellement sur freelancermap une fiche que les outils de l'agent n'avaient pas captée (date affichée en JS, invisible au fetch/recherche). Données brutes transmises par Joseph :
+
+**2. IT-Testmanager (m/w/d) — Wavestone Germany**, Hannover DE, sur site/hybride à fort taux de remote, Freiberuflich, secteur Insurance/Finanzsektor. Contexte : produit digital en environnement agile scaled (SAFe, ART/PI), assurance qualité transverse, stratégie de test moderne (Built-in Quality, Shift Left, Continuous Testing). Muss : testmanagement agile scaled SAFe, pilotage multi-équipes, test risk-based, Jira/Azure DevOps/Confluence, ALM SDM ou Octane, CI/CD + automatisation, diplôme info, ISTQB valide, bon anglais. Kann : SAP Public Cloud, secteur financier (IFRS, HGB). Contact : Emira Bucan. Réf. plateforme #3014389, publié 23.06.2026 11:51 (le jour même, vu directement par Joseph dans son navigateur).
+URL : https://www.freelancermap.de/projekt/it-testmanager-m-w-d-3014389 — **URL reconstruite par déduction de pattern (non fournie explicitement par Joseph), confirmée par un seul WebFetch qui retourne un contenu cohérent (titre H1 "IT-Testmanager (m/w/d)", première phrase "Wir suchen einen erfahrenen Test Manager / Quality Manager für ein anspruchsvolles digitales Produktentwicklungsprojekt im Finanzsektor."). A faire reconfirmer par Joseph avec l'URL exacte copiée depuis son navigateur lors d'une prochaine session, par prudence méthodologique : un seul WebFetch concordant ne suffit pas à exclure une coïncidence ou un artefact du modèle de fetch.**
+
+**Implication méthode** : confirme définitivement que freelancermap publie une date de mise en ligne lisible par un humain dans son navigateur (« veröffentlicht am jj.mm.aaaa, hh:mm Uhr »), mais que cette date reste structurellement invisible aux outils WebFetch/WebSearch de l'agent (rendu JS). Tant qu'aucun outil à rendu JS n'est disponible, la seule voie fiable pour capter ces fiches reste : (a) Joseph remonte manuellement les fiches qu'il repère comme fraîches, ou (b) alertes email natives freelancermap.
+
+## Session du 2026-06-23 (10e exécution, session de VÉRIFICATION méthode freelancermap `created=3`)
+
+Gmail revérifié (`from:linkedin.com newer_than:2d`) : **0 résultat**, 5e vérification consécutive à blanc. Méthode `created=3` testée et validée en profondeur, voir [[sources-dach]] pour le détail technique complet. Lead Wavestone #3014389 (déjà livré ce matin via remontée manuelle de Joseph) reconfirmé présent dans les résultats `created=3`, non recompté.
+
+**5 leads livrés ce jour** (tous fraîcheur confirmée ≤3j via `created=3` freelancermap.de) :
+
+1. Place-IT Consulting — Senior Business Analyst / Testmanager Zahlungsverkehr (m/w/d), remote DE (déplacements ponctuels Frankfurt), freelance confirmé, Projektstart ab sofort, 12 mois+. URL: https://www.freelancermap.de/projekt/senior-business-analyst-testmanager-zahlungsverkehr-m-w-d
+2. Büllesbach & Plöntzke GmbH — SAP Testmanager (m/w/d) S/4HANA, remote DE, freelance confirmé, ASAP, 8 mois+. URL: https://www.freelancermap.de/projekt/sap-testmanager-m-w-d-s-4hana-3014256
+3. percision services GmbH — SAP Testmanager (m/w/d) S/4 Projekt Remote, 100% remote DE, ASAP, 8 mois jusqu'à février 2027+ option. Note : environnement lié à l'industrie de défense mentionné. URL: https://www.freelancermap.de/projekt/sap-testmanager-m-w-d-s-4-projekt-remote
+4. RM Group — Scrum Master, Zurich CH, hybride (40% remote), début 06/2026, 6 mois. Réserve : poste réservé aux citoyens CH/UE/détenteurs de permis de travail suisse. URL: https://www.freelancermap.de/projekt/scrum-master-3014083
+5. PROSTAFF Schweiz GmbH — Scrum Master / Agile Coach 30-40%, St. Gallen/Basel/remote CH, freelance, 6 mois+. Réserve : Projektstart affiché 01.07.2025 (passé), incohérent avec date de publication fraîche confirmée (22.06.2026) — probable republication, à clarifier avec le recruteur avant contact. URL: https://www.freelancermap.de/projekt/26165-scrum-master-agile-coach-30-40-prozent
+
+**Écartés** :
+- INTERIM Scrum Master (gn), Hamburg, Michael Page Contracting — exige statut salarié (ANÜ), pas une mission freelance pure. URL: https://www.freelancermap.de/projekt/interim-scrum-master-gn-3014458
+- IT Projektleiter ID 30435, Ravensburg/Immenstaad, Contractor Consulting GmbH — DOUBLON confirmé avec lead déjà livré le 2026-06-23 via freelance.de (projet 1276929, même ID 30435). URL freelancermap: https://www.freelancermap.de/projekt/it-projektleiter-m-w-d-immenstaad-remote-id-30435
+- Mot-clé `qa` (DE) : 9 résultats, tous hors cible (vente B2B QA-Dienstleistungen, construction MEP/CSA, ingénierie agentic AI) — confirme que ce mot-clé est trop large, voir [[sources-dach]].
+- Suisse `testmanager` : 0 résultat. Suisse `projektleiter`/`agile coach` : 1 résultat chacun, hors cœur de cible (Product Owner Chur).
+
+Axe IA : non retesté cette session (session dédiée à la vérification méthode freelancermap uniquement, sur consigne explicite).
+
 ## Leads écartés (vérifiés mais rejetés)
 
 - **Hays / freelancermap.de** — Testmanager (m/w/d) Magdeburg : annonce datée février 2023, obsolète. URL: https://www.freelancermap.de/projekt/hays-projektangebot-testmanager-m-w-d
