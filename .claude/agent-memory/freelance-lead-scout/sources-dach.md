@@ -85,3 +85,59 @@ Règle qui prime désormais :
 - Toujours combiner avec les mots-clés métier ajoutés au prompt : testing, ISTQB / ISTQB Advanced Level, Test Manager, Testmanager, Scrum / Scrum Master.
 
 Si une future session ne trouve toujours rien sur freelancermap, documenter précisément ce qui a été tenté (URLs ouvertes, requêtes) avant de conclure, au lieu d'écarter la source en bloc.
+
+## Session du 2026-06-22 (8e exécution) : test approfondi freelancermap — limite technique confirmée, pas une limite de méthode
+
+Conformément à la consigne de Joseph, 12 fiches projet individuelles freelancermap.de/.ch ont été ouvertes par WebFetch cette session (liste complète dans [[leads-livres]]). **Aucune ne renvoie de date de publication dans le contenu récupéré.** Un test ciblé a été fait pour isoler la cause : WebFetch a été interrogé explicitement sur la présence de tout indice temporel (texte visible, meta tags, JSON-LD, commentaires HTML) sur la fiche `scrum-master-m-w-d-gesucht-2877310` — réponse : aucune mention trouvée nulle part dans le document récupéré, seule une mention promotionnelle ("Nur bis 28.06.") sans rapport avec la publication.
+
+**Conclusion technique** : le bloc de date de publication que Joseph voit dans son navigateur (« eingestellt vor X Tagen/Stunden », « heute », « gestern ») est très probablement injecté côté client par JavaScript après chargement initial de la page, et n'est donc PAS présent dans le HTML statique que WebFetch convertit en markdown. Ce n'est pas un problème de mauvaises URLs ou de méthode de recherche : c'est une limite structurelle de l'outil WebFetch face à du contenu rendu dynamiquement. WebSearch (indexation Google) ne capture pas non plus ce texte (testé via requêtes `"vor 1 Tag" OR "vor 2 Tagen"` sur le domaine, 0 résultat pertinent).
+
+**Implication pratique** : tant qu'aucun outil avec rendu JS (navigateur piloté, type Playwright/Puppeteer, ou accès API freelancermap) n'est disponible, la fraîcheur de publication sur freelancermap restera invérifiable par les moyens actuels, malgré le fait que l'info existe bel et bien sur la plateforme (vue confirmée par Joseph manuellement). Pistes pour lever ce blocage : (a) Joseph peut copier-coller le texte affiché sur une fiche repérée comme fraîche pour que l'agent l'intègre directement, (b) alertes email natives freelancermap (toujours recommandées), (c) si un outil de navigation avec rendu JS devient disponible dans l'environnement, le retester en priorité sur cette source.
+
+## PERCÉE MAJEURE du 2026-06-23 (9e session) : freelancermap EST exploitable pour la fraîcheur via l'URL de RECHERCHE filtrée (`created=N`)
+
+Joseph a fourni l'URL de recherche qu'il utilise lui-même sur freelancermap. Test direct : **cette URL de listing de recherche se rend parfaitement en WebFetch** (résultats présents dans le HTML statique), contrairement aux fiches individuelles (date JS, invisible) et au chemin de listing `/projekte/deutschland` testé avant. **La conclusion des sessions 2/8 ("freelancermap inexploitable pour la fraîcheur") est donc INVALIDÉE.** Le problème n'était pas la plateforme mais le mauvais point d'entrée.
+
+**La clé : le paramètre `created=N` filtre côté serveur les annonces publiées dans les N derniers jours.** Plus besoin de lire la date de chaque fiche : tout ce que la page renvoie est garanti ≤ N jours par construction. Confirmé par le texte "seit 3 Tagen öffentlich" affiché sur la page de résultats avec `created=3`. C'est la solution au problème de preuve de fraîcheur qui bloquait depuis 8 sessions, sans même avoir besoin d'alertes email.
+
+**Structure d'URL à utiliser systématiquement** (domaine `freelancermap.de`, endpoint `/projekte`) :
+```
+https://www.freelancermap.de/projekte?created=3&query=<mot-cle>&countries[]=<code>&sort=2&pagenr=1
+```
+- `created=3` → fenêtre de fraîcheur stricte de 3 jours (= règle actuelle de Joseph). Ajuster le chiffre si la règle change.
+- `query=<mot-cle>` → un seul mot-clé par requête (espaces encodés `+`, ex: `scrum+master`). Faire une requête PAR mot-clé métier : `testmanager`, `test+manager`, `scrum+master`, `it-projektleiter`, `projektleiter`, `qa`, `istqb`.
+- `countries[]=<code>` → **code pays vérifié : Allemagne = `1`, Suisse = `3`**. (Note : le `[]` doit être encodé `%5B%5D` dans l'URL passée à WebFetch.)
+- `sort=2` → tri par date (plus récent d'abord).
+- Paginer avec `pagenr=2`, `3`... si la première page est pleine (env. 20 résultats/page).
+
+**Méthode de balayage recommandée par session** :
+1. Pour chaque mot-clé métier × chaque pays (DE=1, CH=3), fetcher l'URL de recherche `created=3`. La liste renvoyée est déjà filtrée en fraîcheur.
+2. Trier la pertinence métier : **la recherche par mot-clé est LARGE** (un scan `scrum+master` a remonté des Data Engineers, Product Owners, etc., car freelancermap matche sur tout le texte de l'annonce). Garder uniquement les vrais rôles cœur de cible.
+3. Pour chaque lead retenu, l'URL de fiche est reconstructible/fournie dans le listing (format `/projekt/<slug>-<id>`) ; un WebFetch sur la fiche donne les détails complets (tâches, exigences, contact) — seule la date manque, mais elle n'est plus nécessaire puisque garantie par `created=3`.
+4. Dédupliquer contre [[leads-livres]] par id de projet.
+
+**À retenir** : ne plus jamais écarter freelancermap pour "fraîcheur invérifiable". Utiliser l'URL de recherche `created=3`, pas les fiches individuelles ni le listing générique. C'est désormais une source pleinement exploitable, probablement la plus productive avec freelance.de.
+
+## CONFIRMATION du 2026-06-23 (session de vérification dédiée) : méthode `created=3` validée à 100%, technique fiable
+
+Test de vérification complet effectué sur 9 requêtes (`testmanager`, `scrum+master`, `it-projektleiter`, `istqb`, `test+manager`, `qa` en DE ; `testmanager`, `scrum+master`, `agile+coach`, `projektleiter` en CH). **Le WebFetch sur l'URL de recherche se rend systématiquement en HTML statique avec les résultats et leurs dates visibles** ("seit 3 Tagen öffentlich", "vor 3 Tagen", ou date/heure explicite jj.mm.aaaa hh:mm). Le projet Wavestone #3014389 (connu et déjà livré la veille) réapparaît correctement dans les résultats `created=3`, ce qui confirme que le filtre fonctionne et que la fenêtre de 3 jours est cohérente.
+
+**Constats complémentaires importants** :
+- **Suisse (`countries[]=3`) donne souvent 0 ou très peu de résultats par mot-clé** (0 pour `testmanager`, 3 pour `scrum+master`, 1 pour `agile+coach`, 1 pour `projektleiter`). Le volume CH est structurellement faible sur 3 jours ; ne pas s'inquiéter de trouver peu de leads suisses par session, c'est la norme du marché, pas un défaut de méthode.
+- **Le mot-clé `qa` est confirmé trop large** (matche du sales/vente B2B "QA-Dienstleistungen", de la construction MEP/CSA, de l'ingénierie agentic AI) : à garder en balayage mais filtrer encore plus sévèrement, voire le déprioriser au profit de `istqb`/`testmanager`/`test+manager` qui sont plus propres.
+- **Vigilance ANÜ/salarié** : certaines fiches freelancermap dans les résultats `created=3` sont en réalité des postes Arbeitnehmerüberlassung (ANÜ) réservés aux salariés (ex: INTERIM Scrum Master Hamburg, Michael Page, "Seules les personnes ayant un statut de salarié sont acceptées"). Toujours vérifier le statut contractuel sur la fiche individuelle avant de qualifier, le mot "freelance"/"INTERIM" dans le titre ne suffit pas.
+- **Doublon cross-plateforme confirmé** : la mission "IT Projektleiter ID 30435, Ravensburg/Immenstaad" apparaît à la fois sur freelancermap (créée le 22.06, ID 30435) et avait déjà été livrée la veille via freelance.de (projet 1276929, même ID 30435 dans le titre). Les ESN/recruteurs republient la même mission sur plusieurs plateformes avec le même ID client interne — toujours vérifier cet ID dans le titre/texte pour dédupliquer entre freelance.de et freelancermap, pas seulement entre sessions de la même plateforme.
+- **Incohérence Projektstart vs fraîcheur** : PROSTAFF Schweiz republie parfois une fiche avec Projektstart passé (01.07.2025) mais date de publication fraîche confirmée (22.06.2026, "depuis 3 jours"). Conformément à la règle de Joseph (fraîcheur = date de PUBLICATION, indépendante du Projektstart), ce type de lead reste éligible mais doit être signalé avec la réserve explicite sur l'incohérence de date de début.
+
+**Conclusion** : la méthode `created=3&query=<mot-clé>&countries[]=<code>&sort=2` est confirmée robuste et reproductible. À adopter comme méthode standard pour toutes les sessions futures sur freelancermap, en complément de freelance.de (listings "Projekt Insights").
+
+## RÈGLE DE LIVRAISON (formalisée par Joseph, 2026-06-23) : toujours fournir le LIEN DIRECT de l'offre, avec ID quand il existe
+
+Joseph a demandé que chaque lead livré contienne le **lien direct de la fiche de l'offre**, jamais l'URL de recherche `created=3` (qui n'est qu'un outil interne de découverte et ne doit pas apparaître dans les livrables ni dans les brouillons Gmail).
+
+Règles à appliquer pour chaque lead :
+- **Livrer l'URL de la fiche individuelle** au format `https://www.freelancermap.de/projekt/<slug>-<id>` (ou domaine `.ch`/`.com` selon la source).
+- **Privilégier systématiquement le lien qui contient l'ID numérique du projet** (ex: `...-3014389`). C'est la forme la plus stable dans le temps. Les liens sans ID (slug seul, ex: `sap-testmanager-m-w-d-s-4-projekt-remote`) résolvent aujourd'hui mais reposent sur le titre, donc moins pérennes — ne les utiliser que si aucun lien avec ID n'est trouvable.
+- **L'ID figure dans le listing de recherche** (à côté de chaque résultat) et/ou dans le slug de l'URL de la fiche. Le récupérer là pour construire le lien canonique.
+- Si seule une forme sans ID est disponible, la livrer quand même (vérifié : elle fonctionne), mais signaler brièvement qu'elle est moins stable.
+- Vérifier par WebFetch que le lien mène bien à une fiche individuelle (titre + client + description) et non à une redirection vers la recherche, avant de le livrer.
