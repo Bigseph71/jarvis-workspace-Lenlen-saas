@@ -43,3 +43,7 @@ venv/
 *.tmp
 tmp/
 .cache/
+
+# --- Worktrees git et clones locaux jetables ---------------------------------
+.claude/worktrees/
+test-clone/
