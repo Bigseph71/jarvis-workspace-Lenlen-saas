@@ -9,6 +9,7 @@ import { AppError } from "./lib/errors.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { patientRoutes } from "./modules/patients/patient.routes.js";
 import { caregiverRoutes } from "./modules/caregivers/caregiver.routes.js";
+import { visitRoutes } from "./modules/visits/visit.routes.js";
 
 const app = Fastify({
   logger: {
@@ -55,8 +56,9 @@ app.get("/health", async () => {
 await app.register(authRoutes);
 await app.register(patientRoutes);
 await app.register(caregiverRoutes);
+await app.register(visitRoutes);
 
-// TODO Phase 1: Besuchsplanung (1 Besuch/Woche/Patient), Geocoding-Anbindung.
+// TODO Phase 1: Geocoding-Anbindung (Google Maps) für Patientenadressen.
 
 try {
   await app.listen({ port: env.BACKEND_PORT, host: "0.0.0.0" });

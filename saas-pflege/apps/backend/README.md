@@ -85,6 +85,40 @@ Règles appliquées : la fachkraft attitrée à un patient doit appartenir au te
 et être active ; un compte utilisateur ne peut être lié qu'à une seule fachkraft.
 Chaque création/modification/suppression écrit un **audit log** (DSGVO).
 
+### Besuche / Planification (`/visits`)
+
+Planification : `SUPER_ADMIN`, `STRUKTUR_ADMIN`, `KOORDINATOR`.
+Pointage GPS : `+ FACHKRAFT` (uniquement ses propres visites).
+
+| Méthode | Route | Effet | Accès |
+|---|---|---|---|
+| GET | `/visits` | liste (filtres `from`,`to`,`patientId`,`caregiverId`,`status`,`includeEmergency`) | planif |
+| GET | `/visits/:id` | détail | planif |
+| POST | `/visits` | crée un besuch régulier | planif |
+| POST | `/visits/emergency` | crée un besuch d'urgence (motif obligatoire) | planif |
+| PATCH | `/visits/:id/reschedule` | déplace un besuch | planif |
+| PUT | `/visits/:id/caregiver` | assigne une vertretung | planif |
+| POST | `/visits/:id/cancel` | annule | planif |
+| POST | `/visits/:id/check-in` | pointage arrivée (→ IN_PROGRESS) | track |
+| POST | `/visits/:id/check-out` | pointage départ (→ COMPLETED) | track |
+| GET | `/visits/alerts/missing-week` | patients sans visite régulière la semaine | planif |
+| GET | `/visits/mine` | route du jour de la fachkraft connectée | FACHKRAFT |
+
+**Règles métier appliquées** :
+1. **1 visite régulière / semaine / patient** (ISO, lun-dim) → conflit 409 si doublon.
+2. **Urgences** hors cycle : motif obligatoire, `isEmergency=true`, ne consomment
+   pas la semaine et ignorent les contraintes de jour/qualification.
+3. **Alerte** : patients actifs sans visite régulière planifiée/en cours/faite
+   pour la semaine demandée.
+4. **Remplacement** : la vertretung doit avoir la **même qualification** que la
+   stamm-fachkraft ; traçabilité `caregiverId` (effectif) vs `assignedCaregiverId`.
+5. **Jours travaillés** : un besuch ne peut tomber que sur un `workDay` de la
+   fachkraft effective (les heures contractuelles restent un TODO, faute de
+   modèle de durée/horaire de visite).
+
+Transitions de statut : `PLANNED → IN_PROGRESS` (check-in) → `COMPLETED`
+(check-out) ; `PLANNED|IN_PROGRESS → CANCELED` (cancel).
+
 ## Modèle multi-tenant / RLS
 
 Deux chemins d'accès à la base (voir `packages/database/prisma/rls.sql`) :
