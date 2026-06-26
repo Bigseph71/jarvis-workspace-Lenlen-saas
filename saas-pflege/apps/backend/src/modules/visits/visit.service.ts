@@ -9,6 +9,7 @@ import { AppError, ConflictError, ForbiddenError } from "../../lib/errors.js";
 import { writeAudit } from "../../lib/audit.js";
 import { paginated, toSkipTake, type Paginated } from "../../lib/pagination.js";
 import { weekRange, dayRange, weekdayCode } from "../../lib/week.js";
+import { isWorkDay, sameQualification } from "./visit.rules.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
 import type {
   CreateVisitInput,
@@ -29,10 +30,6 @@ interface CaregiverCore {
   qualification: Qualification;
   workDays: Prisma.JsonValue;
   isActive: boolean;
-}
-
-function workDaysOf(caregiver: { workDays: Prisma.JsonValue }): string[] {
-  return Array.isArray(caregiver.workDays) ? (caregiver.workDays as string[]) : [];
 }
 
 async function loadActiveCaregiver(tx: TenantTx, id: string): Promise<CaregiverCore> {
@@ -71,17 +68,16 @@ async function assertNoWeeklyClash(
   }
 }
 
-/** Regel métier 5 (Teil): Besuch nur an einem Arbeitstag der Fachkraft. */
+/** Wirft, wenn der Besuch nicht auf einen Arbeitstag der Fachkraft fällt. */
 function assertWorkDay(caregiver: { workDays: Prisma.JsonValue }, scheduledAt: Date): void {
-  const code = weekdayCode(scheduledAt);
-  if (!workDaysOf(caregiver).includes(code)) {
-    throw new AppError(422, `Fachkraft arbeitet nicht am ${code}`, "UnprocessableEntity");
+  if (!isWorkDay(caregiver, scheduledAt)) {
+    throw new AppError(422, `Fachkraft arbeitet nicht am ${weekdayCode(scheduledAt)}`, "UnprocessableEntity");
   }
 }
 
-/** Regel métier 4: Vertretung muss dieselbe Qualifikation wie die Stammkraft haben. */
+/** Wirft, wenn Vertretung und Stammkraft unterschiedliche Qualifikation haben. */
 function assertSameQualification(replacement: CaregiverCore, attitre: CaregiverCore): void {
-  if (replacement.qualification !== attitre.qualification) {
+  if (!sameQualification(replacement.qualification, attitre.qualification)) {
     throw new AppError(
       422,
       "Vertretung benötigt dieselbe Qualifikation wie die Stamm-Fachkraft",

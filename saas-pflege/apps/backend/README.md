@@ -119,6 +119,39 @@ Pointage GPS : `+ FACHKRAFT` (uniquement ses propres visites).
 Transitions de statut : `PLANNED → IN_PROGRESS` (check-in) → `COMPLETED`
 (check-out) ; `PLANNED|IN_PROGRESS → CANCELED` (cancel).
 
+## Tests
+
+Runner : **Vitest**. Deux niveaux.
+
+### Tests unitaires (sans base de données)
+
+Couvrent la logique pure : dates/semaines (`lib/week`), tokens (`lib/tokens`),
+pagination, règles métier des visites (`visit.rules`), validation Zod des schémas,
+RBAC (`requireRole`), hachage Argon2id.
+
+```bash
+pnpm install
+pnpm --filter @len-len/database generate   # requis : les schemas utilisent les enums Prisma
+pnpm --filter @len-len/backend test         # vitest run
+```
+
+Les secrets/env de test sont injectés par `vitest.config.ts` (pas de `.env` requis).
+
+### Test d'intégration (base réelle, opt-in)
+
+`test/integration/auth-flow.int.test.ts` exerce register → login → rotation →
+détection de réutilisation contre une vraie DB. Skippé par défaut.
+
+```bash
+# Postgres démarré + DATABASE_URL vers une DB migrée :
+pnpm --filter @len-len/database migrate:deploy
+pnpm --filter @len-len/database rls
+RUN_DB_TESTS=1 pnpm --filter @len-len/backend test
+```
+
+Les imports y sont dynamiques : sans DB ni client généré, le fichier ne casse
+pas le run unitaire.
+
 ## Modèle multi-tenant / RLS
 
 Deux chemins d'accès à la base (voir `packages/database/prisma/rls.sql`) :
