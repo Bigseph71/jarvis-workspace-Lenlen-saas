@@ -7,6 +7,24 @@
 
 ---
 
+## 2026-06-26
+
+### Démarrage du projet SaaS « Len Len » (ambulante Pflege)
+- Mise en place d'une structure multi-projets dans le workspace : ajout des dossiers `saas-pflege/` (le SaaS Len Len) et `autre-projet/` (placeholder), à côté du `CLAUDE.md` racine resté intact
+- Création du `saas-pflege/CLAUDE.md` : spec produit et technique complète (multi-tenant, stack Next.js / Node / Prisma / PostgreSQL / Redis-BullMQ, microservice VRPTW, microservice KI Python, RBAC 5 rôles, plans Stripe, sécurité DSGVO, plan de dev en 3 phases). Ce fichier est chargé automatiquement quand on travaille dans le dossier
+- **Contexte produit** : SaaS multi-tenant pour PME de soins ambulatoires (20-200 fachkräfte), langue UI allemande, i18n DE/EN/FR
+
+### Scaffolding initial généré (46 fichiers)
+- **Monorepo** pnpm + Turborepo : `apps/` (backend Fastify, web Next.js App Router + next-intl, vrptw-worker BullMQ, ki-service FastAPI) et `packages/` (database Prisma partagé, types partagés). TypeScript strict partout
+- **Schéma Prisma complet** validé par la CLI Prisma : toutes les entités du CLAUDE.md (organizations, users, caregivers, patients, visits, vehicles, routes, translations) + refresh_tokens (rotation JWT) et audit_logs (DSGVO). `organizationId` sur chaque table métier
+- **Row-Level Security PostgreSQL** (`rls.sql`) + helper `withTenant()` pour l'isolation tenant au niveau base
+- **Config Docker** : `docker-compose.yml` (postgres, redis, backend, web, worker, ki) avec réseau interne isolé d'Internet, un Dockerfile multi-stage par service, healthchecks
+
+### Points d'attention
+- **Docker n'est pas installé sur le poste** : le `docker-compose.yml` n'a pas pu être validé en exécution (syntaxe standard). Docker Desktop requis pour lancer la stack
+- **Pas de `pnpm install` lancé** : aucune dépendance installée, pas de lockfile. Versions des packages à figer au premier install
+- Prochaine étape identifiée : module auth multi-tenant + middleware tenant + branchement RLS, puis CRUD patients/fachkräfte/contrats (Phase 1 MVP)
+
 ## 2026-06-20
 
 ### Connexion à l'instance n8n établie et vérifiée

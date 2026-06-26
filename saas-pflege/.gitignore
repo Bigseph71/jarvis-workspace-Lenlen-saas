@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Prisma
+packages/database/prisma/migrations/dev.db*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Env (Secrets) – nur .env.example wird versioniert
+.env
+.env.*
+!.env.example
+
+# Logs / OS
+*.log
+.DS_Store
