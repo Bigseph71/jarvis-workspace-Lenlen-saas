@@ -7,6 +7,8 @@ import { Prisma, prisma } from "@len-len/database";
 import { env } from "./config/env.js";
 import { AppError } from "./lib/errors.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
+import { patientRoutes } from "./modules/patients/patient.routes.js";
+import { caregiverRoutes } from "./modules/caregivers/caregiver.routes.js";
 
 const app = Fastify({
   logger: {
@@ -51,8 +53,10 @@ app.get("/health", async () => {
 });
 
 await app.register(authRoutes);
+await app.register(patientRoutes);
+await app.register(caregiverRoutes);
 
-// TODO Phase 1: CRUD Patienten / Fachkräfte / Verträge (Tenant-gescoped).
+// TODO Phase 1: Besuchsplanung (1 Besuch/Woche/Patient), Geocoding-Anbindung.
 
 try {
   await app.listen({ port: env.BACKEND_PORT, host: "0.0.0.0" });

@@ -49,6 +49,42 @@ curl -X POST localhost:4000/auth/refresh \
   -H 'content-type: application/json' -d '{"refreshToken":"<refreshToken>"}'
 ```
 
+## Ressources métier (tenant-scoped)
+
+Toutes ces routes exigent un Bearer token. Les requêtes passent par
+`withTenant(orgId, …)` → isolation RLS automatique. Pagination via
+`?page=&pageSize=` (max 100).
+
+### Patients (`/patients`)
+
+Accès : `SUPER_ADMIN`, `STRUKTUR_ADMIN`, `KOORDINATOR`.
+HR exclu (pas de données patients), Fachkraft exclu (app mobile).
+
+| Méthode | Route | Effet |
+|---|---|---|
+| GET | `/patients` | liste (filtres `search`, `geocodingStatus`, `includeInactive`) |
+| GET | `/patients/:id` | détail (+ audit log READ, DSGVO) |
+| POST | `/patients` | création (geocodingStatus=PENDING) |
+| PATCH | `/patients/:id` | mise à jour (changement d'adresse → re-geocoding) |
+| DELETE | `/patients/:id` | soft-delete (isActive=false, préserve l'historique) |
+
+### Fachkräfte (`/caregivers`)
+
+Lecture : `+ HR` et `KOORDINATOR`. Écriture / contrat : `STRUKTUR_ADMIN`, `HR`.
+
+| Méthode | Route | Effet |
+|---|---|---|
+| GET | `/caregivers` | liste (filtres `search`, `qualification`, `includeInactive`) |
+| GET | `/caregivers/:id` | détail (+ nb de patients attitrés) |
+| POST | `/caregivers` | création (avec bloc contrat obligatoire) |
+| PATCH | `/caregivers/:id` | mise à jour profil (nom, qualification, lien user) |
+| PUT | `/caregivers/:id/contract` | **module Vertrag** : type, heures, jours, max patients |
+| DELETE | `/caregivers/:id` | soft-delete |
+
+Règles appliquées : la fachkraft attitrée à un patient doit appartenir au tenant
+et être active ; un compte utilisateur ne peut être lié qu'à une seule fachkraft.
+Chaque création/modification/suppression écrit un **audit log** (DSGVO).
+
 ## Modèle multi-tenant / RLS
 
 Deux chemins d'accès à la base (voir `packages/database/prisma/rls.sql`) :
