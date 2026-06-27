@@ -44,7 +44,8 @@ app.setErrorHandler((error, request, reply) => {
     return reply.status(409).send({ error: "Conflict", message: "Eintrag existiert bereits" });
   }
   request.log.error(error);
-  return reply.status(error.statusCode ?? 500).send({ error: "InternalServerError" });
+  const err = error as { statusCode?: number };
+  return reply.status(err.statusCode ?? 500).send({ error: "InternalServerError" });
 });
 
 // Health-Check (für Docker / Monitoring).
