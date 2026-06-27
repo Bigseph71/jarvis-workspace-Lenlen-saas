@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 const NAV_ITEMS = [
   { href: "/dashboard", key: "dashboard" },
   { href: "/patients", key: "patients" },
+  { href: "/caregivers", key: "caregivers" },
 ] as const;
 
 /** Rahmen für angemeldete Seiten: Kopfzeile mit Navigation + Abmelden. */

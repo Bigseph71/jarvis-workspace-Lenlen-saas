@@ -31,7 +31,8 @@
   },
   "nav": {
     "dashboard": "Overview",
-    "patients": "Patients"
+    "patients": "Patients",
+    "caregivers": "Caregivers"
   },
   "patients": {
     "title": "Patients",
@@ -77,6 +78,76 @@
         "lastName": "Last name: 1–80 characters.",
         "rawAddress": "Address: 3–300 characters."
       }
+    }
+  },
+  "caregivers": {
+    "title": "Caregivers",
+    "searchPlaceholder": "Search by name …",
+    "loading": "Loading …",
+    "error": "Caregivers could not be loaded.",
+    "empty": "No caregivers found.",
+    "count": "{total} caregivers",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {totalPages}",
+    "new": "New caregiver",
+    "columns": {
+      "name": "Name",
+      "qualification": "Qualification",
+      "contract": "Contract",
+      "weeklyHours": "Weekly hours",
+      "actions": "Actions"
+    },
+    "actions": {
+      "contract": "Contract"
+    },
+    "qualifications": {
+      "PFLEGEFACHKRAFT": "Registered nurse",
+      "PFLEGEHILFSKRAFT": "Nursing assistant",
+      "BETREUUNGSKRAFT": "Care assistant",
+      "AUSZUBILDENDE": "Trainee"
+    },
+    "contractTypes": {
+      "FULL_100": "Full-time (100%)",
+      "PART_80": "Part-time (80%)",
+      "PART_50": "Part-time (50%)",
+      "MINIJOB": "Mini-job",
+      "CUSTOM": "Custom"
+    },
+    "weekdays": {
+      "MON": "Mon",
+      "TUE": "Tue",
+      "WED": "Wed",
+      "THU": "Thu",
+      "FRI": "Fri",
+      "SAT": "Sat",
+      "SUN": "Sun"
+    },
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "qualification": "Qualification",
+      "contractType": "Contract type",
+      "weeklyHours": "Weekly hours",
+      "workDays": "Work days",
+      "maxPatients": "Max. patients"
+    },
+    "form": {
+      "newTitle": "New caregiver",
+      "contractTitle": "Edit contract",
+      "create": "Create",
+      "save": "Save",
+      "saving": "Saving …",
+      "cancel": "Cancel",
+      "loadError": "Caregiver could not be loaded.",
+      "limitReached": "Plan limit reached. Please upgrade the subscription."
+    },
+    "errors": {
+      "firstName": "First name: 1–80 characters.",
+      "lastName": "Last name: 1–80 characters.",
+      "weeklyHours": "Weekly hours: above 0 up to 60.",
+      "workDays": "Select at least one work day.",
+      "maxPatients": "Max. patients: 0–500."
     }
   }
 }

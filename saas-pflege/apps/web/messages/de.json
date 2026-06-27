@@ -31,7 +31,8 @@
   },
   "nav": {
     "dashboard": "Übersicht",
-    "patients": "Patienten"
+    "patients": "Patienten",
+    "caregivers": "Fachkräfte"
   },
   "patients": {
     "title": "Patienten",
@@ -77,6 +78,76 @@
         "lastName": "Nachname: 1–80 Zeichen.",
         "rawAddress": "Adresse: 3–300 Zeichen."
       }
+    }
+  },
+  "caregivers": {
+    "title": "Fachkräfte",
+    "searchPlaceholder": "Nach Name suchen …",
+    "loading": "Wird geladen …",
+    "error": "Fachkräfte konnten nicht geladen werden.",
+    "empty": "Keine Fachkräfte gefunden.",
+    "count": "{total} Fachkräfte",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "pageOf": "Seite {page} von {totalPages}",
+    "new": "Neue Fachkraft",
+    "columns": {
+      "name": "Name",
+      "qualification": "Qualifikation",
+      "contract": "Vertrag",
+      "weeklyHours": "Wochenstunden",
+      "actions": "Aktionen"
+    },
+    "actions": {
+      "contract": "Vertrag"
+    },
+    "qualifications": {
+      "PFLEGEFACHKRAFT": "Pflegefachkraft",
+      "PFLEGEHILFSKRAFT": "Pflegehilfskraft",
+      "BETREUUNGSKRAFT": "Betreuungskraft",
+      "AUSZUBILDENDE": "Auszubildende"
+    },
+    "contractTypes": {
+      "FULL_100": "Vollzeit (100%)",
+      "PART_80": "Teilzeit (80%)",
+      "PART_50": "Teilzeit (50%)",
+      "MINIJOB": "Minijob",
+      "CUSTOM": "Individuell"
+    },
+    "weekdays": {
+      "MON": "Mo",
+      "TUE": "Di",
+      "WED": "Mi",
+      "THU": "Do",
+      "FRI": "Fr",
+      "SAT": "Sa",
+      "SUN": "So"
+    },
+    "fields": {
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "qualification": "Qualifikation",
+      "contractType": "Vertragsart",
+      "weeklyHours": "Wochenstunden",
+      "workDays": "Arbeitstage",
+      "maxPatients": "Max. Patienten"
+    },
+    "form": {
+      "newTitle": "Neue Fachkraft",
+      "contractTitle": "Vertrag bearbeiten",
+      "create": "Anlegen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert …",
+      "cancel": "Abbrechen",
+      "loadError": "Fachkraft konnte nicht geladen werden.",
+      "limitReached": "Plan-Limit erreicht. Bitte das Abonnement upgraden."
+    },
+    "errors": {
+      "firstName": "Vorname: 1–80 Zeichen.",
+      "lastName": "Nachname: 1–80 Zeichen.",
+      "weeklyHours": "Wochenstunden: über 0 bis 60.",
+      "workDays": "Mindestens einen Arbeitstag wählen.",
+      "maxPatients": "Max. Patienten: 0–500."
     }
   }
 }

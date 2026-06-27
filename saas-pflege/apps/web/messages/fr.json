@@ -31,7 +31,8 @@
   },
   "nav": {
     "dashboard": "Tableau de bord",
-    "patients": "Patients"
+    "patients": "Patients",
+    "caregivers": "Soignants"
   },
   "patients": {
     "title": "Patients",
@@ -77,6 +78,76 @@
         "lastName": "Nom : 1 à 80 caractères.",
         "rawAddress": "Adresse : 3 à 300 caractères."
       }
+    }
+  },
+  "caregivers": {
+    "title": "Soignants",
+    "searchPlaceholder": "Rechercher par nom …",
+    "loading": "Chargement …",
+    "error": "Impossible de charger les soignants.",
+    "empty": "Aucun soignant trouvé.",
+    "count": "{total} soignants",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageOf": "Page {page} sur {totalPages}",
+    "new": "Nouveau soignant",
+    "columns": {
+      "name": "Nom",
+      "qualification": "Qualification",
+      "contract": "Contrat",
+      "weeklyHours": "Heures hebdo.",
+      "actions": "Actions"
+    },
+    "actions": {
+      "contract": "Contrat"
+    },
+    "qualifications": {
+      "PFLEGEFACHKRAFT": "Infirmier diplômé",
+      "PFLEGEHILFSKRAFT": "Aide-soignant",
+      "BETREUUNGSKRAFT": "Auxiliaire de vie",
+      "AUSZUBILDENDE": "Apprenti"
+    },
+    "contractTypes": {
+      "FULL_100": "Temps plein (100%)",
+      "PART_80": "Temps partiel (80%)",
+      "PART_50": "Temps partiel (50%)",
+      "MINIJOB": "Mini-job",
+      "CUSTOM": "Personnalisé"
+    },
+    "weekdays": {
+      "MON": "Lun",
+      "TUE": "Mar",
+      "WED": "Mer",
+      "THU": "Jeu",
+      "FRI": "Ven",
+      "SAT": "Sam",
+      "SUN": "Dim"
+    },
+    "fields": {
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "qualification": "Qualification",
+      "contractType": "Type de contrat",
+      "weeklyHours": "Heures hebdomadaires",
+      "workDays": "Jours travaillés",
+      "maxPatients": "Patients max."
+    },
+    "form": {
+      "newTitle": "Nouveau soignant",
+      "contractTitle": "Modifier le contrat",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "saving": "Enregistrement …",
+      "cancel": "Annuler",
+      "loadError": "Impossible de charger le soignant.",
+      "limitReached": "Limite du plan atteinte. Veuillez mettre à niveau l'abonnement."
+    },
+    "errors": {
+      "firstName": "Prénom : 1 à 80 caractères.",
+      "lastName": "Nom : 1 à 80 caractères.",
+      "weeklyHours": "Heures hebdo. : de plus de 0 à 60.",
+      "workDays": "Sélectionnez au moins un jour travaillé.",
+      "maxPatients": "Patients max. : 0 à 500."
     }
   }
 }
