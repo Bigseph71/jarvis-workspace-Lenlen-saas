@@ -1,12 +1,14 @@
-import { Worker, Queue } from "bullmq";
+import { Worker, Queue, type ConnectionOptions } from "bullmq";
 import { Redis as IORedis } from "ioredis";
 import pino from "pino";
 
 const log = pino({ name: "vrptw-worker" });
 
+// Cast wegen doppelter ioredis-Typen (Worker-App vs. BullMQ); zur Laufzeit
+// dieselbe Instanz.
 const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", {
   maxRetriesPerRequest: null,
-});
+}) as unknown as ConnectionOptions;
 
 export const VRPTW_QUEUE = "vrptw-optimization";
 const TIMEOUT_MS = Number(process.env.VRPTW_TIMEOUT_MS ?? 30000);
