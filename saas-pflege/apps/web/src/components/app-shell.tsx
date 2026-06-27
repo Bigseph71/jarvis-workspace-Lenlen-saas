@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", key: "dashboard" },
   { href: "/patients", key: "patients" },
   { href: "/caregivers", key: "caregivers" },
+  { href: "/visits", key: "visits" },
 ] as const;
 
 /** Rahmen für angemeldete Seiten: Kopfzeile mit Navigation + Abmelden. */

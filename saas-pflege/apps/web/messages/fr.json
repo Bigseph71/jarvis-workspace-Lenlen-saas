@@ -32,7 +32,8 @@
   "nav": {
     "dashboard": "Tableau de bord",
     "patients": "Patients",
-    "caregivers": "Soignants"
+    "caregivers": "Soignants",
+    "visits": "Planning"
   },
   "patients": {
     "title": "Patients",
@@ -148,6 +149,52 @@
       "weeklyHours": "Heures hebdo. : de plus de 0 à 60.",
       "workDays": "Sélectionnez au moins un jour travaillé.",
       "maxPatients": "Patients max. : 0 à 500."
+    }
+  },
+  "visits": {
+    "title": "Planning",
+    "new": "Nouvelle visite",
+    "prevWeek": "Semaine précédente",
+    "thisWeek": "Cette semaine",
+    "nextWeek": "Semaine suivante",
+    "allStatuses": "Tous les statuts",
+    "loading": "Chargement …",
+    "error": "Impossible de charger les visites.",
+    "empty": "Aucune visite cette semaine.",
+    "emergency": "Urgence",
+    "missingTitle": "{count} patients sans visite cette semaine :",
+    "columns": {
+      "when": "Échéance",
+      "patient": "Patient",
+      "caregiver": "Soignant",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "PLANNED": "Planifiée",
+      "IN_PROGRESS": "En cours",
+      "COMPLETED": "Terminée",
+      "MISSED": "Manquée",
+      "CANCELED": "Annulée"
+    },
+    "actions": {
+      "cancel": "Annuler"
+    },
+    "form": {
+      "newTitle": "Nouvelle visite",
+      "patient": "Patient",
+      "choosePatient": "— Choisir un patient —",
+      "scheduledAt": "Échéance",
+      "caregiver": "Soignant",
+      "defaultCaregiver": "— Soignant attitré du patient —",
+      "caregiverHint": "Laisser vide pour utiliser le soignant attitré du patient.",
+      "create": "Créer",
+      "saving": "Enregistrement …",
+      "cancel": "Annuler",
+      "errors": {
+        "patient": "Veuillez choisir un patient.",
+        "scheduledAt": "Veuillez choisir une date et une heure."
+      }
     }
   }
 }

@@ -32,7 +32,8 @@
   "nav": {
     "dashboard": "Übersicht",
     "patients": "Patienten",
-    "caregivers": "Fachkräfte"
+    "caregivers": "Fachkräfte",
+    "visits": "Planung"
   },
   "patients": {
     "title": "Patienten",
@@ -148,6 +149,52 @@
       "weeklyHours": "Wochenstunden: über 0 bis 60.",
       "workDays": "Mindestens einen Arbeitstag wählen.",
       "maxPatients": "Max. Patienten: 0–500."
+    }
+  },
+  "visits": {
+    "title": "Planung",
+    "new": "Neue Visite",
+    "prevWeek": "Vorherige Woche",
+    "thisWeek": "Diese Woche",
+    "nextWeek": "Nächste Woche",
+    "allStatuses": "Alle Status",
+    "loading": "Wird geladen …",
+    "error": "Visiten konnten nicht geladen werden.",
+    "empty": "Keine Visiten in dieser Woche.",
+    "emergency": "Notfall",
+    "missingTitle": "{count} Patienten ohne Besuch diese Woche:",
+    "columns": {
+      "when": "Termin",
+      "patient": "Patient",
+      "caregiver": "Fachkraft",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "PLANNED": "Geplant",
+      "IN_PROGRESS": "Läuft",
+      "COMPLETED": "Abgeschlossen",
+      "MISSED": "Verpasst",
+      "CANCELED": "Storniert"
+    },
+    "actions": {
+      "cancel": "Stornieren"
+    },
+    "form": {
+      "newTitle": "Neue Visite",
+      "patient": "Patient",
+      "choosePatient": "— Patient wählen —",
+      "scheduledAt": "Termin",
+      "caregiver": "Fachkraft",
+      "defaultCaregiver": "— Stamm-Fachkraft des Patienten —",
+      "caregiverHint": "Leer lassen, um die Stamm-Fachkraft des Patienten zu verwenden.",
+      "create": "Anlegen",
+      "saving": "Wird gespeichert …",
+      "cancel": "Abbrechen",
+      "errors": {
+        "patient": "Bitte einen Patienten wählen.",
+        "scheduledAt": "Bitte einen Termin wählen."
+      }
     }
   }
 }

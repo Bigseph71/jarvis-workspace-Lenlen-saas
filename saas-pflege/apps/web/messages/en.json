@@ -32,7 +32,8 @@
   "nav": {
     "dashboard": "Overview",
     "patients": "Patients",
-    "caregivers": "Caregivers"
+    "caregivers": "Caregivers",
+    "visits": "Planning"
   },
   "patients": {
     "title": "Patients",
@@ -148,6 +149,52 @@
       "weeklyHours": "Weekly hours: above 0 up to 60.",
       "workDays": "Select at least one work day.",
       "maxPatients": "Max. patients: 0–500."
+    }
+  },
+  "visits": {
+    "title": "Planning",
+    "new": "New visit",
+    "prevWeek": "Previous week",
+    "thisWeek": "This week",
+    "nextWeek": "Next week",
+    "allStatuses": "All statuses",
+    "loading": "Loading …",
+    "error": "Visits could not be loaded.",
+    "empty": "No visits this week.",
+    "emergency": "Emergency",
+    "missingTitle": "{count} patients without a visit this week:",
+    "columns": {
+      "when": "When",
+      "patient": "Patient",
+      "caregiver": "Caregiver",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "PLANNED": "Planned",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "MISSED": "Missed",
+      "CANCELED": "Canceled"
+    },
+    "actions": {
+      "cancel": "Cancel"
+    },
+    "form": {
+      "newTitle": "New visit",
+      "patient": "Patient",
+      "choosePatient": "— Choose patient —",
+      "scheduledAt": "When",
+      "caregiver": "Caregiver",
+      "defaultCaregiver": "— Patient's primary caregiver —",
+      "caregiverHint": "Leave empty to use the patient's primary caregiver.",
+      "create": "Create",
+      "saving": "Saving …",
+      "cancel": "Cancel",
+      "errors": {
+        "patient": "Please choose a patient.",
+        "scheduledAt": "Please choose a date and time."
+      }
     }
   }
 }
