@@ -1,5 +1,5 @@
 import { Queue } from "bullmq";
-import IORedis from "ioredis";
+import { Redis as IORedis } from "ioredis";
 import { env } from "../config/env.js";
 
 export const GEOCODING_QUEUE = "geocoding";

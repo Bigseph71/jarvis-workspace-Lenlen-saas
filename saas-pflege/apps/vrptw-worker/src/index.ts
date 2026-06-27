@@ -1,5 +1,5 @@
 import { Worker, Queue } from "bullmq";
-import IORedis from "ioredis";
+import { Redis as IORedis } from "ioredis";
 import pino from "pino";
 
 const log = pino({ name: "vrptw-worker" });
