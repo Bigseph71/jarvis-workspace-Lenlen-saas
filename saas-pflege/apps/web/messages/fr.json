@@ -2,5 +2,31 @@
   "home": {
     "title": "Len Len – Plateforme de soins",
     "subtitle": "SaaS multi-tenant pour services de soins à domicile"
+  },
+  "common": {
+    "appName": "Len Len",
+    "loading": "Chargement …",
+    "logout": "Se déconnecter",
+    "errorGeneric": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "subtitle": "Connectez-vous à votre compte Len Len",
+      "email": "E-mail",
+      "emailPlaceholder": "nom@service-de-soins.fr",
+      "password": "Mot de passe",
+      "organizationId": "ID de l'organisation",
+      "organizationIdHint": "Nécessaire uniquement si le même e-mail existe dans plusieurs organisations.",
+      "submit": "Se connecter",
+      "submitting": "Connexion …",
+      "invalidCredentials": "Identifiants invalides."
+    }
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue, {email}",
+    "role": "Rôle",
+    "organization": "Organisation"
   }
 }

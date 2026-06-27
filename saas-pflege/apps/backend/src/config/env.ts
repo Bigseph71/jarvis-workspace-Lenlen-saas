@@ -28,6 +28,9 @@ const schema = z.object({
   STRIPE_PRICE_ENTERPRISE: z.string().optional(),
 
   NEXT_PUBLIC_API_URL: z.string().optional(),
+
+  // Ursprung (Origin) des Web-Frontends – für CORS. NICHT die API-URL.
+  WEB_ORIGIN: z.string().default("http://localhost:3000"),
 });
 
 const parsed = schema.safeParse(process.env);

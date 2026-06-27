@@ -2,5 +2,31 @@
   "home": {
     "title": "Len Len – Pflege-Plattform",
     "subtitle": "Multi-Tenant SaaS für ambulante Pflegedienste"
+  },
+  "common": {
+    "appName": "Len Len",
+    "loading": "Wird geladen …",
+    "logout": "Abmelden",
+    "errorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
+  },
+  "auth": {
+    "login": {
+      "title": "Anmelden",
+      "subtitle": "Mit Ihrem Konto bei Len Len anmelden",
+      "email": "E-Mail",
+      "emailPlaceholder": "name@pflegedienst.de",
+      "password": "Passwort",
+      "organizationId": "Organisations-ID",
+      "organizationIdHint": "Nur nötig, wenn dieselbe E-Mail in mehreren Organisationen existiert.",
+      "submit": "Anmelden",
+      "submitting": "Wird angemeldet …",
+      "invalidCredentials": "Ungültige Anmeldedaten."
+    }
+  },
+  "dashboard": {
+    "title": "Übersicht",
+    "welcome": "Willkommen, {email}",
+    "role": "Rolle",
+    "organization": "Organisation"
   }
 }

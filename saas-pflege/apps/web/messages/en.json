@@ -2,5 +2,31 @@
   "home": {
     "title": "Len Len – Care Platform",
     "subtitle": "Multi-tenant SaaS for outpatient care services"
+  },
+  "common": {
+    "appName": "Len Len",
+    "loading": "Loading …",
+    "logout": "Sign out",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Sign in to your Len Len account",
+      "email": "Email",
+      "emailPlaceholder": "name@careservice.com",
+      "password": "Password",
+      "organizationId": "Organization ID",
+      "organizationIdHint": "Only needed if the same email exists in several organizations.",
+      "submit": "Sign in",
+      "submitting": "Signing in …",
+      "invalidCredentials": "Invalid credentials."
+    }
+  },
+  "dashboard": {
+    "title": "Overview",
+    "welcome": "Welcome, {email}",
+    "role": "Role",
+    "organization": "Organization"
   }
 }

@@ -25,7 +25,8 @@ const app = Fastify({
 
 await app.register(helmet);
 await app.register(cors, {
-  origin: env.NEXT_PUBLIC_API_URL ? [env.NEXT_PUBLIC_API_URL] : false,
+  // Erlaubter Origin = Web-Frontend (nicht die API-URL selbst).
+  origin: [env.WEB_ORIGIN],
   credentials: true,
 });
 await app.register(rateLimit, {
