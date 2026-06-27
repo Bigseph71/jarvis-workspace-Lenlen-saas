@@ -46,12 +46,37 @@
     "columns": {
       "name": "Name",
       "address": "Address",
-      "status": "Geocoding"
+      "status": "Geocoding",
+      "actions": "Actions"
     },
     "status": {
       "VALID": "Valid",
       "PENDING": "Pending",
       "INVALID": "Invalid"
+    },
+    "new": "New patient",
+    "actions": {
+      "edit": "Edit"
+    },
+    "form": {
+      "newTitle": "New patient",
+      "editTitle": "Edit patient",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "address": "Address",
+      "caregiver": "Assigned caregiver",
+      "noCaregiver": "— None —",
+      "create": "Create",
+      "save": "Save",
+      "saving": "Saving …",
+      "cancel": "Cancel",
+      "limitReached": "Plan limit reached. Please upgrade the subscription.",
+      "loadError": "Patient could not be loaded.",
+      "errors": {
+        "firstName": "First name: 1–80 characters.",
+        "lastName": "Last name: 1–80 characters.",
+        "rawAddress": "Address: 3–300 characters."
+      }
     }
   }
 }

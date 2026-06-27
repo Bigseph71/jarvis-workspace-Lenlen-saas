@@ -46,12 +46,37 @@
     "columns": {
       "name": "Name",
       "address": "Adresse",
-      "status": "Geokodierung"
+      "status": "Geokodierung",
+      "actions": "Aktionen"
     },
     "status": {
       "VALID": "Gültig",
       "PENDING": "Ausstehend",
       "INVALID": "Ungültig"
+    },
+    "new": "Neuer Patient",
+    "actions": {
+      "edit": "Bearbeiten"
+    },
+    "form": {
+      "newTitle": "Neuer Patient",
+      "editTitle": "Patient bearbeiten",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "address": "Adresse",
+      "caregiver": "Zuständige Fachkraft",
+      "noCaregiver": "— Keine —",
+      "create": "Anlegen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert …",
+      "cancel": "Abbrechen",
+      "limitReached": "Plan-Limit erreicht. Bitte das Abonnement upgraden.",
+      "loadError": "Patient konnte nicht geladen werden.",
+      "errors": {
+        "firstName": "Vorname: 1–80 Zeichen.",
+        "lastName": "Nachname: 1–80 Zeichen.",
+        "rawAddress": "Adresse: 3–300 Zeichen."
+      }
     }
   }
 }

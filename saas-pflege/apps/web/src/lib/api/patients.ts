@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import type { Paginated } from "./pagination";
 
 export type GeocodingStatus = "PENDING" | "VALID" | "INVALID";
 
@@ -8,18 +9,15 @@ export interface Patient {
   lastName: string;
   rawAddress: string;
   normalizedAddress: string | null;
+  assignedCaregiverId: string | null;
   geocodingStatus: GeocodingStatus;
   isActive: boolean;
   createdAt: string;
 }
 
-/** Generische paginierte Antwort (siehe lib/pagination.ts im Backend). */
-export interface Paginated<T> {
-  data: T[];
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
+/** Detailansicht inkl. zugewiesener Fachkraft (GET /patients/:id). */
+export interface PatientDetail extends Patient {
+  assignedCaregiver: { id: string; firstName: string; lastName: string } | null;
 }
 
 export interface ListPatientsParams {
@@ -28,6 +26,22 @@ export interface ListPatientsParams {
   search?: string;
   geocodingStatus?: GeocodingStatus;
   includeInactive?: boolean;
+}
+
+/** Eingabe Anlegen: assignedCaregiverId optional (keine Zuweisung = weglassen). */
+export interface CreatePatientInput {
+  firstName: string;
+  lastName: string;
+  rawAddress: string;
+  assignedCaregiverId?: string;
+}
+
+/** Eingabe Bearbeiten: alle Felder optional; null hebt die Zuweisung auf. */
+export interface UpdatePatientInput {
+  firstName?: string;
+  lastName?: string;
+  rawAddress?: string;
+  assignedCaregiverId?: string | null;
 }
 
 export async function listPatients(params: ListPatientsParams = {}): Promise<Paginated<Patient>> {
@@ -40,4 +54,16 @@ export async function listPatients(params: ListPatientsParams = {}): Promise<Pag
 
   const qs = query.toString();
   return apiFetch<Paginated<Patient>>(`/patients${qs ? `?${qs}` : ""}`);
+}
+
+export async function getPatient(id: string): Promise<PatientDetail> {
+  return apiFetch<PatientDetail>(`/patients/${id}`);
+}
+
+export async function createPatient(input: CreatePatientInput): Promise<Patient> {
+  return apiFetch<Patient>("/patients", { method: "POST", body: input });
+}
+
+export async function updatePatient(id: string, input: UpdatePatientInput): Promise<Patient> {
+  return apiFetch<Patient>(`/patients/${id}`, { method: "PATCH", body: input });
 }

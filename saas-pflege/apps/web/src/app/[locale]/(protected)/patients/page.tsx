@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { listPatients, type GeocodingStatus, type Patient } from "@/lib/api/patients";
 
 const PAGE_SIZE = 20;
@@ -67,13 +68,21 @@ export default function PatientsPage() {
     <section>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900">{t("title")}</h1>
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("searchPlaceholder")}
-          className="w-64 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("searchPlaceholder")}
+            className="w-64 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+          />
+          <Link
+            href="/patients/new"
+            className="whitespace-nowrap rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
+          >
+            {t("new")}
+          </Link>
+        </div>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -83,24 +92,27 @@ export default function PatientsPage() {
               <th className="px-4 py-3 font-medium">{t("columns.name")}</th>
               <th className="px-4 py-3 font-medium">{t("columns.address")}</th>
               <th className="px-4 py-3 font-medium">{t("columns.status")}</th>
+              <th className="px-4 py-3 font-medium">
+                <span className="sr-only">{t("columns.actions")}</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {state === "loading" ? (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
                   {t("loading")}
                 </td>
               </tr>
             ) : state === "error" ? (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-red-600">
+                <td colSpan={4} className="px-4 py-8 text-center text-red-600">
                   {t("error")}
                 </td>
               </tr>
             ) : patients.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
                   {t("empty")}
                 </td>
               </tr>
@@ -115,6 +127,14 @@ export default function PatientsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <GeocodingBadge status={patient.geocodingStatus} />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/patients/${patient.id}/edit`}
+                      className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
+                    >
+                      {t("actions.edit")}
+                    </Link>
                   </td>
                 </tr>
               ))

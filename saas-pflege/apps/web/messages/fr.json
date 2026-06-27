@@ -46,12 +46,37 @@
     "columns": {
       "name": "Nom",
       "address": "Adresse",
-      "status": "Géocodage"
+      "status": "Géocodage",
+      "actions": "Actions"
     },
     "status": {
       "VALID": "Valide",
       "PENDING": "En attente",
       "INVALID": "Invalide"
+    },
+    "new": "Nouveau patient",
+    "actions": {
+      "edit": "Éditer"
+    },
+    "form": {
+      "newTitle": "Nouveau patient",
+      "editTitle": "Modifier le patient",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "address": "Adresse",
+      "caregiver": "Soignant attitré",
+      "noCaregiver": "— Aucun —",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "saving": "Enregistrement …",
+      "cancel": "Annuler",
+      "limitReached": "Limite du plan atteinte. Veuillez mettre à niveau l'abonnement.",
+      "loadError": "Impossible de charger le patient.",
+      "errors": {
+        "firstName": "Prénom : 1 à 80 caractères.",
+        "lastName": "Nom : 1 à 80 caractères.",
+        "rawAddress": "Adresse : 3 à 300 caractères."
+      }
     }
   }
 }
