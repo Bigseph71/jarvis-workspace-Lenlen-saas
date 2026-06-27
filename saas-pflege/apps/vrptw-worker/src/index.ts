@@ -27,6 +27,9 @@ const worker = new Worker<VrptwJobData>(
   async (job) => {
     log.info({ jobId: job.id, ...job.data }, "VRPTW-Optimierung gestartet");
     const deadline = Date.now() + TIMEOUT_MS;
+    // Regel métier 7 (TODO): Vor der Optimierung prüfen, dass kein Patient der
+    // Tour geocodingStatus = INVALID hat. Sonst Job ablehnen / Patient melden,
+    // da ohne gültige Koordinaten keine Routenoptimierung möglich ist.
     // Platzhalter-Ergebnis
     return {
       optimized: true,

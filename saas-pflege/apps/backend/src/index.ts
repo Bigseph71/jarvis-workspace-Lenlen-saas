@@ -10,6 +10,8 @@ import { authRoutes } from "./modules/auth/auth.routes.js";
 import { patientRoutes } from "./modules/patients/patient.routes.js";
 import { caregiverRoutes } from "./modules/caregivers/caregiver.routes.js";
 import { visitRoutes } from "./modules/visits/visit.routes.js";
+import { geocodingRoutes } from "./modules/geocoding/geocoding.routes.js";
+import { startGeocodingWorker } from "./modules/geocoding/geocoding.worker.js";
 
 const app = Fastify({
   logger: {
@@ -58,8 +60,19 @@ await app.register(authRoutes);
 await app.register(patientRoutes);
 await app.register(caregiverRoutes);
 await app.register(visitRoutes);
+await app.register(geocodingRoutes);
 
-// TODO Phase 1: Geocoding-Anbindung (Google Maps) für Patientenadressen.
+// Async Geocoding-Worker (in-process für MVP). In Test-Umgebung aus.
+if (env.NODE_ENV !== "test") {
+  try {
+    startGeocodingWorker();
+    app.log.info("Geocoding-Worker gestartet");
+  } catch (err) {
+    app.log.warn({ err }, "Geocoding-Worker konnte nicht gestartet werden");
+  }
+}
+
+// TODO Phase 1: Stripe Basic (Abo, Plan-Limits, Webhooks).
 
 try {
   await app.listen({ port: env.BACKEND_PORT, host: "0.0.0.0" });

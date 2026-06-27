@@ -119,6 +119,26 @@ Pointage GPS : `+ FACHKRAFT` (uniquement ses propres visites).
 Transitions de statut : `PLANNED → IN_PROGRESS` (check-in) → `COMPLETED`
 (check-out) ; `PLANNED|IN_PROGRESS → CANCELED` (cancel).
 
+### Geocodage (`/geocoding`, `/patients/:id/geocode`)
+
+Convertit l'adresse d'un patient en coordonnées (Google Maps). Sans
+`GOOGLE_MAPS_API_KEY`, un **stub déterministe** prend le relais (dev/test).
+
+- **Provider** : abstraction `GeocodingProvider` ; `GoogleMapsProvider` (réel) ou
+  `StubGeocodingProvider` (fallback). Le parseur de réponse Google est pur et testé.
+- **Statuts** : un succès → `VALID` (+ lat/long, score, adresse normalisée) ;
+  aucun résultat → `INVALID` ; en attente → `PENDING`.
+- **Async** : à la création d'un patient (ou changement d'adresse), un job BullMQ
+  est mis en file (best-effort, ne bloque pas la requête). Un worker in-process
+  le traite. Si Redis est indisponible, le patient reste `PENDING` et le geocodage
+  se rattrape via `/geocoding/process`.
+- **Règle 7** : l'optimisation VRPTW est bloquée tant qu'un patient est `INVALID`.
+
+| Méthode | Route | Effet | Accès |
+|---|---|---|---|
+| POST | `/patients/:id/geocode` | (re)géocode un patient (synchrone) | admin, koordinator |
+| POST | `/geocoding/process?limit=` | traite les patients `PENDING` du tenant | admin |
+
 ## Tests
 
 Runner : **Vitest**. Deux niveaux.

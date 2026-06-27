@@ -17,6 +17,9 @@ const schema = z.object({
   JWT_ACCESS_TTL: z.string().default("15m"),
   JWT_REFRESH_TTL: z.string().default("7d"),
 
+  // Ohne Key fällt Geocoding auf den Stub-Provider zurück.
+  GOOGLE_MAPS_API_KEY: z.string().optional(),
+
   NEXT_PUBLIC_API_URL: z.string().optional(),
 });
 

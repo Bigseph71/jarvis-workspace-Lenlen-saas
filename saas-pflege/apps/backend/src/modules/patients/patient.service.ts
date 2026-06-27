@@ -2,6 +2,7 @@ import { AuditAction, GeocodingStatus, withTenant, type Prisma } from "@len-len/
 import { AppError } from "../../lib/errors.js";
 import { writeAudit } from "../../lib/audit.js";
 import { paginated, toSkipTake, type Paginated } from "../../lib/pagination.js";
+import { enqueueGeocode } from "../../lib/queue.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
 import type {
   CreatePatientInput,
@@ -67,12 +68,12 @@ export async function getPatient(ctx: TenantContext, id: string): Promise<unknow
 }
 
 export async function createPatient(ctx: TenantContext, input: CreatePatientInput): Promise<unknown> {
-  return withTenant(ctx.organizationId, async (tx) => {
+  const patient = await withTenant(ctx.organizationId, async (tx) => {
     if (input.assignedCaregiverId) {
       await assertCaregiverInTenant(tx, input.assignedCaregiverId);
     }
 
-    const patient = await tx.patient.create({
+    const created = await tx.patient.create({
       data: {
         organizationId: ctx.organizationId,
         firstName: input.firstName,
@@ -86,10 +87,14 @@ export async function createPatient(ctx: TenantContext, input: CreatePatientInpu
     await writeAudit(tx, ctx, {
       action: AuditAction.CREATE,
       entityType: "patient",
-      entityId: patient.id,
+      entityId: created.id,
     });
-    return patient;
+    return created;
   });
+
+  // Adresse asynchron geokodieren (best-effort, blockiert den Request nicht).
+  await enqueueGeocode({ organizationId: ctx.organizationId, patientId: patient.id });
+  return patient;
 }
 
 export async function updatePatient(
@@ -97,7 +102,7 @@ export async function updatePatient(
   id: string,
   input: UpdatePatientInput,
 ): Promise<unknown> {
-  return withTenant(ctx.organizationId, async (tx) => {
+  const { patient, addressChanged } = await withTenant(ctx.organizationId, async (tx) => {
     const existing = await tx.patient.findFirst({
       where: { id, organizationId: ctx.organizationId },
       select: { id: true, rawAddress: true },
@@ -109,21 +114,26 @@ export async function updatePatient(
     }
 
     // Adressänderung erzwingt erneutes Geocoding.
-    const addressChanged = input.rawAddress !== undefined && input.rawAddress !== existing.rawAddress;
+    const changed = input.rawAddress !== undefined && input.rawAddress !== existing.rawAddress;
 
-    const patient = await tx.patient.update({
+    const updated = await tx.patient.update({
       where: { id },
       data: {
         ...input,
-        ...(addressChanged
+        ...(changed
           ? { geocodingStatus: GeocodingStatus.PENDING, latitude: null, longitude: null, geocodingScore: null }
           : {}),
       },
     });
 
     await writeAudit(tx, ctx, { action: AuditAction.UPDATE, entityType: "patient", entityId: id });
-    return patient;
+    return { patient: updated, addressChanged: changed };
   });
+
+  if (addressChanged) {
+    await enqueueGeocode({ organizationId: ctx.organizationId, patientId: id });
+  }
+  return patient;
 }
 
 /** Soft-Delete: deaktiviert den Patienten, erhält Besuchshistorie. */

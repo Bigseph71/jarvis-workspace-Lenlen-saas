@@ -1,9 +1,12 @@
 import type { PrismaClient } from "@len-len/database";
 
-/** Akteur + Tenant eines Requests (aus request.user abgeleitet). */
+/**
+ * Akteur + Tenant eines Requests (aus request.user abgeleitet).
+ * userId ist null für System-Aktionen (z.B. async Worker ohne eingeloggten User).
+ */
 export interface TenantContext {
   organizationId: string;
-  userId: string;
+  userId: string | null;
 }
 
 /**
