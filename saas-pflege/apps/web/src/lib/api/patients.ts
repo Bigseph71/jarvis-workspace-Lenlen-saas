@@ -67,3 +67,8 @@ export async function createPatient(input: CreatePatientInput): Promise<Patient>
 export async function updatePatient(id: string, input: UpdatePatientInput): Promise<Patient> {
   return apiFetch<Patient>(`/patients/${id}`, { method: "PATCH", body: input });
 }
+
+/** Soft-Delete: deaktiviert den Patienten (isActive=false), erhält die Historie. */
+export async function deactivatePatient(id: string): Promise<void> {
+  await apiFetch<void>(`/patients/${id}`, { method: "DELETE" });
+}

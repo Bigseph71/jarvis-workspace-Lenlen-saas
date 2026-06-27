@@ -57,8 +57,12 @@
       "INVALID": "Ungültig"
     },
     "new": "Neuer Patient",
+    "showInactive": "Inaktive anzeigen",
+    "inactiveBadge": "Inaktiv",
+    "confirmDeactivate": "{name} wirklich deaktivieren?",
     "actions": {
-      "edit": "Bearbeiten"
+      "edit": "Bearbeiten",
+      "deactivate": "Deaktivieren"
     },
     "form": {
       "newTitle": "Neuer Patient",
@@ -92,6 +96,9 @@
     "next": "Weiter",
     "pageOf": "Seite {page} von {totalPages}",
     "new": "Neue Fachkraft",
+    "showInactive": "Inaktive anzeigen",
+    "inactiveBadge": "Inaktiv",
+    "confirmDeactivate": "{name} wirklich deaktivieren?",
     "columns": {
       "name": "Name",
       "qualification": "Qualifikation",
@@ -100,7 +107,8 @@
       "actions": "Aktionen"
     },
     "actions": {
-      "contract": "Vertrag"
+      "contract": "Vertrag",
+      "deactivate": "Deaktivieren"
     },
     "qualifications": {
       "PFLEGEFACHKRAFT": "Pflegefachkraft",

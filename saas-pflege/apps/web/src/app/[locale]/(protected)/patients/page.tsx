@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { listPatients, type GeocodingStatus, type Patient } from "@/lib/api/patients";
+import { deactivatePatient, listPatients, type GeocodingStatus, type Patient } from "@/lib/api/patients";
 
 const PAGE_SIZE = 20;
 
@@ -30,6 +30,8 @@ export default function PatientsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [includeInactive, setIncludeInactive] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [patients, setPatients] = useState<Patient[]>([]);
   const [total, setTotal] = useState(0);
@@ -48,7 +50,12 @@ export default function PatientsPage() {
   useEffect(() => {
     let active = true;
     setState("loading");
-    listPatients({ page, pageSize: PAGE_SIZE, search: debouncedSearch || undefined })
+    listPatients({
+      page,
+      pageSize: PAGE_SIZE,
+      search: debouncedSearch || undefined,
+      includeInactive: includeInactive || undefined,
+    })
       .then((res) => {
         if (!active) return;
         setPatients(res.data);
@@ -62,7 +69,18 @@ export default function PatientsPage() {
     return () => {
       active = false;
     };
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, includeInactive, reloadKey]);
+
+  async function onDeactivate(patient: Patient) {
+    const name = `${patient.lastName}, ${patient.firstName}`;
+    if (!window.confirm(t("confirmDeactivate", { name }))) return;
+    try {
+      await deactivatePatient(patient.id);
+      setReloadKey((k) => k + 1);
+    } catch {
+      /* Liste neu laden zeigt den realen Zustand; Fehler still. */
+    }
+  }
 
   return (
     <section>
@@ -84,6 +102,18 @@ export default function PatientsPage() {
           </Link>
         </div>
       </div>
+
+      <label className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+        <input
+          type="checkbox"
+          checked={includeInactive}
+          onChange={(e) => {
+            setIncludeInactive(e.target.checked);
+            setPage(1);
+          }}
+        />
+        {t("showInactive")}
+      </label>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
         <table className="w-full text-left text-sm">
@@ -118,9 +148,14 @@ export default function PatientsPage() {
               </tr>
             ) : (
               patients.map((patient) => (
-                <tr key={patient.id} className="hover:bg-gray-50">
+                <tr key={patient.id} className={patient.isActive ? "hover:bg-gray-50" : "bg-gray-50 text-gray-400"}>
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {patient.lastName}, {patient.firstName}
+                    {!patient.isActive ? (
+                      <span className="ml-2 rounded bg-gray-200 px-1.5 py-0.5 text-xs font-medium text-gray-600">
+                        {t("inactiveBadge")}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
                     {patient.normalizedAddress ?? patient.rawAddress}
@@ -129,12 +164,23 @@ export default function PatientsPage() {
                     <GeocodingBadge status={patient.geocodingStatus} />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/patients/${patient.id}/edit`}
-                      className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
-                    >
-                      {t("actions.edit")}
-                    </Link>
+                    <div className="flex items-center justify-end gap-3">
+                      <Link
+                        href={`/patients/${patient.id}/edit`}
+                        className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
+                      >
+                        {t("actions.edit")}
+                      </Link>
+                      {patient.isActive ? (
+                        <button
+                          type="button"
+                          onClick={() => void onDeactivate(patient)}
+                          className="text-sm font-medium text-red-600 underline-offset-2 hover:underline"
+                        >
+                          {t("actions.deactivate")}
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))

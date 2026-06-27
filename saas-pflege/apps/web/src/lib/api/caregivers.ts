@@ -76,3 +76,8 @@ export async function createCaregiver(input: CreateCaregiverInput): Promise<Care
 export async function updateContract(id: string, input: ContractInput): Promise<Caregiver> {
   return apiFetch<Caregiver>(`/caregivers/${id}/contract`, { method: "PUT", body: input });
 }
+
+/** Soft-Delete: deaktiviert die Fachkraft (isActive=false). */
+export async function deactivateCaregiver(id: string): Promise<void> {
+  await apiFetch<void>(`/caregivers/${id}`, { method: "DELETE" });
+}

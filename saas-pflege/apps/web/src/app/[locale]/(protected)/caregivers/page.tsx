@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { listCaregivers, type Caregiver } from "@/lib/api/caregivers";
+import { deactivateCaregiver, listCaregivers, type Caregiver } from "@/lib/api/caregivers";
 
 const PAGE_SIZE = 20;
 
@@ -15,6 +15,8 @@ export default function CaregiversPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [includeInactive, setIncludeInactive] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
   const [total, setTotal] = useState(0);
@@ -32,7 +34,12 @@ export default function CaregiversPage() {
   useEffect(() => {
     let active = true;
     setState("loading");
-    listCaregivers({ page, pageSize: PAGE_SIZE, search: debouncedSearch || undefined })
+    listCaregivers({
+      page,
+      pageSize: PAGE_SIZE,
+      search: debouncedSearch || undefined,
+      includeInactive: includeInactive || undefined,
+    })
       .then((res) => {
         if (!active) return;
         setCaregivers(res.data);
@@ -46,7 +53,18 @@ export default function CaregiversPage() {
     return () => {
       active = false;
     };
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, includeInactive, reloadKey]);
+
+  async function onDeactivate(caregiver: Caregiver) {
+    const name = `${caregiver.lastName}, ${caregiver.firstName}`;
+    if (!window.confirm(t("confirmDeactivate", { name }))) return;
+    try {
+      await deactivateCaregiver(caregiver.id);
+      setReloadKey((k) => k + 1);
+    } catch {
+      /* Erneutes Laden zeigt den realen Zustand. */
+    }
+  }
 
   return (
     <section>
@@ -68,6 +86,18 @@ export default function CaregiversPage() {
           </Link>
         </div>
       </div>
+
+      <label className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+        <input
+          type="checkbox"
+          checked={includeInactive}
+          onChange={(e) => {
+            setIncludeInactive(e.target.checked);
+            setPage(1);
+          }}
+        />
+        {t("showInactive")}
+      </label>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
         <table className="w-full text-left text-sm">
@@ -103,20 +133,36 @@ export default function CaregiversPage() {
               </tr>
             ) : (
               caregivers.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50">
+                <tr key={c.id} className={c.isActive ? "hover:bg-gray-50" : "bg-gray-50 text-gray-400"}>
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {c.lastName}, {c.firstName}
+                    {!c.isActive ? (
+                      <span className="ml-2 rounded bg-gray-200 px-1.5 py-0.5 text-xs font-medium text-gray-600">
+                        {t("inactiveBadge")}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{t(`qualifications.${c.qualification}`)}</td>
                   <td className="px-4 py-3 text-gray-600">{t(`contractTypes.${c.contractType}`)}</td>
                   <td className="px-4 py-3 text-gray-600">{c.weeklyHours}</td>
                   <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/caregivers/${c.id}/contract`}
-                      className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
-                    >
-                      {t("actions.contract")}
-                    </Link>
+                    <div className="flex items-center justify-end gap-3">
+                      <Link
+                        href={`/caregivers/${c.id}/contract`}
+                        className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
+                      >
+                        {t("actions.contract")}
+                      </Link>
+                      {c.isActive ? (
+                        <button
+                          type="button"
+                          onClick={() => void onDeactivate(c)}
+                          className="text-sm font-medium text-red-600 underline-offset-2 hover:underline"
+                        >
+                          {t("actions.deactivate")}
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))

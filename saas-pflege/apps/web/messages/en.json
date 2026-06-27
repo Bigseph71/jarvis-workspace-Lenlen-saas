@@ -57,8 +57,12 @@
       "INVALID": "Invalid"
     },
     "new": "New patient",
+    "showInactive": "Show inactive",
+    "inactiveBadge": "Inactive",
+    "confirmDeactivate": "Really deactivate {name}?",
     "actions": {
-      "edit": "Edit"
+      "edit": "Edit",
+      "deactivate": "Deactivate"
     },
     "form": {
       "newTitle": "New patient",
@@ -92,6 +96,9 @@
     "next": "Next",
     "pageOf": "Page {page} of {totalPages}",
     "new": "New caregiver",
+    "showInactive": "Show inactive",
+    "inactiveBadge": "Inactive",
+    "confirmDeactivate": "Really deactivate {name}?",
     "columns": {
       "name": "Name",
       "qualification": "Qualification",
@@ -100,7 +107,8 @@
       "actions": "Actions"
     },
     "actions": {
-      "contract": "Contract"
+      "contract": "Contract",
+      "deactivate": "Deactivate"
     },
     "qualifications": {
       "PFLEGEFACHKRAFT": "Registered nurse",

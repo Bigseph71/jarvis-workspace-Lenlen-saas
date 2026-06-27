@@ -57,8 +57,12 @@
       "INVALID": "Invalide"
     },
     "new": "Nouveau patient",
+    "showInactive": "Afficher les inactifs",
+    "inactiveBadge": "Inactif",
+    "confirmDeactivate": "Désactiver vraiment {name} ?",
     "actions": {
-      "edit": "Éditer"
+      "edit": "Éditer",
+      "deactivate": "Désactiver"
     },
     "form": {
       "newTitle": "Nouveau patient",
@@ -92,6 +96,9 @@
     "next": "Suivant",
     "pageOf": "Page {page} sur {totalPages}",
     "new": "Nouveau soignant",
+    "showInactive": "Afficher les inactifs",
+    "inactiveBadge": "Inactif",
+    "confirmDeactivate": "Désactiver vraiment {name} ?",
     "columns": {
       "name": "Nom",
       "qualification": "Qualification",
@@ -100,7 +107,8 @@
       "actions": "Actions"
     },
     "actions": {
-      "contract": "Contrat"
+      "contract": "Contrat",
+      "deactivate": "Désactiver"
     },
     "qualifications": {
       "PFLEGEFACHKRAFT": "Infirmier diplômé",
