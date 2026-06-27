@@ -3,8 +3,8 @@ import { env } from "../../config/env.js";
 import { AppError } from "../../lib/errors.js";
 import type { TenantContext } from "../../lib/context.js";
 import { getBillingProvider, type BillingEvent } from "../../lib/billing/index.js";
-import { PLAN_LIMITS, parsePlan } from "./plan.js";
-import { mapEventToStatus } from "./events.js";
+import { PLAN_LIMITS, parsePlan, resolvePlanLimits } from "./plan.js";
+import { mapEventToStatus, mapSubscriptionStatus } from "./events.js";
 
 /** Startet eine Stripe-Checkout-Session für den aktuellen Tenant. */
 export async function createCheckout(
@@ -21,19 +21,41 @@ export async function createCheckout(
   return { url: session.url };
 }
 
-/** Liefert den aktuellen Abo-Status + Limits des Tenants. */
+/** Liefert den aktuellen Abo-Status + (überschriebene) Limits des Tenants. */
 export async function getSubscription(ctx: TenantContext): Promise<unknown> {
   return withTenant(ctx.organizationId, async (tx) => {
     const org = await tx.organization.findFirst({
       where: { id: ctx.organizationId },
-      select: { subscriptionPlan: true, subscriptionStatus: true },
+      select: { subscriptionPlan: true, subscriptionStatus: true, planLimits: true },
     });
     if (!org) throw new AppError(404, "Organisation nicht gefunden", "NotFound");
     return {
       plan: org.subscriptionPlan,
       status: org.subscriptionStatus,
-      limits: PLAN_LIMITS[org.subscriptionPlan],
+      limits: resolvePlanLimits(org.subscriptionPlan, org.planLimits),
     };
+  });
+}
+
+/**
+ * Öffnet das Stripe Billing-Portal (Self-Service). Setzt einen bestehenden
+ * Stripe-Customer voraus (wird beim ersten Checkout angelegt).
+ */
+export async function createPortal(ctx: TenantContext): Promise<{ url: string }> {
+  const org = await withTenant(ctx.organizationId, (tx) =>
+    tx.organization.findFirst({
+      where: { id: ctx.organizationId },
+      select: { stripeCustomerId: true },
+    }),
+  );
+  if (!org?.stripeCustomerId) {
+    throw new AppError(409, "Kein aktives Abonnement – bitte zuerst einen Checkout abschließen", "Conflict");
+  }
+
+  const base = env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+  return getBillingProvider().createPortalSession({
+    customerId: org.stripeCustomerId,
+    returnUrl: `${base}/billing`,
   });
 }
 
@@ -42,9 +64,6 @@ export async function getSubscription(ctx: TenantContext): Promise<unknown> {
  * Idempotent genug für MVP; unbekannte Events werden ignoriert.
  */
 export async function handleStripeEvent(event: BillingEvent): Promise<void> {
-  const status = mapEventToStatus(event.type);
-  if (!status) return;
-
   const object = event.data.object;
 
   // Checkout abgeschlossen: Plan + Stripe-IDs am Tenant setzen.
@@ -57,7 +76,7 @@ export async function handleStripeEvent(event: BillingEvent): Promise<void> {
     await prisma.organization.update({
       where: { id: organizationId },
       data: {
-        subscriptionStatus: status,
+        subscriptionStatus: "ACTIVE",
         ...(plan
           ? { subscriptionPlan: plan, planLimits: PLAN_LIMITS[plan] as unknown as Prisma.InputJsonValue }
           : {}),
@@ -68,7 +87,25 @@ export async function handleStripeEvent(event: BillingEvent): Promise<void> {
     return;
   }
 
-  // Übrige Events: Tenant über die Stripe-Customer-ID finden.
+  // Subscription-Lebenszyklus: REALER Stripe-Status -> ermöglicht SUSPENDED bei
+  // `unpaid` (Regel 8). Tenant über die Stripe-Customer-ID gefunden.
+  if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.created") {
+    const subStatus = typeof object.status === "string" ? mapSubscriptionStatus(object.status) : null;
+    const customerId = typeof object.customer === "string" ? object.customer : null;
+    if (!subStatus || !customerId) return;
+    await prisma.organization.updateMany({
+      where: { stripeCustomerId: customerId },
+      data: {
+        subscriptionStatus: subStatus,
+        ...(typeof object.id === "string" ? { stripeSubscriptionId: object.id } : {}),
+      },
+    });
+    return;
+  }
+
+  // Übrige Events (Rechnungen, Kündigung) über Event-Typ -> Status.
+  const status = mapEventToStatus(event.type);
+  if (!status) return;
   const customerId = typeof object.customer === "string" ? object.customer : null;
   if (!customerId) return;
   await prisma.organization.updateMany({

@@ -11,6 +11,11 @@ export interface CheckoutSession {
   url: string;
 }
 
+export interface PortalParams {
+  customerId: string;
+  returnUrl: string;
+}
+
 /** Vereinfachtes Event (kompatibel zu Stripe.Event-Struktur). */
 export interface BillingEvent {
   id?: string;
@@ -21,6 +26,8 @@ export interface BillingEvent {
 export interface BillingProvider {
   readonly name: string;
   createCheckoutSession(params: CheckoutParams): Promise<CheckoutSession>;
+  /** Self-Service-Portal (Zahlungsmittel, Rechnungen, Kündigung) für einen bestehenden Customer. */
+  createPortalSession(params: PortalParams): Promise<{ url: string }>;
   /** Verifiziert die Signatur und liefert das Event (oder wirft). */
   constructEvent(payload: Buffer, signature: string | undefined): BillingEvent;
 }

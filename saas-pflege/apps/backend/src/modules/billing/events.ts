@@ -19,3 +19,27 @@ export function mapEventToStatus(eventType: string): SubscriptionStatus | null {
       return null;
   }
 }
+
+/**
+ * Bildet den REALEN Stripe-Subscription-Status (aus subscription.updated/created)
+ * auf unseren Status ab. Hierüber greift die automatische Suspendierung (Regel 8):
+ * `unpaid` nach erschöpften Smart Retries -> SUSPENDED. null = ignorieren.
+ */
+export function mapSubscriptionStatus(stripeStatus: string): SubscriptionStatus | null {
+  switch (stripeStatus) {
+    case "active":
+    case "trialing":
+      return SubscriptionStatus.ACTIVE;
+    case "past_due":
+      return SubscriptionStatus.PAST_DUE;
+    case "canceled":
+      return SubscriptionStatus.CANCELED;
+    case "unpaid":
+    case "incomplete_expired":
+    case "paused":
+      return SubscriptionStatus.SUSPENDED;
+    default:
+      // incomplete/unbekannt: noch kein finaler Zustand -> ignorieren.
+      return null;
+  }
+}

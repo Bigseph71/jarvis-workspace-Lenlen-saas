@@ -1,7 +1,7 @@
 import { SubscriptionStatus } from "@len-len/database";
 import { AppError } from "../../lib/errors.js";
 import type { TenantTx } from "../../lib/context.js";
-import { limitFor, type LimitedResource } from "./plan.js";
+import { resolvePlanLimits, type LimitedResource } from "./plan.js";
 
 async function countResource(
   tx: TenantTx,
@@ -29,7 +29,7 @@ export async function assertWithinPlan(
 ): Promise<void> {
   const org = await tx.organization.findFirst({
     where: { id: organizationId },
-    select: { subscriptionPlan: true, subscriptionStatus: true },
+    select: { subscriptionPlan: true, subscriptionStatus: true, planLimits: true },
   });
   if (!org) throw new AppError(404, "Organisation nicht gefunden", "NotFound");
 
@@ -40,7 +40,7 @@ export async function assertWithinPlan(
     throw new AppError(402, "Abonnement nicht aktiv", "PaymentRequired");
   }
 
-  const limit = limitFor(org.subscriptionPlan, resource);
+  const limit = resolvePlanLimits(org.subscriptionPlan, org.planLimits)[resource];
   if (limit === null) return; // unbegrenzt
 
   const count = await countResource(tx, organizationId, resource);

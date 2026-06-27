@@ -1,6 +1,12 @@
 import Stripe from "stripe";
 import { env } from "../../config/env.js";
-import type { BillingEvent, BillingProvider, CheckoutParams, CheckoutSession } from "./types.js";
+import type {
+  BillingEvent,
+  BillingProvider,
+  CheckoutParams,
+  CheckoutSession,
+  PortalParams,
+} from "./types.js";
 
 const PRICE_BY_PLAN: Record<string, string | undefined> = {
   BASIC: env.STRIPE_PRICE_BASIC,
@@ -33,6 +39,14 @@ export class StripeBillingProvider implements BillingProvider {
 
     if (!session.url) throw new Error("Stripe lieferte keine Checkout-URL");
     return { id: session.id, url: session.url };
+  }
+
+  async createPortalSession(params: PortalParams): Promise<{ url: string }> {
+    const session = await this.stripe.billingPortal.sessions.create({
+      customer: params.customerId,
+      return_url: params.returnUrl,
+    });
+    return { url: session.url };
   }
 
   constructEvent(payload: Buffer, signature: string | undefined): BillingEvent {
