@@ -139,6 +139,33 @@ Convertit l'adresse d'un patient en coordonnées (Google Maps). Sans
 | POST | `/patients/:id/geocode` | (re)géocode un patient (synchrone) | admin, koordinator |
 | POST | `/geocoding/process?limit=` | traite les patients `PENDING` du tenant | admin |
 
+### Billing / Stripe (`/billing`)
+
+Abonnement multi-tenant. Sans clés Stripe, un **stub** prend le relais (dev/test).
+
+- **Plans & limites** (source de vérité `billing/plan.ts`) : Basic (100 patients,
+  10 fachkräfte, 5 véhicules, sans KI), Pro (1000/100/30, KI), Enterprise
+  (5000/500/illimité, KI).
+- **Enforcement HTTP 402** : la création d'un patient ou d'une fachkraft appelle
+  `assertWithinPlan` dans la transaction → `402` si quota atteint ou abo inactif
+  (règle 8).
+- **Checkout** : `POST /billing/checkout { plan }` crée une session Stripe
+  (mode subscription) et renvoie l'URL.
+- **Webhook signé** : `POST /billing/webhook` vérifie la signature
+  (`constructEvent`) sur le **body brut** (parseur buffer scopé), puis met à jour
+  `subscriptionStatus`. Mapping : `checkout.session.completed`/`invoice.paid` →
+  `ACTIVE`, `invoice.payment_failed` → `PAST_DUE`, `customer.subscription.deleted`
+  → `CANCELED`.
+
+| Méthode | Route | Effet | Accès |
+|---|---|---|---|
+| GET | `/billing/subscription` | plan, statut, limites du tenant | admin |
+| POST | `/billing/checkout` | démarre l'abonnement Stripe | admin |
+| POST | `/billing/webhook` | événements Stripe (signature vérifiée) | public (Stripe) |
+
+Note : suspension après karenzzeit (`PAST_DUE` → `SUSPENDED`) laissée en TODO ;
+le webhook passe à `PAST_DUE` à l'échec, la suspension dure restera un job planifié.
+
 ## Tests
 
 Runner : **Vitest**. Deux niveaux.

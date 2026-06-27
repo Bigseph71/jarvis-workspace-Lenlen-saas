@@ -20,6 +20,13 @@ const schema = z.object({
   // Ohne Key fällt Geocoding auf den Stub-Provider zurück.
   GOOGLE_MAPS_API_KEY: z.string().optional(),
 
+  // Ohne Stripe-Keys läuft Billing im Stub-Modus.
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PRICE_BASIC: z.string().optional(),
+  STRIPE_PRICE_PRO: z.string().optional(),
+  STRIPE_PRICE_ENTERPRISE: z.string().optional(),
+
   NEXT_PUBLIC_API_URL: z.string().optional(),
 });
 

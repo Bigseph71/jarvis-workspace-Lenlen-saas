@@ -3,6 +3,7 @@ import { AppError } from "../../lib/errors.js";
 import { writeAudit } from "../../lib/audit.js";
 import { paginated, toSkipTake, type Paginated } from "../../lib/pagination.js";
 import { enqueueGeocode } from "../../lib/queue.js";
+import { assertWithinPlan } from "../billing/limits.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
 import type {
   CreatePatientInput,
@@ -69,6 +70,7 @@ export async function getPatient(ctx: TenantContext, id: string): Promise<unknow
 
 export async function createPatient(ctx: TenantContext, input: CreatePatientInput): Promise<unknown> {
   const patient = await withTenant(ctx.organizationId, async (tx) => {
+    await assertWithinPlan(tx, ctx.organizationId, "patients");
     if (input.assignedCaregiverId) {
       await assertCaregiverInTenant(tx, input.assignedCaregiverId);
     }

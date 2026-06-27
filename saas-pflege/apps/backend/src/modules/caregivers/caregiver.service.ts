@@ -2,6 +2,7 @@ import { AuditAction, withTenant, type Prisma } from "@len-len/database";
 import { AppError, ConflictError } from "../../lib/errors.js";
 import { writeAudit } from "../../lib/audit.js";
 import { paginated, toSkipTake, type Paginated } from "../../lib/pagination.js";
+import { assertWithinPlan } from "../billing/limits.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
 import type {
   CreateCaregiverInput,
@@ -63,6 +64,7 @@ export async function getCaregiver(ctx: TenantContext, id: string): Promise<unkn
 
 export async function createCaregiver(ctx: TenantContext, input: CreateCaregiverInput): Promise<unknown> {
   return withTenant(ctx.organizationId, async (tx) => {
+    await assertWithinPlan(tx, ctx.organizationId, "caregivers");
     if (input.userId) await assertUserLinkable(tx, input.userId);
 
     const caregiver = await tx.caregiver.create({

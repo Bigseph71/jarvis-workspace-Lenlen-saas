@@ -12,6 +12,8 @@ import { caregiverRoutes } from "./modules/caregivers/caregiver.routes.js";
 import { visitRoutes } from "./modules/visits/visit.routes.js";
 import { geocodingRoutes } from "./modules/geocoding/geocoding.routes.js";
 import { startGeocodingWorker } from "./modules/geocoding/geocoding.worker.js";
+import { billingRoutes } from "./modules/billing/billing.routes.js";
+import { billingWebhookRoutes } from "./modules/billing/webhook.routes.js";
 
 const app = Fastify({
   logger: {
@@ -61,6 +63,8 @@ await app.register(patientRoutes);
 await app.register(caregiverRoutes);
 await app.register(visitRoutes);
 await app.register(geocodingRoutes);
+await app.register(billingRoutes);
+await app.register(billingWebhookRoutes);
 
 // Async Geocoding-Worker (in-process für MVP). In Test-Umgebung aus.
 if (env.NODE_ENV !== "test") {
@@ -72,7 +76,7 @@ if (env.NODE_ENV !== "test") {
   }
 }
 
-// TODO Phase 1: Stripe Basic (Abo, Plan-Limits, Webhooks).
+// Phase 1 (MVP) Backend abgeschlossen: Auth, CRUD, Besuche, Geocoding, Billing.
 
 try {
   await app.listen({ port: env.BACKEND_PORT, host: "0.0.0.0" });

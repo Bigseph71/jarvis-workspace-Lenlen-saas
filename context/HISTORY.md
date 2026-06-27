@@ -7,6 +7,30 @@
 
 ---
 
+## 2026-06-27
+
+### Backend Phase 1 (MVP) de « Len Len » terminé et validé localement
+Suite du démarrage de la veille, le backend Fastify multi-tenant a été développé module par module (chaque module commité puis poussé sur le dépôt dédié `lenlen`), avec un découpage régulier schemas / service / routes :
+- **Auth multi-tenant + RBAC** : Argon2id, JWT access 15 min, refresh tokens opaques poivrés avec rotation et détection de réutilisation, 5 rôles (`requireRole`)
+- **CRUD tenant-scoped** : patients, fachkräfte, contrats (module Vertrag), via `withTenant` + audit logs DSGVO
+- **Planification des visites** : 1 visite/semaine/patient, urgences (motif obligatoire), remplacement (même qualification), pointage GPS, alerte hebdomadaire, route du jour
+- **Geocodage** : abstraction provider (Google Maps + stub déterministe), traitement async BullMQ, enqueue auto à la création/changement d'adresse
+- **Stripe Basic** : plans + limites serveur (HTTP 402), checkout, webhook signé (body brut), mapping d'événements → statut d'abonnement
+
+### Outillage et validation
+- **Tests Vitest** : ~40 tests unitaires sur la logique pure (dates, tokens, pagination, règles métier, validation Zod, RBAC, geocodage, billing) + template d'intégration auth (opt-in DB)
+- **Mode opératoire de validation** documenté dans `saas-pflege/VALIDATION.md` (bac à sable hors OneDrive : `pnpm install` + `db:generate` + typecheck + tests)
+- **Boucle de validation activée** : premier passage typecheck/tests dans un clone hors OneDrive (`C:\dev\lenlen`). 3 corrections trouvées et appliquées (cast du gestionnaire d'erreurs, import nommé `ioredis`, conflit de types double-paquet BullMQ). Résultat : typecheck vert, 38 tests passants
+
+### Organisation des dépôts
+- Le code Len Len est poussé sur un dépôt GitHub dédié : `Bigseph71/jarvis-workspace-Lenlen-saas` (remote `lenlen`)
+- La branche `main` reste suivie sur `origin` (`jarvis-workspace`) ; les pushes Len Len ciblent explicitement `lenlen`
+
+### Reste à faire (Phase 1)
+- Frontend Next.js (à peine ébauché), app mobile Fachkraft
+- Suspension dure d'abonnement (`PAST_DUE` → `SUSPENDED` après karenzzeit) en job planifié
+- Brancher la règle 7 (VRPTW bloqué si patient `INVALID`) dans le vrai worker VRPTW
+
 ## 2026-06-26
 
 ### Démarrage du projet SaaS « Len Len » (ambulante Pflege)
