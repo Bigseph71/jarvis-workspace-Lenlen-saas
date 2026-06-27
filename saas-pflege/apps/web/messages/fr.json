@@ -28,5 +28,30 @@
     "welcome": "Bienvenue, {email}",
     "role": "Rôle",
     "organization": "Organisation"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "patients": "Patients"
+  },
+  "patients": {
+    "title": "Patients",
+    "searchPlaceholder": "Rechercher par nom …",
+    "loading": "Chargement …",
+    "error": "Impossible de charger les patients.",
+    "empty": "Aucun patient trouvé.",
+    "count": "{total} patients",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageOf": "Page {page} sur {totalPages}",
+    "columns": {
+      "name": "Nom",
+      "address": "Adresse",
+      "status": "Géocodage"
+    },
+    "status": {
+      "VALID": "Valide",
+      "PENDING": "En attente",
+      "INVALID": "Invalide"
+    }
   }
 }

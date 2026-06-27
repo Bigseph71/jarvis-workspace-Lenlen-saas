@@ -28,5 +28,30 @@
     "welcome": "Willkommen, {email}",
     "role": "Rolle",
     "organization": "Organisation"
+  },
+  "nav": {
+    "dashboard": "Übersicht",
+    "patients": "Patienten"
+  },
+  "patients": {
+    "title": "Patienten",
+    "searchPlaceholder": "Nach Name suchen …",
+    "loading": "Wird geladen …",
+    "error": "Patienten konnten nicht geladen werden.",
+    "empty": "Keine Patienten gefunden.",
+    "count": "{total} Patienten",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "pageOf": "Seite {page} von {totalPages}",
+    "columns": {
+      "name": "Name",
+      "address": "Adresse",
+      "status": "Geokodierung"
+    },
+    "status": {
+      "VALID": "Gültig",
+      "PENDING": "Ausstehend",
+      "INVALID": "Ungültig"
+    }
   }
 }
