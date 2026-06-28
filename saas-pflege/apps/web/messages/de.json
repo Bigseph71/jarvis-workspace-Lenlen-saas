@@ -107,6 +107,7 @@
       "actions": "Aktionen"
     },
     "actions": {
+      "edit": "Bearbeiten",
       "contract": "Vertrag",
       "deactivate": "Deaktivieren"
     },
@@ -143,6 +144,7 @@
     },
     "form": {
       "newTitle": "Neue Fachkraft",
+      "editTitle": "Fachkraft bearbeiten",
       "contractTitle": "Vertrag bearbeiten",
       "create": "Anlegen",
       "save": "Speichern",

@@ -44,6 +44,13 @@ export interface CreateCaregiverInput extends ContractInput {
   userId?: string;
 }
 
+/** Identitäts-Block (ohne Vertrag, der hat einen eigenen Endpoint). */
+export interface UpdateCaregiverInput {
+  firstName?: string;
+  lastName?: string;
+  qualification?: Qualification;
+}
+
 export interface ListCaregiversParams {
   page?: number;
   pageSize?: number;
@@ -70,6 +77,11 @@ export async function getCaregiver(id: string): Promise<CaregiverDetail> {
 
 export async function createCaregiver(input: CreateCaregiverInput): Promise<Caregiver> {
   return apiFetch<Caregiver>("/caregivers", { method: "POST", body: input });
+}
+
+/** Aktualisiert den Identitäts-Block (PATCH /caregivers/:id). */
+export async function updateCaregiver(id: string, input: UpdateCaregiverInput): Promise<Caregiver> {
+  return apiFetch<Caregiver>(`/caregivers/${id}`, { method: "PATCH", body: input });
 }
 
 /** Aktualisiert nur den Vertrags-Block (PUT /caregivers/:id/contract). */

@@ -107,6 +107,7 @@
       "actions": "Actions"
     },
     "actions": {
+      "edit": "Éditer",
       "contract": "Contrat",
       "deactivate": "Désactiver"
     },
@@ -143,6 +144,7 @@
     },
     "form": {
       "newTitle": "Nouveau soignant",
+      "editTitle": "Modifier le soignant",
       "contractTitle": "Modifier le contrat",
       "create": "Créer",
       "save": "Enregistrer",

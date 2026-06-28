@@ -107,6 +107,7 @@
       "actions": "Actions"
     },
     "actions": {
+      "edit": "Edit",
       "contract": "Contract",
       "deactivate": "Deactivate"
     },
@@ -143,6 +144,7 @@
     },
     "form": {
       "newTitle": "New caregiver",
+      "editTitle": "Edit caregiver",
       "contractTitle": "Edit contract",
       "create": "Create",
       "save": "Save",

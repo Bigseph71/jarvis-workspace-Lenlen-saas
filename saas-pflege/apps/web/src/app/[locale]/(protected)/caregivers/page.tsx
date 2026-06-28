@@ -148,6 +148,12 @@ export default function CaregiversPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-3">
                       <Link
+                        href={`/caregivers/${c.id}/edit`}
+                        className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
+                      >
+                        {t("actions.edit")}
+                      </Link>
+                      <Link
                         href={`/caregivers/${c.id}/contract`}
                         className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
                       >
