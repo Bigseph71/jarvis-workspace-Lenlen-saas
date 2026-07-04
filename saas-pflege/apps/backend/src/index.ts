@@ -14,6 +14,7 @@ import { geocodingRoutes } from "./modules/geocoding/geocoding.routes.js";
 import { startGeocodingWorker } from "./modules/geocoding/geocoding.worker.js";
 import { billingRoutes } from "./modules/billing/billing.routes.js";
 import { billingWebhookRoutes } from "./modules/billing/webhook.routes.js";
+import { chatRoutes } from "./modules/chat/chat.routes.js";
 
 const app = Fastify({
   logger: {
@@ -66,6 +67,7 @@ await app.register(visitRoutes);
 await app.register(geocodingRoutes);
 await app.register(billingRoutes);
 await app.register(billingWebhookRoutes);
+await app.register(chatRoutes);
 
 // Async Geocoding-Worker (in-process für MVP). In Test-Umgebung aus.
 if (env.NODE_ENV !== "test") {
