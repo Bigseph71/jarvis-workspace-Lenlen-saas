@@ -229,6 +229,13 @@ model Visit {
   emergencyReason     String?     @map("emergency_reason")
   gpsArrivalAt        DateTime?   @map("gps_arrival_at")
   gpsDepartureAt      DateTime?   @map("gps_departure_at")
+  // Position beim Pointage (Mobile-App). Genauigkeit in Metern.
+  gpsArrivalLat       Decimal?    @map("gps_arrival_lat") @db.Decimal(9, 6)
+  gpsArrivalLng       Decimal?    @map("gps_arrival_lng") @db.Decimal(9, 6)
+  gpsArrivalAccuracy  Float?      @map("gps_arrival_accuracy")
+  gpsDepartureLat     Decimal?    @map("gps_departure_lat") @db.Decimal(9, 6)
+  gpsDepartureLng     Decimal?    @map("gps_departure_lng") @db.Decimal(9, 6)
+  gpsDepartureAccuracy Float?     @map("gps_departure_accuracy")
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 

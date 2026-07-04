@@ -12,6 +12,7 @@ import {
   listVisitsQuerySchema,
   missingWeekQuerySchema,
   myVisitsQuerySchema,
+  pointageSchema,
 } from "./visit.schemas.js";
 import {
   createVisit,
@@ -93,12 +94,14 @@ export async function visitRoutes(app: FastifyInstance): Promise<void> {
   // Pointage GPS (Fachkraft auf eigene Besuche, Planer auch).
   app.post("/visits/:id/check-in", { preHandler: [canTrack] }, async (request) => {
     const { id } = idParamSchema.parse(request.params);
-    return checkIn(ctxFrom(request), id, ownership(request));
+    const pointage = pointageSchema.parse(request.body ?? undefined);
+    return checkIn(ctxFrom(request), id, ownership(request), pointage);
   });
 
   app.post("/visits/:id/check-out", { preHandler: [canTrack] }, async (request) => {
     const { id } = idParamSchema.parse(request.params);
-    return checkOut(ctxFrom(request), id, ownership(request));
+    const pointage = pointageSchema.parse(request.body ?? undefined);
+    return checkOut(ctxFrom(request), id, ownership(request), pointage);
   });
 
   // Regel métier 3: Wochen-Alerte für fehlende Besuche.
