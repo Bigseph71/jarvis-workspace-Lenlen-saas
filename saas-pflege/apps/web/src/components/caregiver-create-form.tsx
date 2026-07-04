@@ -9,7 +9,7 @@ import {
   type ContractErrorKey,
   type ContractFieldsValue,
 } from "./contract-fields";
-import type { CreateCaregiverInput, Qualification } from "@/lib/api/caregivers";
+import type { CreateCaregiverInput, Qualification } from "@len-len/api-client";
 
 const QUALIFICATIONS: Qualification[] = [
   "PFLEGEFACHKRAFT",

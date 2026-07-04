@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { PatientForm, type PatientFormValues } from "@/components/patient-form";
-import { getPatient, updatePatient } from "@/lib/api/patients";
-import { listCaregivers, type Caregiver } from "@/lib/api/caregivers";
+import { getPatient, updatePatient } from "@len-len/api-client";
+import { listCaregivers, type Caregiver } from "@len-len/api-client";
 
 type LoadState = "loading" | "ready" | "error";
 

@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
-import { ApiError } from "@/lib/api/errors";
+import { ApiError } from "@len-len/api-client";
 
 export default function LoginPage() {
   const t = useTranslations("auth.login");

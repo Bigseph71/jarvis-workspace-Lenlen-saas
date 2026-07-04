@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { ContractForm } from "@/components/contract-form";
 import type { ContractFieldsValue } from "@/components/contract-fields";
-import { getCaregiver, updateContract, type ContractInput } from "@/lib/api/caregivers";
+import { getCaregiver, updateContract, type ContractInput } from "@len-len/api-client";
 
 type LoadState = "loading" | "ready" | "error";
 

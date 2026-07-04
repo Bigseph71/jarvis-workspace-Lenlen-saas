@@ -1,13 +1,5 @@
 import { ApiError, type ApiErrorBody } from "./errors";
-import {
-  clearTokens,
-  getAccessToken,
-  getRefreshToken,
-  setAccessToken,
-  setRefreshToken,
-} from "../auth/tokens";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+import { clearTokens, getApiConfig } from "./config";
 
 export interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -27,24 +19,25 @@ interface RefreshResult {
 let refreshPromise: Promise<boolean> | null = null;
 
 async function doRefresh(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
+  const { baseUrl, storage } = getApiConfig();
+  const refreshToken = await storage.getRefreshToken();
   if (!refreshToken) return false;
   try {
-    const res = await fetch(`${BASE_URL}/auth/refresh`, {
+    const res = await fetch(`${baseUrl}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
     });
     if (!res.ok) {
-      clearTokens();
+      await clearTokens();
       return false;
     }
     const data = (await res.json()) as RefreshResult;
-    setAccessToken(data.accessToken);
-    setRefreshToken(data.refreshToken); // Rotation: neues Token persistieren.
+    await storage.setAccessToken(data.accessToken);
+    await storage.setRefreshToken(data.refreshToken); // Rotation: neues Token persistieren.
     return true;
   } catch {
-    clearTokens();
+    await clearTokens();
     return false;
   }
 }
@@ -64,13 +57,14 @@ function refreshAccessToken(): Promise<boolean> {
  */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth = true, signal } = options;
+  const { baseUrl, storage } = getApiConfig();
 
-  const send = (): Promise<Response> => {
+  const send = async (): Promise<Response> => {
     const headers: Record<string, string> = {};
     if (body !== undefined) headers["Content-Type"] = "application/json";
-    const token = getAccessToken();
+    const token = await storage.getAccessToken();
     if (auth && token) headers["Authorization"] = `Bearer ${token}`;
-    return fetch(`${BASE_URL}${path}`, {
+    return fetch(`${baseUrl}${path}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -81,7 +75,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   let res = await send();
 
   // Access abgelaufen -> einmal refreshen und Request wiederholen.
-  if (res.status === 401 && auth && getRefreshToken()) {
+  if (res.status === 401 && auth && (await storage.getRefreshToken())) {
     const ok = await refreshAccessToken();
     if (ok) res = await send();
   }

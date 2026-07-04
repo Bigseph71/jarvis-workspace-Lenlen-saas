@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { CaregiverEditForm, type CaregiverIdentity } from "@/components/caregiver-edit-form";
-import { getCaregiver, updateCaregiver } from "@/lib/api/caregivers";
+import { getCaregiver, updateCaregiver } from "@len-len/api-client";
 
 type LoadState = "loading" | "ready" | "error";
 

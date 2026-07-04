@@ -8,7 +8,7 @@ import {
   type ContractErrorKey,
   type ContractFieldsValue,
 } from "./contract-fields";
-import type { ContractInput } from "@/lib/api/caregivers";
+import type { ContractInput } from "@len-len/api-client";
 
 interface ContractFormProps {
   initial: ContractFieldsValue;

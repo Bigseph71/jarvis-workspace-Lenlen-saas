@@ -1,8 +1,8 @@
 import { apiFetch } from "./client";
-import { clearTokens, getRefreshToken, setAccessToken, setRefreshToken } from "../auth/tokens";
+import { clearTokens, getApiConfig } from "./config";
 
-// Rollen wie im Backend (lokal gespiegelt, um keine Backend-Pakete ins
-// Frontend zu ziehen).
+// Rollen wie im Backend (lokal gespiegelt, um keine Backend-Pakete in die
+// Clients zu ziehen).
 export type UserRole = "SUPER_ADMIN" | "STRUKTUR_ADMIN" | "KOORDINATOR" | "HR" | "FACHKRAFT";
 
 export interface AuthUser {
@@ -32,14 +32,16 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
     body: credentials,
     auth: false,
   });
-  setAccessToken(result.accessToken);
-  setRefreshToken(result.refreshToken);
+  const { storage } = getApiConfig();
+  await storage.setAccessToken(result.accessToken);
+  await storage.setRefreshToken(result.refreshToken);
   return result.user;
 }
 
 /** Abmeldung: widerruft das Refresh-Token (best effort) und leert den Speicher. */
 export async function logout(): Promise<void> {
-  const refreshToken = getRefreshToken();
+  const { storage } = getApiConfig();
+  const refreshToken = await storage.getRefreshToken();
   if (refreshToken) {
     await apiFetch<void>("/auth/logout", {
       method: "POST",
@@ -47,7 +49,7 @@ export async function logout(): Promise<void> {
       auth: false,
     }).catch(() => undefined);
   }
-  clearTokens();
+  await clearTokens();
 }
 
 /**
@@ -55,7 +57,8 @@ export async function logout(): Promise<void> {
  * Liefert null, wenn kein gültiges Token vorhanden ist.
  */
 export async function restoreSession(): Promise<AuthUser | null> {
-  const refreshToken = getRefreshToken();
+  const { storage } = getApiConfig();
+  const refreshToken = await storage.getRefreshToken();
   if (!refreshToken) return null;
   try {
     const result = await apiFetch<AuthResult>("/auth/refresh", {
@@ -63,11 +66,11 @@ export async function restoreSession(): Promise<AuthUser | null> {
       body: { refreshToken },
       auth: false,
     });
-    setAccessToken(result.accessToken);
-    setRefreshToken(result.refreshToken);
+    await storage.setAccessToken(result.accessToken);
+    await storage.setRefreshToken(result.refreshToken);
     return result.user;
   } catch {
-    clearTokens();
+    await clearTokens();
     return null;
   }
 }

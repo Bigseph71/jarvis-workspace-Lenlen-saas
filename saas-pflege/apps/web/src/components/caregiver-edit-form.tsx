@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import type { Qualification } from "@/lib/api/caregivers";
+import type { Qualification } from "@len-len/api-client";
 
 const QUALIFICATIONS: Qualification[] = [
   "PFLEGEFACHKRAFT",

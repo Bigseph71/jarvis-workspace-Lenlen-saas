@@ -2,9 +2,9 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import { listPatients, type Patient } from "@/lib/api/patients";
-import { listCaregivers, type Caregiver } from "@/lib/api/caregivers";
-import type { CreateVisitInput } from "@/lib/api/visits";
+import { listPatients, type Patient } from "@len-len/api-client";
+import { listCaregivers, type Caregiver } from "@len-len/api-client";
+import type { CreateVisitInput } from "@len-len/api-client";
 
 interface VisitCreateFormProps {
   submitting: boolean;

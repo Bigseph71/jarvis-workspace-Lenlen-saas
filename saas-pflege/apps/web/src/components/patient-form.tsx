@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import type { Caregiver } from "@/lib/api/caregivers";
+import type { Caregiver } from "@len-len/api-client";
 
 /** Vom Formular emittierte Werte (leeres Feld der Fachkraft = null). */
 export interface PatientFormValues {

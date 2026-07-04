@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@len-len/api-client": "workspace:*",
     "next": "^15.0.0",
     "next-intl": "^3.20.0",
     "react": "^18.3.1",
