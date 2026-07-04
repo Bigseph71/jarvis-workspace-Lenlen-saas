@@ -1,0 +1,50 @@
+{
+  "common": {
+    "appName": "Len Len",
+    "loading": "Loading …",
+    "retry": "Try again",
+    "logout": "Log out",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Caregiver access to Len Len",
+      "email": "Email",
+      "emailPlaceholder": "name@careservice.com",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in …",
+      "invalidCredentials": "Invalid credentials.",
+      "fachkraftOnly": "This app is for caregivers only. Please use the web application.",
+      "networkError": "Server unreachable. Check your connection (on a device, EXPO_PUBLIC_API_URL must point to your computer's LAN IP)."
+    }
+  },
+  "today": {
+    "title": "My route",
+    "day_today": "Today",
+    "day_tomorrow": "Tomorrow",
+    "visitsCount_one": "{{count}} visit",
+    "visitsCount_other": "{{count}} visits",
+    "empty": "No visits for this day.",
+    "pendingSync_one": "{{count}} check-in/out pending sync (recorded offline).",
+    "pendingSync_other": "{{count}} check-ins/outs pending sync (recorded offline).",
+    "emergency": "Emergency",
+    "navigate": "Navigate",
+    "checkIn": "Arrival",
+    "checkOut": "Departure",
+    "status": {
+      "PLANNED": "Planned",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Done",
+      "MISSED": "Missed",
+      "CANCELED": "Canceled"
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "placeholder": "Message to the coordination team …",
+    "send": "Send",
+    "empty": "No messages yet. Write to the coordination team."
+  }
+}
