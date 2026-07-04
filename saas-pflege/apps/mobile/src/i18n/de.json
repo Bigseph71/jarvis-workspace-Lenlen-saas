@@ -1,0 +1,50 @@
+{
+  "common": {
+    "appName": "Len Len",
+    "loading": "Wird geladen …",
+    "retry": "Erneut versuchen",
+    "logout": "Abmelden",
+    "errorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
+  },
+  "auth": {
+    "login": {
+      "title": "Anmelden",
+      "subtitle": "Fachkraft-Zugang zu Len Len",
+      "email": "E-Mail",
+      "emailPlaceholder": "name@pflegedienst.de",
+      "password": "Passwort",
+      "submit": "Anmelden",
+      "submitting": "Wird angemeldet …",
+      "invalidCredentials": "Ungültige Anmeldedaten.",
+      "fachkraftOnly": "Diese App ist nur für Fachkräfte. Bitte nutzen Sie die Web-Anwendung.",
+      "networkError": "Server nicht erreichbar. Prüfen Sie Ihre Verbindung (auf dem Gerät muss EXPO_PUBLIC_API_URL auf die LAN-IP des Rechners zeigen)."
+    }
+  },
+  "today": {
+    "title": "Meine Route",
+    "day_today": "Heute",
+    "day_tomorrow": "Morgen",
+    "visitsCount_one": "{{count}} Besuch",
+    "visitsCount_other": "{{count}} Besuche",
+    "empty": "Keine Besuche für diesen Tag.",
+    "pendingSync_one": "{{count}} Pointage wartet auf Synchronisation (offline erfasst).",
+    "pendingSync_other": "{{count}} Pointages warten auf Synchronisation (offline erfasst).",
+    "emergency": "Notfall",
+    "navigate": "Navigation",
+    "checkIn": "Ankunft",
+    "checkOut": "Abfahrt",
+    "status": {
+      "PLANNED": "Geplant",
+      "IN_PROGRESS": "Läuft",
+      "COMPLETED": "Erledigt",
+      "MISSED": "Verpasst",
+      "CANCELED": "Storniert"
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "placeholder": "Nachricht an die Koordination …",
+    "send": "Senden",
+    "empty": "Noch keine Nachrichten. Schreiben Sie der Koordination."
+  }
+}

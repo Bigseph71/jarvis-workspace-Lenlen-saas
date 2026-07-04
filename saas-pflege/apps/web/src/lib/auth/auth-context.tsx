@@ -1,13 +1,14 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import "@/lib/api-setup";
 import {
   login as apiLogin,
   logout as apiLogout,
   restoreSession,
   type AuthUser,
   type LoginCredentials,
-} from "@/lib/api/auth";
+} from "@len-len/api-client";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 

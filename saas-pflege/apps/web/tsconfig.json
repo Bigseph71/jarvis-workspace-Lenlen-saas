@@ -13,6 +13,9 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    // Nur lokale @types einbinden: pnpm hoistet @types/react@19 (Mobile-App)
+    // in die Workspace-Wurzel, was sonst mit React 18 kollidiert.
+    "typeRoots": ["./node_modules/@types"],
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"]

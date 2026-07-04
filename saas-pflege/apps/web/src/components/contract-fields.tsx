@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { ContractInput, ContractType, WeekDay } from "@/lib/api/caregivers";
+import type { ContractInput, ContractType, WeekDay } from "@len-len/api-client";
 
 /** Formularwerte: Zahlen als Strings (DOM-Inputs), beim Submit geparst. */
 export interface ContractFieldsValue {

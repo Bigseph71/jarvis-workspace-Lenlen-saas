@@ -1,0 +1,50 @@
+{
+  "common": {
+    "appName": "Len Len",
+    "loading": "Chargement …",
+    "retry": "Réessayer",
+    "logout": "Se déconnecter",
+    "errorGeneric": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "subtitle": "Accès soignant à Len Len",
+      "email": "E-mail",
+      "emailPlaceholder": "nom@service-soins.fr",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "submitting": "Connexion en cours …",
+      "invalidCredentials": "Identifiants invalides.",
+      "fachkraftOnly": "Cette application est réservée aux soignants. Veuillez utiliser l'application web.",
+      "networkError": "Serveur injoignable. Vérifiez votre connexion (sur un appareil, EXPO_PUBLIC_API_URL doit pointer vers l'IP LAN de votre ordinateur)."
+    }
+  },
+  "today": {
+    "title": "Ma tournée",
+    "day_today": "Aujourd'hui",
+    "day_tomorrow": "Demain",
+    "visitsCount_one": "{{count}} visite",
+    "visitsCount_other": "{{count}} visites",
+    "empty": "Aucune visite pour ce jour.",
+    "pendingSync_one": "{{count}} pointage en attente de synchronisation (enregistré hors ligne).",
+    "pendingSync_other": "{{count}} pointages en attente de synchronisation (enregistrés hors ligne).",
+    "emergency": "Urgence",
+    "navigate": "Navigation",
+    "checkIn": "Arrivée",
+    "checkOut": "Départ",
+    "status": {
+      "PLANNED": "Planifiée",
+      "IN_PROGRESS": "En cours",
+      "COMPLETED": "Terminée",
+      "MISSED": "Manquée",
+      "CANCELED": "Annulée"
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "placeholder": "Message à la coordination …",
+    "send": "Envoyer",
+    "empty": "Pas encore de messages. Écrivez à la coordination."
+  }
+}

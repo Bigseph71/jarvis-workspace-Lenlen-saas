@@ -11,7 +11,7 @@ import {
   type MissingWeekResult,
   type Visit,
   type VisitStatus,
-} from "@/lib/api/visits";
+} from "@len-len/api-client";
 
 type LoadState = "loading" | "ready" | "error";
 

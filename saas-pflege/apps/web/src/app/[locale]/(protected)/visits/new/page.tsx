@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { VisitCreateForm } from "@/components/visit-create-form";
-import { createVisit, type CreateVisitInput } from "@/lib/api/visits";
-import { ApiError } from "@/lib/api/errors";
+import { createVisit, type CreateVisitInput } from "@len-len/api-client";
+import { ApiError } from "@len-len/api-client";
 
 export default function NewVisitPage() {
   const t = useTranslations("visits.form");

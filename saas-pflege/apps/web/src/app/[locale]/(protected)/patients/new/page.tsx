@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { PatientForm, type PatientFormValues } from "@/components/patient-form";
-import { createPatient } from "@/lib/api/patients";
-import { listCaregivers, type Caregiver } from "@/lib/api/caregivers";
-import { ApiError } from "@/lib/api/errors";
+import { createPatient } from "@len-len/api-client";
+import { listCaregivers, type Caregiver } from "@len-len/api-client";
+import { ApiError } from "@len-len/api-client";
 
 export default function NewPatientPage() {
   const t = useTranslations("patients.form");

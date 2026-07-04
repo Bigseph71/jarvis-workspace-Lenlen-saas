@@ -50,8 +50,32 @@ export const myVisitsQuerySchema = z.object({
   date: z.coerce.date().optional(),
 });
 
+// Pointage (Mobile): Position optional (Web sendet keine), recordedAt für
+// Offline-Nachreichung (max. 24h alt, nie in der Zukunft).
+export const pointageSchema = z
+  .object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    accuracy: z.number().nonnegative().max(10000).optional(),
+    recordedAt: z.coerce
+      .date()
+      .refine((d) => d.getTime() <= Date.now() + 60_000, "recordedAt liegt in der Zukunft")
+      .refine(
+        (d) => d.getTime() >= Date.now() - 24 * 60 * 60 * 1000,
+        "recordedAt ist älter als 24 Stunden",
+      )
+      .optional(),
+  })
+  .partial({ latitude: true, longitude: true })
+  .refine(
+    (v) => (v.latitude === undefined) === (v.longitude === undefined),
+    "latitude und longitude nur gemeinsam",
+  )
+  .optional();
+
 export type CreateVisitInput = z.infer<typeof createVisitSchema>;
 export type CreateEmergencyVisitInput = z.infer<typeof createEmergencyVisitSchema>;
 export type RescheduleVisitInput = z.infer<typeof rescheduleVisitSchema>;
 export type AssignCaregiverInput = z.infer<typeof assignCaregiverSchema>;
 export type ListVisitsQuery = z.infer<typeof listVisitsQuerySchema>;
+export type PointageInput = z.infer<typeof pointageSchema>;

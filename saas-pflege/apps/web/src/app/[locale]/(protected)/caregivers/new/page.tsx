@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { CaregiverCreateForm } from "@/components/caregiver-create-form";
-import { createCaregiver, type CreateCaregiverInput } from "@/lib/api/caregivers";
-import { ApiError } from "@/lib/api/errors";
+import { createCaregiver, type CreateCaregiverInput } from "@len-len/api-client";
+import { ApiError } from "@len-len/api-client";
 
 export default function NewCaregiverPage() {
   const t = useTranslations("caregivers.form");

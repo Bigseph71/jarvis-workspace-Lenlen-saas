@@ -16,6 +16,7 @@ import type {
   CreateEmergencyVisitInput,
   RescheduleVisitInput,
   ListVisitsQuery,
+  PointageInput,
 } from "./visit.schemas.js";
 
 // Status, die eine Wochenbelegung "verbrauchen" (CANCELED/MISSED zählen nicht).
@@ -297,7 +298,12 @@ async function loadVisitForStatus(tx: TenantTx, organizationId: string, id: stri
   return visit;
 }
 
-export async function checkIn(ctx: TenantContext, id: string, opts: OwnershipOpts = {}): Promise<unknown> {
+export async function checkIn(
+  ctx: TenantContext,
+  id: string,
+  opts: OwnershipOpts = {},
+  pointage?: PointageInput,
+): Promise<unknown> {
   return withTenant(ctx.organizationId, async (tx) => {
     const visit = await loadVisitForStatus(tx, ctx.organizationId, id, opts);
     if (visit.status !== VisitStatus.PLANNED) {
@@ -305,15 +311,27 @@ export async function checkIn(ctx: TenantContext, id: string, opts: OwnershipOpt
     }
     const updated = await tx.visit.update({
       where: { id },
-      data: { status: VisitStatus.IN_PROGRESS, gpsArrivalAt: new Date() },
+      data: {
+        status: VisitStatus.IN_PROGRESS,
+        // recordedAt = tatsächlicher Zeitpunkt bei Offline-Nachreichung.
+        gpsArrivalAt: pointage?.recordedAt ?? new Date(),
+        gpsArrivalLat: pointage?.latitude,
+        gpsArrivalLng: pointage?.longitude,
+        gpsArrivalAccuracy: pointage?.accuracy,
+      },
       include: VISIT_INCLUDE,
     });
-    await writeAudit(tx, ctx, { action: AuditAction.UPDATE, entityType: "visit", entityId: id, metadata: { event: "check_in" } });
+    await writeAudit(tx, ctx, { action: AuditAction.UPDATE, entityType: "visit", entityId: id, metadata: { event: "check_in", offline: pointage?.recordedAt !== undefined } });
     return updated;
   });
 }
 
-export async function checkOut(ctx: TenantContext, id: string, opts: OwnershipOpts = {}): Promise<unknown> {
+export async function checkOut(
+  ctx: TenantContext,
+  id: string,
+  opts: OwnershipOpts = {},
+  pointage?: PointageInput,
+): Promise<unknown> {
   return withTenant(ctx.organizationId, async (tx) => {
     const visit = await loadVisitForStatus(tx, ctx.organizationId, id, opts);
     if (visit.status !== VisitStatus.IN_PROGRESS) {
@@ -321,10 +339,16 @@ export async function checkOut(ctx: TenantContext, id: string, opts: OwnershipOp
     }
     const updated = await tx.visit.update({
       where: { id },
-      data: { status: VisitStatus.COMPLETED, gpsDepartureAt: new Date() },
+      data: {
+        status: VisitStatus.COMPLETED,
+        gpsDepartureAt: pointage?.recordedAt ?? new Date(),
+        gpsDepartureLat: pointage?.latitude,
+        gpsDepartureLng: pointage?.longitude,
+        gpsDepartureAccuracy: pointage?.accuracy,
+      },
       include: VISIT_INCLUDE,
     });
-    await writeAudit(tx, ctx, { action: AuditAction.UPDATE, entityType: "visit", entityId: id, metadata: { event: "check_out" } });
+    await writeAudit(tx, ctx, { action: AuditAction.UPDATE, entityType: "visit", entityId: id, metadata: { event: "check_out", offline: pointage?.recordedAt !== undefined } });
     return updated;
   });
 }
@@ -366,6 +390,25 @@ export async function patientsMissingWeeklyVisit(ctx: TenantContext, weekOf: Dat
   });
 }
 
+// Für die Tagesroute braucht die Fachkraft zusätzlich Adresse und Koordinaten
+// des Patienten (Navigation). Bewusst getrennt vom schlanken VISIT_INCLUDE.
+const MY_DAY_INCLUDE = {
+  patient: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      rawAddress: true,
+      normalizedAddress: true,
+      latitude: true,
+      longitude: true,
+      geocodingStatus: true,
+    },
+  },
+  caregiver: { select: { id: true, firstName: true, lastName: true, userId: true } },
+  assignedCaregiver: { select: { id: true, firstName: true, lastName: true } },
+} satisfies Prisma.VisitInclude;
+
 /** Tagesroute der eingeloggten Fachkraft (Mobile-App). */
 export async function myVisitsForDay(ctx: TenantContext, date: Date): Promise<unknown> {
   return withTenant(ctx.organizationId, async (tx) => {
@@ -384,7 +427,7 @@ export async function myVisitsForDay(ctx: TenantContext, date: Date): Promise<un
         status: { not: VisitStatus.CANCELED },
       },
       orderBy: { scheduledAt: "asc" },
-      include: VISIT_INCLUDE,
+      include: MY_DAY_INCLUDE,
     });
     return { date: start, count: visits.length, visits };
   });

@@ -103,6 +103,7 @@ model Organization {
   vehicles   Vehicle[]
   routes     Route[]
   auditLogs  AuditLog[]
+  messages   Message[]
 
   @@map("organizations")
 }
@@ -129,6 +130,7 @@ model User {
   caregiver     Caregiver?
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
+  sentMessages  Message[]
 
   // E-Mail eindeutig pro Tenant
   @@unique([organizationId, email])
@@ -175,9 +177,35 @@ model Caregiver {
   performedVisits   Visit[]      @relation("PerformingCaregiver")
   assignedVisits    Visit[]      @relation("AssignedVisitCaregiver")
   routes            Route[]
+  messages          Message[]
 
   @@index([organizationId])
   @@map("caregivers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Chat (Fachkraft <-> Koordination)
+// ─────────────────────────────────────────────────────────────────────────
+
+// Eine Konversation pro Fachkraft (caregiverId = Konversationsschlüssel).
+// Gegenseite ist das Planungsteam (Koordinator / Struktur-Admin).
+model Message {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  caregiverId    String    @map("caregiver_id") @db.Uuid
+  senderUserId   String    @map("sender_user_id") @db.Uuid
+  body           String
+  // Vom Empfänger-Lager gelesen (Fachkraft bzw. Koordination).
+  readAt         DateTime? @map("read_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caregiver    Caregiver    @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderUserId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, caregiverId, createdAt])
+  @@map("messages")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -229,6 +257,13 @@ model Visit {
   emergencyReason     String?     @map("emergency_reason")
   gpsArrivalAt        DateTime?   @map("gps_arrival_at")
   gpsDepartureAt      DateTime?   @map("gps_departure_at")
+  // Position beim Pointage (Mobile-App). Genauigkeit in Metern.
+  gpsArrivalLat       Decimal?    @map("gps_arrival_lat") @db.Decimal(9, 6)
+  gpsArrivalLng       Decimal?    @map("gps_arrival_lng") @db.Decimal(9, 6)
+  gpsArrivalAccuracy  Float?      @map("gps_arrival_accuracy")
+  gpsDepartureLat     Decimal?    @map("gps_departure_lat") @db.Decimal(9, 6)
+  gpsDepartureLng     Decimal?    @map("gps_departure_lng") @db.Decimal(9, 6)
+  gpsDepartureAccuracy Float?     @map("gps_departure_accuracy")
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { deactivatePatient, listPatients, type GeocodingStatus, type Patient } from "@/lib/api/patients";
+import { deactivatePatient, listPatients, type GeocodingStatus, type Patient } from "@len-len/api-client";
 
 const PAGE_SIZE = 20;
 

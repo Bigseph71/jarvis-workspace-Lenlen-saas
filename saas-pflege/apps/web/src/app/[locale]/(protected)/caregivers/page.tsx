@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { deactivateCaregiver, listCaregivers, type Caregiver } from "@/lib/api/caregivers";
+import { deactivateCaregiver, listCaregivers, type Caregiver } from "@len-len/api-client";
 
 const PAGE_SIZE = 20;
 
