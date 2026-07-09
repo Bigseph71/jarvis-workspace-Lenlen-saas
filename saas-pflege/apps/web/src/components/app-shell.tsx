@@ -2,23 +2,35 @@
 
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import type { UserRole } from "@len-len/api-client";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 
-// Navigationspunkte des angemeldeten Bereichs.
-const NAV_ITEMS = [
+// Navigationspunkte des angemeldeten Bereichs. `roles` beschränkt die Sichtbarkeit.
+interface NavItem {
+  href: string;
+  key: string;
+  roles?: readonly UserRole[];
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", key: "dashboard" },
   { href: "/patients", key: "patients" },
   { href: "/caregivers", key: "caregivers" },
   { href: "/visits", key: "visits" },
-] as const;
+  { href: "/leasing", key: "leasing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
+];
 
 /** Rahmen für angemeldete Seiten: Kopfzeile mit Navigation + Abmelden. */
 export function AppShell({ children }: { children: ReactNode }) {
   const tc = useTranslations("common");
   const tn = useTranslations("nav");
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const pathname = usePathname();
+
+  const navItems = NAV_ITEMS.filter(
+    (item) => !item.roles || (user != null && item.roles.includes(user.role)),
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -27,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-6">
             <span className="font-semibold text-gray-900">{tc("appName")}</span>
             <nav className="flex gap-1">
-              {NAV_ITEMS.map((item) => {
+              {navItems.map((item) => {
                 const active = pathname === item.href;
                 return (
                   <Link

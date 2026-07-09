@@ -33,7 +33,8 @@
     "dashboard": "Overview",
     "patients": "Patients",
     "caregivers": "Caregivers",
-    "visits": "Planning"
+    "visits": "Planning",
+    "leasing": "Leasing"
   },
   "patients": {
     "title": "Patients",
@@ -204,6 +205,58 @@
       "errors": {
         "patient": "Please choose a patient.",
         "scheduledAt": "Please choose a date and time."
+      }
+    }
+  },
+  "leasing": {
+    "title": "Leasing / Vehicles",
+    "new": "New vehicle",
+    "loading": "Loading …",
+    "error": "Vehicles could not be loaded.",
+    "empty": "No vehicles found.",
+    "count": "{total} vehicles",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {totalPages}",
+    "showInactive": "Show inactive",
+    "inactiveBadge": "Inactive",
+    "confirmDeactivate": "Really deactivate {label}?",
+    "addKmPrompt": "Enter kilometres driven for {label}:",
+    "addKmInvalid": "Please enter a positive whole number.",
+    "columns": {
+      "label": "Vehicle",
+      "usage": "Mileage",
+      "endDate": "Leasing end",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "OK": "OK",
+      "Warnung": "Warning",
+      "Kritisch": "Critical",
+      "Ablauf": "Expiring"
+    },
+    "actions": {
+      "addKm": "Add km",
+      "edit": "Edit",
+      "deactivate": "Deactivate"
+    },
+    "form": {
+      "newTitle": "New vehicle",
+      "editTitle": "Edit vehicle",
+      "label": "Name / plate",
+      "leasingKmLimit": "km limit (leasing)",
+      "leasingEndDate": "Leasing end",
+      "leasingEndDateHint": "Optional. Leave empty if no end date is known.",
+      "create": "Create",
+      "save": "Save",
+      "saving": "Saving …",
+      "cancel": "Cancel",
+      "loadError": "Vehicle could not be loaded.",
+      "limitReached": "Plan limit reached. Please upgrade the subscription.",
+      "errors": {
+        "label": "Name: 1–120 characters.",
+        "leasingKmLimit": "km limit: positive whole number."
       }
     }
   }
