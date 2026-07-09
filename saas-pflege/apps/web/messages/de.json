@@ -33,7 +33,8 @@
     "dashboard": "Übersicht",
     "patients": "Patienten",
     "caregivers": "Fachkräfte",
-    "visits": "Planung"
+    "visits": "Planung",
+    "leasing": "Leasing"
   },
   "patients": {
     "title": "Patienten",
@@ -204,6 +205,58 @@
       "errors": {
         "patient": "Bitte einen Patienten wählen.",
         "scheduledAt": "Bitte einen Termin wählen."
+      }
+    }
+  },
+  "leasing": {
+    "title": "Leasing / Fahrzeuge",
+    "new": "Neues Fahrzeug",
+    "loading": "Wird geladen …",
+    "error": "Fahrzeuge konnten nicht geladen werden.",
+    "empty": "Keine Fahrzeuge gefunden.",
+    "count": "{total} Fahrzeuge",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "pageOf": "Seite {page} von {totalPages}",
+    "showInactive": "Inaktive anzeigen",
+    "inactiveBadge": "Inaktiv",
+    "confirmDeactivate": "{label} wirklich deaktivieren?",
+    "addKmPrompt": "Gefahrene Kilometer für {label} erfassen:",
+    "addKmInvalid": "Bitte eine positive ganze Zahl eingeben.",
+    "columns": {
+      "label": "Fahrzeug",
+      "usage": "Kilometerstand",
+      "endDate": "Leasingende",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "OK": "OK",
+      "Warnung": "Warnung",
+      "Kritisch": "Kritisch",
+      "Ablauf": "Ablauf"
+    },
+    "actions": {
+      "addKm": "km erfassen",
+      "edit": "Bearbeiten",
+      "deactivate": "Deaktivieren"
+    },
+    "form": {
+      "newTitle": "Neues Fahrzeug",
+      "editTitle": "Fahrzeug bearbeiten",
+      "label": "Bezeichnung / Kennzeichen",
+      "leasingKmLimit": "km-Limit (Leasing)",
+      "leasingEndDate": "Leasingende",
+      "leasingEndDateHint": "Optional. Leer lassen, wenn kein Enddatum bekannt ist.",
+      "create": "Anlegen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert …",
+      "cancel": "Abbrechen",
+      "loadError": "Fahrzeug konnte nicht geladen werden.",
+      "limitReached": "Plan-Limit erreicht. Bitte das Abonnement upgraden.",
+      "errors": {
+        "label": "Bezeichnung: 1–120 Zeichen.",
+        "leasingKmLimit": "km-Limit: positive ganze Zahl."
       }
     }
   }

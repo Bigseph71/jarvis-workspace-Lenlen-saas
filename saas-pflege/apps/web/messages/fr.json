@@ -33,7 +33,8 @@
     "dashboard": "Tableau de bord",
     "patients": "Patients",
     "caregivers": "Soignants",
-    "visits": "Planning"
+    "visits": "Planning",
+    "leasing": "Leasing"
   },
   "patients": {
     "title": "Patients",
@@ -204,6 +205,58 @@
       "errors": {
         "patient": "Veuillez choisir un patient.",
         "scheduledAt": "Veuillez choisir une date et une heure."
+      }
+    }
+  },
+  "leasing": {
+    "title": "Leasing / Véhicules",
+    "new": "Nouveau véhicule",
+    "loading": "Chargement …",
+    "error": "Impossible de charger les véhicules.",
+    "empty": "Aucun véhicule trouvé.",
+    "count": "{total} véhicules",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageOf": "Page {page} sur {totalPages}",
+    "showInactive": "Afficher les inactifs",
+    "inactiveBadge": "Inactif",
+    "confirmDeactivate": "Désactiver vraiment {label} ?",
+    "addKmPrompt": "Saisir les kilomètres parcourus pour {label} :",
+    "addKmInvalid": "Veuillez saisir un entier positif.",
+    "columns": {
+      "label": "Véhicule",
+      "usage": "Kilométrage",
+      "endDate": "Fin de leasing",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "OK": "OK",
+      "Warnung": "Avertissement",
+      "Kritisch": "Critique",
+      "Ablauf": "Expiration"
+    },
+    "actions": {
+      "addKm": "Ajouter km",
+      "edit": "Modifier",
+      "deactivate": "Désactiver"
+    },
+    "form": {
+      "newTitle": "Nouveau véhicule",
+      "editTitle": "Modifier le véhicule",
+      "label": "Nom / plaque",
+      "leasingKmLimit": "Limite km (leasing)",
+      "leasingEndDate": "Fin de leasing",
+      "leasingEndDateHint": "Facultatif. Laisser vide si aucune date de fin n'est connue.",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "saving": "Enregistrement …",
+      "cancel": "Annuler",
+      "loadError": "Impossible de charger le véhicule.",
+      "limitReached": "Limite du forfait atteinte. Veuillez mettre à niveau l'abonnement.",
+      "errors": {
+        "label": "Nom : 1 à 120 caractères.",
+        "leasingKmLimit": "Limite km : entier positif."
       }
     }
   }
