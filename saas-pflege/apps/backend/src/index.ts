@@ -16,6 +16,8 @@ import { billingRoutes } from "./modules/billing/billing.routes.js";
 import { billingWebhookRoutes } from "./modules/billing/webhook.routes.js";
 import { chatRoutes } from "./modules/chat/chat.routes.js";
 import { vehicleRoutes } from "./modules/vehicles/vehicle.routes.js";
+import { vrptwRoutes } from "./modules/vrptw/vrptw.routes.js";
+import { startVrptwWorker } from "./modules/vrptw/vrptw.worker.js";
 
 const app = Fastify({
   logger: {
@@ -70,6 +72,7 @@ await app.register(billingRoutes);
 await app.register(billingWebhookRoutes);
 await app.register(chatRoutes);
 await app.register(vehicleRoutes);
+await app.register(vrptwRoutes);
 
 // Async Geocoding-Worker (in-process für MVP). In Test-Umgebung aus.
 if (env.NODE_ENV !== "test") {
@@ -78,6 +81,12 @@ if (env.NODE_ENV !== "test") {
     app.log.info("Geocoding-Worker gestartet");
   } catch (err) {
     app.log.warn({ err }, "Geocoding-Worker konnte nicht gestartet werden");
+  }
+  try {
+    startVrptwWorker();
+    app.log.info("VRPTW-Worker gestartet");
+  } catch (err) {
+    app.log.warn({ err }, "VRPTW-Worker konnte nicht gestartet werden");
   }
 }
 

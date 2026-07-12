@@ -24,3 +24,7 @@ __pycache__/
 # Logs / OS
 *.log
 .DS_Store
+
+# Redis (local dev persistence)
+*.rdb
+dump.rdb

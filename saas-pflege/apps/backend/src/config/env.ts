@@ -9,6 +9,10 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().default("redis://localhost:6379"),
 
+  // Sicherheits-Timeout des VRPTW-Solvers (ms). Nach Ablauf wird eine
+  // Teil-Lösung zurückgegeben statt abzubrechen (CLAUDE.md: 30 s, konfigurierbar).
+  VRPTW_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
+
   // Pflicht-Secrets. In Prod lange Zufallswerte verwenden.
   JWT_ACCESS_SECRET: z.string().min(16, "JWT_ACCESS_SECRET muss >= 16 Zeichen sein"),
   JWT_REFRESH_SECRET: z.string().min(16, "JWT_REFRESH_SECRET muss >= 16 Zeichen sein"),
