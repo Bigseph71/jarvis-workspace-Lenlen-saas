@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
+import websocket from "@fastify/websocket";
 import { ZodError } from "zod";
 import { Prisma, prisma } from "@len-len/database";
 import { env } from "./config/env.js";
@@ -17,6 +18,7 @@ import { billingWebhookRoutes } from "./modules/billing/webhook.routes.js";
 import { chatRoutes } from "./modules/chat/chat.routes.js";
 import { vehicleRoutes } from "./modules/vehicles/vehicle.routes.js";
 import { vrptwRoutes } from "./modules/vrptw/vrptw.routes.js";
+import { vrptwWsRoutes } from "./modules/vrptw/vrptw.ws.js";
 import { startVrptwWorker } from "./modules/vrptw/vrptw.worker.js";
 
 const app = Fastify({
@@ -37,6 +39,8 @@ await app.register(rateLimit, {
   max: 100,
   timeWindow: "1 minute",
 });
+// WebSocket-Unterstützung (Echtzeit-Status VRPTW). Muss vor den WS-Routen stehen.
+await app.register(websocket);
 
 // Zentraler Error-Handler: Zod -> 400, AppError -> Status, Prisma-Unique -> 409.
 app.setErrorHandler((error, request, reply) => {
@@ -73,6 +77,7 @@ await app.register(billingWebhookRoutes);
 await app.register(chatRoutes);
 await app.register(vehicleRoutes);
 await app.register(vrptwRoutes);
+await app.register(vrptwWsRoutes);
 
 // Async Geocoding-Worker (in-process für MVP). In Test-Umgebung aus.
 if (env.NODE_ENV !== "test") {

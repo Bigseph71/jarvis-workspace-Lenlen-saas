@@ -1,4 +1,4 @@
-import { Queue, type ConnectionOptions } from "bullmq";
+import { Queue, QueueEvents, type ConnectionOptions } from "bullmq";
 import { Redis as IORedis } from "ioredis";
 import { env } from "../config/env.js";
 
@@ -63,6 +63,60 @@ function getVrptwQueue(): Queue<VrptwJob> {
     vrptwQueue = new Queue<VrptwJob>(VRPTW_QUEUE, { connection: getQueueConnection() });
   }
   return vrptwQueue;
+}
+
+let vrptwQueueEvents: QueueEvents | undefined;
+
+/**
+ * Gemeinsamer QueueEvents-Stream der VRPTW-Queue (Redis-basiert, daher auch
+ * prozessübergreifend nutzbar, wenn der Worker später in einen isolierten
+ * Microservice wandert). Braucht eine EIGENE (blockierende) Verbindung.
+ * Konsumenten (WebSocket) filtern selbst nach jobId.
+ */
+export function getVrptwQueueEvents(): QueueEvents {
+  if (!vrptwQueueEvents) {
+    vrptwQueueEvents = new QueueEvents(VRPTW_QUEUE, { connection: createRedisConnection() });
+  }
+  return vrptwQueueEvents;
+}
+
+/** Auf unser Status-Vokabular gemappter Job-Zustand einer Tour. */
+export type VrptwJobStatus = "pending" | "processing" | "done" | "failed" | "unknown";
+
+function mapJobState(state: string): VrptwJobStatus {
+  switch (state) {
+    case "waiting":
+    case "waiting-children":
+    case "delayed":
+    case "prioritized":
+      return "pending";
+    case "active":
+      return "processing";
+    case "completed":
+      return "done";
+    case "failed":
+      return "failed";
+    default:
+      return "unknown";
+  }
+}
+
+/**
+ * Aktueller Queue-Zustand des Jobs einer Tour (jobId = routeId). Liefert
+ * zusätzlich das Ergebnis (bei done) bzw. den Fehlergrund (bei failed), soweit
+ * der Job noch nicht aus Redis entfernt wurde (removeOnComplete).
+ */
+export async function getVrptwJobStatus(
+  routeId: string,
+): Promise<{ status: VrptwJobStatus; result?: unknown; error?: string }> {
+  const job = await getVrptwQueue().getJob(routeId);
+  if (!job) return { status: "unknown" };
+  const status = mapJobState(await job.getState());
+  return {
+    status,
+    ...(status === "done" ? { result: job.returnvalue } : {}),
+    ...(status === "failed" ? { error: job.failedReason } : {}),
+  };
 }
 
 /** Lässt ein Promise nach `ms` rejecten (Sicherheitsnetz gegen Blockieren). */
