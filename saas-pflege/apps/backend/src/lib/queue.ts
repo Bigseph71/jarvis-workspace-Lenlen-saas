@@ -1,12 +1,21 @@
-import { Queue, type ConnectionOptions } from "bullmq";
+import { Queue, QueueEvents, type ConnectionOptions } from "bullmq";
 import { Redis as IORedis } from "ioredis";
 import { env } from "../config/env.js";
 
 export const GEOCODING_QUEUE = "geocoding";
+export const VRPTW_QUEUE = "vrptw-optimization";
 
 export interface GeocodeJob {
   organizationId: string;
   patientId: string;
+}
+
+/** Nutzlast eines VRPTW-Optimierungsjobs (eine Tour = eine Fachkraft + Tag). */
+export interface VrptwJob {
+  organizationId: string;
+  routeId: string;
+  caregiverId: string;
+  date: string;
 }
 
 /**
@@ -34,13 +43,80 @@ function createQueueConnection(): ConnectionOptions {
 
 let queueConnection: ConnectionOptions | undefined;
 let geocodingQueue: Queue<GeocodeJob> | undefined;
+let vrptwQueue: Queue<VrptwJob> | undefined;
+
+/** Gemeinsame Producer-Verbindung (lazy, einmalig für alle Enqueue-Queues). */
+function getQueueConnection(): ConnectionOptions {
+  if (!queueConnection) queueConnection = createQueueConnection();
+  return queueConnection;
+}
 
 function getGeocodingQueue(): Queue<GeocodeJob> {
   if (!geocodingQueue) {
-    queueConnection = createQueueConnection();
-    geocodingQueue = new Queue<GeocodeJob>(GEOCODING_QUEUE, { connection: queueConnection });
+    geocodingQueue = new Queue<GeocodeJob>(GEOCODING_QUEUE, { connection: getQueueConnection() });
   }
   return geocodingQueue;
+}
+
+function getVrptwQueue(): Queue<VrptwJob> {
+  if (!vrptwQueue) {
+    vrptwQueue = new Queue<VrptwJob>(VRPTW_QUEUE, { connection: getQueueConnection() });
+  }
+  return vrptwQueue;
+}
+
+let vrptwQueueEvents: QueueEvents | undefined;
+
+/**
+ * Gemeinsamer QueueEvents-Stream der VRPTW-Queue (Redis-basiert, daher auch
+ * prozessübergreifend nutzbar, wenn der Worker später in einen isolierten
+ * Microservice wandert). Braucht eine EIGENE (blockierende) Verbindung.
+ * Konsumenten (WebSocket) filtern selbst nach jobId.
+ */
+export function getVrptwQueueEvents(): QueueEvents {
+  if (!vrptwQueueEvents) {
+    vrptwQueueEvents = new QueueEvents(VRPTW_QUEUE, { connection: createRedisConnection() });
+  }
+  return vrptwQueueEvents;
+}
+
+/** Auf unser Status-Vokabular gemappter Job-Zustand einer Tour. */
+export type VrptwJobStatus = "pending" | "processing" | "done" | "failed" | "unknown";
+
+function mapJobState(state: string): VrptwJobStatus {
+  switch (state) {
+    case "waiting":
+    case "waiting-children":
+    case "delayed":
+    case "prioritized":
+      return "pending";
+    case "active":
+      return "processing";
+    case "completed":
+      return "done";
+    case "failed":
+      return "failed";
+    default:
+      return "unknown";
+  }
+}
+
+/**
+ * Aktueller Queue-Zustand des Jobs einer Tour (jobId = routeId). Liefert
+ * zusätzlich das Ergebnis (bei done) bzw. den Fehlergrund (bei failed), soweit
+ * der Job noch nicht aus Redis entfernt wurde (removeOnComplete).
+ */
+export async function getVrptwJobStatus(
+  routeId: string,
+): Promise<{ status: VrptwJobStatus; result?: unknown; error?: string }> {
+  const job = await getVrptwQueue().getJob(routeId);
+  if (!job) return { status: "unknown" };
+  const status = mapJobState(await job.getState());
+  return {
+    status,
+    ...(status === "done" ? { result: job.returnvalue } : {}),
+    ...(status === "failed" ? { error: job.failedReason } : {}),
+  };
 }
 
 /** Lässt ein Promise nach `ms` rejecten (Sicherheitsnetz gegen Blockieren). */
@@ -70,4 +146,26 @@ export async function enqueueGeocode(job: GeocodeJob): Promise<void> {
   } catch (err) {
     console.warn("[geocoding] enqueue fehlgeschlagen, übersprungen:", err);
   }
+}
+
+/**
+ * Reiht einen VRPTW-Optimierungsjob ein und liefert die Job-ID zurück.
+ * Anders als beim Geocoding wird ein Fehler NICHT verschluckt: der Koordinator
+ * hat die Optimierung bewusst angestoßen und muss erfahren, wenn sie (z.B. bei
+ * nicht erreichbarem Redis) gar nicht erst eingereiht werden konnte.
+ * `jobId = routeId` verhindert, dass sich mehrere Jobs für dieselbe Tour stapeln
+ * (removeOnComplete gibt die ID nach Abschluss für eine Neu-Optimierung frei).
+ */
+export async function enqueueVrptw(job: VrptwJob): Promise<string> {
+  const added = await withTimeout(
+    getVrptwQueue().add("optimize", job, {
+      jobId: job.routeId,
+      attempts: 2,
+      backoff: { type: "exponential", delay: 3000 },
+      removeOnComplete: true,
+      removeOnFail: 100,
+    }),
+    2000,
+  );
+  return added.id ?? job.routeId;
 }
