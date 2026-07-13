@@ -34,7 +34,8 @@
     "patients": "Patienten",
     "caregivers": "Fachkräfte",
     "visits": "Planung",
-    "leasing": "Leasing"
+    "leasing": "Leasing",
+    "tracking": "Echtzeit-Tracking"
   },
   "patients": {
     "title": "Patienten",
@@ -258,6 +259,30 @@
         "label": "Bezeichnung: 1–120 Zeichen.",
         "leasingKmLimit": "km-Limit: positive ganze Zahl."
       }
+    }
+  },
+  "tracking": {
+    "title": "Echtzeit-Tracking",
+    "subtitle": "Live-Positionen der Fachkräfte",
+    "loading": "Wird geladen …",
+    "error": "Positionen konnten nicht geladen werden.",
+    "empty": "Aktuell keine aktiven Fachkräfte.",
+    "connected": "Live verbunden",
+    "connecting": "Verbindung wird aufgebaut …",
+    "disconnected": "Verbindung getrennt – erneuter Versuch …",
+    "geofenceAlert": "Geofence-Alarm",
+    "inRange": "Im Bereich",
+    "distanceToPatient": "{meters} m vom Patienten",
+    "noVisit": "Kein aktiver Besuch",
+    "lastSeen": "Zuletzt {time}",
+    "mapHint": "Schematische Karte (relative Positionen). Google-Maps-Kachelhintergrund folgt separat.",
+    "activeCount": "{count} aktive Fachkräfte",
+    "alertsCount": "{count} Geofence-Alarme",
+    "columns": {
+      "caregiver": "Fachkraft",
+      "status": "Status",
+      "distance": "Entfernung",
+      "lastSeen": "Zuletzt gesehen"
     }
   }
 }

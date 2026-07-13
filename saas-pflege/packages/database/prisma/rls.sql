@@ -39,7 +39,8 @@ DECLARE
   tbl text;
   tenant_tables text[] := ARRAY[
     'users', 'caregivers', 'patients', 'visits',
-    'vehicles', 'routes', 'audit_logs', 'messages'
+    'vehicles', 'routes', 'audit_logs', 'messages',
+    'gps_positions'
   ];
 BEGIN
   FOREACH tbl IN ARRAY tenant_tables LOOP

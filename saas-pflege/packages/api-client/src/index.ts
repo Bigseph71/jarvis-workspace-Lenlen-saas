@@ -12,3 +12,4 @@ export * from "./caregivers";
 export * from "./visits";
 export * from "./chat";
 export * from "./vehicles";
+export * from "./tracking";

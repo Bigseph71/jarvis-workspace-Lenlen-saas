@@ -46,5 +46,9 @@
     "placeholder": "Message to the coordination team …",
     "send": "Send",
     "empty": "No messages yet. Write to the coordination team."
+  },
+  "tracking": {
+    "active": "Live location active",
+    "permissionDenied": "Location permission denied – no live tracking."
   }
 }

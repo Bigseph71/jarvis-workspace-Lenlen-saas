@@ -104,6 +104,7 @@ model Organization {
   routes     Route[]
   auditLogs  AuditLog[]
   messages   Message[]
+  gpsPositions GpsPosition[]
 
   @@map("organizations")
 }
@@ -178,6 +179,7 @@ model Caregiver {
   assignedVisits    Visit[]      @relation("AssignedVisitCaregiver")
   routes            Route[]
   messages          Message[]
+  gpsPositions      GpsPosition[]
 
   @@index([organizationId])
   @@map("caregivers")
@@ -272,6 +274,7 @@ model Visit {
   caregiver         Caregiver?   @relation("PerformingCaregiver", fields: [caregiverId], references: [id], onDelete: SetNull)
   assignedCaregiver Caregiver?   @relation("AssignedVisitCaregiver", fields: [assignedCaregiverId], references: [id], onDelete: SetNull)
   route             Route?       @relation(fields: [routeId], references: [id], onDelete: SetNull)
+  gpsPositions      GpsPosition[]
 
   @@index([organizationId])
   @@index([organizationId, scheduledAt])
@@ -327,6 +330,38 @@ model Route {
   @@index([organizationId])
   @@index([organizationId, date])
   @@map("routes")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Echtzeit-GPS-Tracking (Phase 2)
+// ─────────────────────────────────────────────────────────────────────────
+
+// Positionsverlauf der Fachkräfte während aktiver Besuche. DSGVO: jeder Punkt
+// mit Zeitstempel, tenant-isoliert per RLS. distanceToPatientM/geofenceBreach
+// werden beim Ingest berechnet (Geofencing 500 m um den geplanten Patienten).
+model GpsPosition {
+  id                 String    @id @default(uuid()) @db.Uuid
+  organizationId     String    @map("organization_id") @db.Uuid
+  caregiverId        String    @map("caregiver_id") @db.Uuid
+  visitId            String?   @map("visit_id") @db.Uuid
+  latitude           Decimal   @db.Decimal(9, 6)
+  longitude          Decimal   @db.Decimal(9, 6)
+  accuracy           Float?
+  // Entfernung zum geplanten Patienten (m) + Geofence-Verletzung (>500 m).
+  distanceToPatientM Float?    @map("distance_to_patient_m")
+  geofenceBreach     Boolean   @default(false) @map("geofence_breach")
+  // recordedAt = Zeitpunkt auf dem Gerät; createdAt = Eingang im Backend.
+  recordedAt         DateTime  @map("recorded_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caregiver    Caregiver    @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  visit        Visit?       @relation(fields: [visitId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([organizationId, caregiverId, recordedAt(sort: Desc)])
+  @@index([visitId])
+  @@map("gps_positions")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
