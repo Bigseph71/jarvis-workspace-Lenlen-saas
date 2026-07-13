@@ -46,5 +46,9 @@
     "placeholder": "Message à la coordination …",
     "send": "Envoyer",
     "empty": "Pas encore de messages. Écrivez à la coordination."
+  },
+  "tracking": {
+    "active": "Localisation en direct active",
+    "permissionDenied": "Autorisation de localisation refusée – pas de suivi."
   }
 }

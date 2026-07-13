@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { chatUnreadCount, myVisits, type MyDayPatient, type MyVisit } from "@len-len/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { flushPointageQueue, pendingPointageCount, performPointage } from "@/lib/pointage";
+import { startTracking, stopTracking } from "@/lib/tracking";
 
 type Day = "today" | "tomorrow";
 
@@ -70,6 +71,17 @@ export default function TodayScreen() {
     setVisits(null);
     void load();
   }, [load]);
+
+  // Echtzeit-GPS-Tracking an den aktiven Besuch koppeln: läuft genau eine
+  // Visite (IN_PROGRESS), wird getrackt; sonst gestoppt. Beim Verlassen des
+  // Screens ebenfalls stoppen (kein Tracking außerhalb eines Besuchs).
+  useEffect(() => {
+    const active = visits?.find((v) => v.status === "IN_PROGRESS");
+    if (active) void startTracking(active.id);
+    else stopTracking();
+  }, [visits]);
+
+  useEffect(() => () => stopTracking(), []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

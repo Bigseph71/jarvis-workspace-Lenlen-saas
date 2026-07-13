@@ -34,7 +34,8 @@
     "patients": "Patients",
     "caregivers": "Soignants",
     "visits": "Planning",
-    "leasing": "Leasing"
+    "leasing": "Leasing",
+    "tracking": "Suivi temps réel"
   },
   "patients": {
     "title": "Patients",
@@ -258,6 +259,30 @@
         "label": "Nom : 1 à 120 caractères.",
         "leasingKmLimit": "Limite km : entier positif."
       }
+    }
+  },
+  "tracking": {
+    "title": "Suivi temps réel",
+    "subtitle": "Positions des soignants en direct",
+    "loading": "Chargement …",
+    "error": "Impossible de charger les positions.",
+    "empty": "Aucun soignant actif pour le moment.",
+    "connected": "Connecté en direct",
+    "connecting": "Connexion …",
+    "disconnected": "Déconnecté – nouvelle tentative …",
+    "geofenceAlert": "Alerte geofencing",
+    "inRange": "Dans la zone",
+    "distanceToPatient": "{meters} m du patient",
+    "noVisit": "Aucune visite active",
+    "lastSeen": "Dernière {time}",
+    "mapHint": "Carte schématique (positions relatives). Fond de carte Google Maps à venir séparément.",
+    "activeCount": "{count} soignants actifs",
+    "alertsCount": "{count} alertes geofencing",
+    "columns": {
+      "caregiver": "Soignant",
+      "status": "Statut",
+      "distance": "Distance",
+      "lastSeen": "Vu pour la dernière fois"
     }
   }
 }

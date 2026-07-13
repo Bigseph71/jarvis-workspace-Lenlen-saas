@@ -34,7 +34,8 @@
     "patients": "Patients",
     "caregivers": "Caregivers",
     "visits": "Planning",
-    "leasing": "Leasing"
+    "leasing": "Leasing",
+    "tracking": "Real-time tracking"
   },
   "patients": {
     "title": "Patients",
@@ -258,6 +259,30 @@
         "label": "Name: 1–120 characters.",
         "leasingKmLimit": "km limit: positive whole number."
       }
+    }
+  },
+  "tracking": {
+    "title": "Real-time tracking",
+    "subtitle": "Live caregiver positions",
+    "loading": "Loading …",
+    "error": "Positions could not be loaded.",
+    "empty": "No active caregivers right now.",
+    "connected": "Live connected",
+    "connecting": "Connecting …",
+    "disconnected": "Disconnected – retrying …",
+    "geofenceAlert": "Geofence alert",
+    "inRange": "In range",
+    "distanceToPatient": "{meters} m from patient",
+    "noVisit": "No active visit",
+    "lastSeen": "Last {time}",
+    "mapHint": "Schematic map (relative positions). Google Maps tile background to follow separately.",
+    "activeCount": "{count} active caregivers",
+    "alertsCount": "{count} geofence alerts",
+    "columns": {
+      "caregiver": "Caregiver",
+      "status": "Status",
+      "distance": "Distance",
+      "lastSeen": "Last seen"
     }
   }
 }

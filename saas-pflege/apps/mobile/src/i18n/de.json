@@ -46,5 +46,9 @@
     "placeholder": "Nachricht an die Koordination …",
     "send": "Senden",
     "empty": "Noch keine Nachrichten. Schreiben Sie der Koordination."
+  },
+  "tracking": {
+    "active": "Live-Standort aktiv",
+    "permissionDenied": "Standortfreigabe verweigert – kein Live-Tracking."
   }
 }

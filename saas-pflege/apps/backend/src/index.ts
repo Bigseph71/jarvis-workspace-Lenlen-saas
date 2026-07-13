@@ -20,6 +20,8 @@ import { vehicleRoutes } from "./modules/vehicles/vehicle.routes.js";
 import { vrptwRoutes } from "./modules/vrptw/vrptw.routes.js";
 import { vrptwWsRoutes } from "./modules/vrptw/vrptw.ws.js";
 import { startVrptwWorker } from "./modules/vrptw/vrptw.worker.js";
+import { trackingRoutes } from "./modules/tracking/tracking.routes.js";
+import { trackingWsRoutes } from "./modules/tracking/tracking.ws.js";
 
 const app = Fastify({
   logger: {
@@ -78,6 +80,8 @@ await app.register(chatRoutes);
 await app.register(vehicleRoutes);
 await app.register(vrptwRoutes);
 await app.register(vrptwWsRoutes);
+await app.register(trackingRoutes);
+await app.register(trackingWsRoutes);
 
 // Async Geocoding-Worker (in-process für MVP). In Test-Umgebung aus.
 if (env.NODE_ENV !== "test") {

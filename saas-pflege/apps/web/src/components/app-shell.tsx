@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/patients", key: "patients" },
   { href: "/caregivers", key: "caregivers" },
   { href: "/visits", key: "visits" },
+  { href: "/planung", key: "tracking", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"] },
   { href: "/leasing", key: "leasing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
 ];
 
