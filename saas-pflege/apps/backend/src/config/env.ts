@@ -31,9 +31,17 @@ const schema = z.object({
   STRIPE_PRICE_PRO: z.string().optional(),
   STRIPE_PRICE_ENTERPRISE: z.string().optional(),
 
-  NEXT_PUBLIC_API_URL: z.string().optional(),
+  // Karenzzeit (Regel 8): Tage zwischen erstem fehlgeschlagenem Zahlungsversuch
+  // und automatischer Suspendierung des Tenants. 0 = sofort suspendieren.
+  BILLING_GRACE_PERIOD_DAYS: z.coerce.number().int().min(0).default(7),
+  // Intervall des Suspendierungs-Workers (ms). Die Karenzzeit zählt in Tagen,
+  // stündlich prüfen reicht daher völlig.
+  BILLING_GRACE_CHECK_INTERVAL_MS: z.coerce.number().int().positive().default(3_600_000),
 
-  // Ursprung (Origin) des Web-Frontends – für CORS. NICHT die API-URL.
+  // Ursprung (Origin) des Web-Frontends – für CORS und für die Rückkehr-URLs
+  // aus Stripe (Checkout/Portal führen nach /{locale}/billing zurück).
+  // NICHT die API-URL: NEXT_PUBLIC_API_URL gehört dem Web und wird dort direkt
+  // aus process.env gelesen.
   WEB_ORIGIN: z.string().default("http://localhost:3000"),
 });
 

@@ -35,7 +35,8 @@
     "caregivers": "Fachkräfte",
     "visits": "Planung",
     "leasing": "Leasing",
-    "tracking": "Echtzeit-Tracking"
+    "tracking": "Echtzeit-Tracking",
+    "billing": "Abrechnung"
   },
   "patients": {
     "title": "Patienten",
@@ -283,6 +284,87 @@
       "status": "Status",
       "distance": "Entfernung",
       "lastSeen": "Zuletzt gesehen"
+    }
+  },
+  "billing": {
+    "title": "Abrechnung",
+    "subtitle": "Abonnement, Limits und Rechnungen Ihrer Organisation.",
+    "loading": "Wird geladen …",
+    "error": "Abrechnungsdaten konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "currentPlan": "Aktueller Plan",
+    "status": {
+      "ACTIVE": "Aktiv",
+      "PAST_DUE": "Zahlung überfällig",
+      "SUSPENDED": "Gesperrt",
+      "CANCELED": "Gekündigt"
+    },
+    "plans": {
+      "BASIC": "Basic",
+      "PRO": "Pro",
+      "ENTERPRISE": "Enterprise"
+    },
+    "planFeatures": {
+      "patients": "{count} Patienten",
+      "caregivers": "{count} Fachkräfte",
+      "vehicles": "{count} Fahrzeuge",
+      "vehiclesUnlimited": "Unbegrenzt Fahrzeuge",
+      "kiIncluded": "KI-Module inklusive",
+      "kiExcluded": "Ohne KI-Module"
+    },
+    "usage": {
+      "title": "Verbrauch",
+      "patients": "Patienten",
+      "caregivers": "Fachkräfte",
+      "vehicles": "Fahrzeuge",
+      "unlimited": "unbegrenzt",
+      "ofLimit": "{used} von {limit}"
+    },
+    "grace": {
+      "title": "Zahlung überfällig",
+      "message": "Ihre letzte Zahlung ist fehlgeschlagen. Bitte aktualisieren Sie Ihr Zahlungsmittel, sonst wird der Zugang am {deadline} automatisch gesperrt.",
+      "daysRemaining": "Noch {days} Tage",
+      "lastDay": "Letzter Tag"
+    },
+    "suspended": {
+      "title": "Zugang gesperrt",
+      "message": "Wegen einer ausstehenden Zahlung ist Ihr Zugang gesperrt. Neue Patienten, Fachkräfte und Fahrzeuge können nicht angelegt werden. Bitte begleichen Sie die offene Rechnung."
+    },
+    "canceled": {
+      "title": "Abonnement gekündigt",
+      "message": "Ihr Abonnement ist beendet. Wählen Sie einen Plan, um weiterzuarbeiten."
+    },
+    "actions": {
+      "upgrade": "Upgrade",
+      "downgrade": "Wechseln",
+      "choose": "Plan wählen",
+      "current": "Aktueller Plan",
+      "portal": "Zahlungsmittel & Rechnungen verwalten",
+      "redirecting": "Weiterleitung zu Stripe …"
+    },
+    "checkout": {
+      "success": "Zahlung erfolgreich. Ihr Abonnement wird in Kürze aktiviert.",
+      "canceled": "Checkout abgebrochen. Es wurde nichts berechnet."
+    },
+    "invoices": {
+      "title": "Rechnungen",
+      "empty": "Noch keine Rechnungen vorhanden.",
+      "error": "Rechnungen konnten nicht geladen werden.",
+      "columns": {
+        "number": "Nummer",
+        "date": "Datum",
+        "amount": "Betrag",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "status": {
+        "PAID": "Bezahlt",
+        "OPEN": "Offen",
+        "FAILED": "Fehlgeschlagen",
+        "VOID": "Storniert"
+      },
+      "view": "Ansehen",
+      "pdf": "PDF"
     }
   }
 }

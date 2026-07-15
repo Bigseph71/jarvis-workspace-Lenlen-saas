@@ -4,11 +4,18 @@ import { env } from "../config/env.js";
 
 export const GEOCODING_QUEUE = "geocoding";
 export const VRPTW_QUEUE = "vrptw-optimization";
+export const BILLING_QUEUE = "billing";
 
 export interface GeocodeJob {
   organizationId: string;
   patientId: string;
 }
+
+/**
+ * Periodischer Karenzzeit-Lauf (Regel 8). Ohne Nutzlast: der Job wird vom
+ * Scheduler ausgelöst und arbeitet über alle Tenants (siehe billing.worker.ts).
+ */
+export type BillingSweepJob = Record<string, never>;
 
 /** Nutzlast eines VRPTW-Optimierungsjobs (eine Tour = eine Fachkraft + Tag). */
 export interface VrptwJob {

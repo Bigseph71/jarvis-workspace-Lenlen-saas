@@ -30,6 +30,13 @@ enum SubscriptionStatus {
   CANCELED
 }
 
+enum InvoiceStatus {
+  PAID
+  OPEN
+  FAILED
+  VOID
+}
+
 enum UserRole {
   SUPER_ADMIN
   STRUKTUR_ADMIN
@@ -93,6 +100,10 @@ model Organization {
   planLimits           Json               @default("{}") @map("plan_limits")
   stripeCustomerId     String?            @unique @map("stripe_customer_id")
   stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  // Beginn der Karenzzeit (Regel 8): gesetzt beim ersten fehlgeschlagenen
+  // Zahlungsversuch, geleert sobald wieder bezahlt wurde. Nach Ablauf von
+  // BILLING_GRACE_PERIOD_DAYS suspendiert der Billing-Worker den Tenant.
+  pastDueSince         DateTime?          @map("past_due_since")
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
@@ -105,6 +116,7 @@ model Organization {
   auditLogs  AuditLog[]
   messages   Message[]
   gpsPositions GpsPosition[]
+  invoices   Invoice[]
 
   @@map("organizations")
 }
@@ -400,4 +412,46 @@ model AuditLog {
   @@index([organizationId, createdAt])
   @@index([entityType, entityId])
   @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Billing (Stripe)
+// ─────────────────────────────────────────────────────────────────────────
+
+// Rechnungs-Historie eines Tenants. Gespiegelt aus Stripe-Invoice-Events –
+// Stripe bleibt die Quelle der Wahrheit, diese Tabelle dient der Anzeige unter
+// /billing ohne Stripe-Roundtrip. Beträge in der kleinsten Währungseinheit
+// (Cent), wie von Stripe geliefert.
+model Invoice {
+  id               String        @id @default(uuid()) @db.Uuid
+  organizationId   String        @map("organization_id") @db.Uuid
+  stripeInvoiceId  String        @unique @map("stripe_invoice_id")
+  number           String?
+  amountDue        Int           @map("amount_due")
+  amountPaid       Int           @default(0) @map("amount_paid")
+  currency         String        @default("eur")
+  status           InvoiceStatus
+  hostedInvoiceUrl String?       @map("hosted_invoice_url")
+  invoicePdfUrl    String?       @map("invoice_pdf_url")
+  issuedAt         DateTime      @map("issued_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, issuedAt])
+  @@map("invoices")
+}
+
+// Verarbeitete Stripe-Events (Idempotenz). Stripe stellt Events MEHRFACH zu
+// (at-least-once); die Event-ID als PK macht das Einfügen zum Gate: schlägt der
+// Insert fehl, wurde das Event bereits verarbeitet und wird verworfen.
+// System-Tabelle ohne organization_id -> keine RLS (nur System-Pfad schreibt).
+model BillingWebhookEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@index([processedAt])
+  @@map("billing_webhook_events")
 }
