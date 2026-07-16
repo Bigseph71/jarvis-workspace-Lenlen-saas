@@ -1,0 +1,59 @@
+name: CI
+
+# Qualitäts-Pipeline: läuft bei jedem Pull Request und bei jedem Push auf main.
+# Das SaaS-Projekt liegt im Unterordner saas-pflege/ (Monorepo im Workspace-Repo),
+# daher laufen alle Schritte mit working-directory: saas-pflege.
+on:
+  push:
+    branches: [main]
+    paths: ["saas-pflege/**", ".github/workflows/ci.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["saas-pflege/**", ".github/workflows/ci.yml"]
+
+# Ältere Läufe desselben Branches abbrechen, wenn ein neuer Commit kommt.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: saas-pflege
+
+jobs:
+  verify:
+    name: typecheck → test → build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: saas-pflege/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Prisma-Client generieren: die getypten Modelle werden von typecheck
+      # und build der DB-Konsumenten (Backend) benötigt.
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

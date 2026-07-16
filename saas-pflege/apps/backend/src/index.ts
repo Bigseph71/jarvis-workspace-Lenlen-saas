@@ -4,9 +4,11 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import websocket from "@fastify/websocket";
 import { ZodError } from "zod";
-import { Prisma, prisma } from "@len-len/database";
+import { Prisma } from "@len-len/database";
 import { env } from "./config/env.js";
 import { AppError } from "./lib/errors.js";
+import { runHealthCheck } from "./lib/health.js";
+import { registerMetrics } from "./lib/metrics.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { patientRoutes } from "./modules/patients/patient.routes.js";
 import { caregiverRoutes } from "./modules/caregivers/caregiver.routes.js";
@@ -24,11 +26,27 @@ import { startVrptwWorker } from "./modules/vrptw/vrptw.worker.js";
 import { trackingRoutes } from "./modules/tracking/tracking.routes.js";
 import { trackingWsRoutes } from "./modules/tracking/tracking.ws.js";
 
+const isProduction = env.NODE_ENV === "production";
+
 const app = Fastify({
   logger: {
-    level: env.NODE_ENV === "production" ? "info" : "debug",
+    level: isProduction ? "info" : "debug",
+    // Feste Basis-Felder auf jeder Logzeile (nützlich für die zentrale
+    // Aggregation über mehrere Dienste in Loki/Grafana).
+    base: { service: "backend", env: env.NODE_ENV },
     // Sensible Felder niemals loggen.
     redact: ["req.headers.authorization", "*.password", "*.passwordHash", "*.refreshToken"],
+    // Produktion: strukturiertes JSON auf stdout (Standard von Pino), damit der
+    // Log-Aggregator es direkt parsen kann. Entwicklung: menschenlesbar via
+    // pino-pretty (nur devDependency, in Prod nie geladen).
+    ...(isProduction
+      ? {}
+      : {
+          transport: {
+            target: "pino-pretty",
+            options: { translateTime: "SYS:standard", ignore: "pid,hostname" },
+          },
+        }),
   },
 });
 
@@ -44,6 +62,9 @@ await app.register(rateLimit, {
 });
 // WebSocket-Unterstützung (Echtzeit-Status VRPTW). Muss vor den WS-Routen stehen.
 await app.register(websocket);
+
+// Prometheus-Metriken (/metrics) + onResponse-Hook zur Erfassung jeder Anfrage.
+registerMetrics(app);
 
 // Zentraler Error-Handler: Zod -> 400, AppError -> Status, Prisma-Unique -> 409.
 app.setErrorHandler((error, request, reply) => {
@@ -64,10 +85,14 @@ app.setErrorHandler((error, request, reply) => {
   return reply.status(err.statusCode ?? 500).send({ error: "InternalServerError" });
 });
 
-// Health-Check (für Docker / Monitoring).
-app.get("/health", async () => {
-  await prisma.$queryRaw`SELECT 1`;
-  return { status: "ok", service: "backend", ts: new Date().toISOString() };
+// Health-Check (für Docker / Monitoring). Prüft Postgres + Redis und antwortet
+// mit 503, sobald eine Abhängigkeit ausgefallen ist – so kann der Orchestrator
+// (Docker/K8s) den Container als "unhealthy" erkennen, statt einen 500-Fehler
+// zu sehen.
+app.get("/health", async (_request, reply) => {
+  const report = await runHealthCheck();
+  reply.status(report.status === "ok" ? 200 : 503);
+  return report;
 });
 
 await app.register(authRoutes);
