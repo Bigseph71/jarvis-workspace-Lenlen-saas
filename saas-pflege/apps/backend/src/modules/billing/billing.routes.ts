@@ -3,8 +3,8 @@ import { UserRole } from "@len-len/database";
 import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
 import type { TenantContext } from "../../lib/context.js";
-import { checkoutSchema } from "./billing.schemas.js";
-import { createCheckout, createPortal, getSubscription } from "./billing.service.js";
+import { checkoutSchema, listInvoicesSchema, portalSchema } from "./billing.schemas.js";
+import { createCheckout, createPortal, getSubscription, listInvoices } from "./billing.service.js";
 
 // Billing nur für die Admin-Ebene.
 const canManageBilling = requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN);
@@ -20,13 +20,20 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     return getSubscription(ctxFrom(request));
   });
 
+  // Rechnungs-Historie (aus Stripe-Events gespiegelt).
+  app.get("/billing/invoices", { preHandler: [canManageBilling] }, async (request) => {
+    const input = listInvoicesSchema.parse(request.query);
+    return listInvoices(ctxFrom(request), input);
+  });
+
   app.post("/billing/checkout", { preHandler: [canManageBilling] }, async (request) => {
-    const { plan } = checkoutSchema.parse(request.body);
-    return createCheckout(ctxFrom(request), plan);
+    const input = checkoutSchema.parse(request.body ?? {});
+    return createCheckout(ctxFrom(request), input);
   });
 
   // Self-Service-Portal (Zahlungsmittel, Rechnungen, Kündigung).
   app.post("/billing/portal", { preHandler: [canManageBilling] }, async (request) => {
-    return createPortal(ctxFrom(request));
+    const input = portalSchema.parse(request.body ?? {});
+    return createPortal(ctxFrom(request), input);
   });
 }

@@ -15,6 +15,7 @@ import { geocodingRoutes } from "./modules/geocoding/geocoding.routes.js";
 import { startGeocodingWorker } from "./modules/geocoding/geocoding.worker.js";
 import { billingRoutes } from "./modules/billing/billing.routes.js";
 import { billingWebhookRoutes } from "./modules/billing/webhook.routes.js";
+import { startBillingWorker } from "./modules/billing/billing.worker.js";
 import { chatRoutes } from "./modules/chat/chat.routes.js";
 import { vehicleRoutes } from "./modules/vehicles/vehicle.routes.js";
 import { vrptwRoutes } from "./modules/vrptw/vrptw.routes.js";
@@ -96,6 +97,14 @@ if (env.NODE_ENV !== "test") {
     app.log.info("VRPTW-Worker gestartet");
   } catch (err) {
     app.log.warn({ err }, "VRPTW-Worker konnte nicht gestartet werden");
+  }
+  try {
+    startBillingWorker();
+    app.log.info(
+      `Billing-Worker gestartet (Karenzzeit: ${env.BILLING_GRACE_PERIOD_DAYS} Tage)`,
+    );
+  } catch (err) {
+    app.log.warn({ err }, "Billing-Worker konnte nicht gestartet werden");
   }
 }
 

@@ -13,3 +13,4 @@ export * from "./visits";
 export * from "./chat";
 export * from "./vehicles";
 export * from "./tracking";
+export * from "./billing";

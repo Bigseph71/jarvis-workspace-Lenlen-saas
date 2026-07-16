@@ -35,7 +35,8 @@
     "caregivers": "Soignants",
     "visits": "Planning",
     "leasing": "Leasing",
-    "tracking": "Suivi temps réel"
+    "tracking": "Suivi temps réel",
+    "billing": "Facturation"
   },
   "patients": {
     "title": "Patients",
@@ -283,6 +284,87 @@
       "status": "Statut",
       "distance": "Distance",
       "lastSeen": "Vu pour la dernière fois"
+    }
+  },
+  "billing": {
+    "title": "Facturation",
+    "subtitle": "Abonnement, limites et factures de votre organisation.",
+    "loading": "Chargement …",
+    "error": "Impossible de charger les données de facturation.",
+    "retry": "Réessayer",
+    "currentPlan": "Plan actuel",
+    "status": {
+      "ACTIVE": "Actif",
+      "PAST_DUE": "Paiement en retard",
+      "SUSPENDED": "Suspendu",
+      "CANCELED": "Résilié"
+    },
+    "plans": {
+      "BASIC": "Basic",
+      "PRO": "Pro",
+      "ENTERPRISE": "Enterprise"
+    },
+    "planFeatures": {
+      "patients": "{count} patients",
+      "caregivers": "{count} soignants",
+      "vehicles": "{count} véhicules",
+      "vehiclesUnlimited": "Véhicules illimités",
+      "kiIncluded": "Modules IA inclus",
+      "kiExcluded": "Sans modules IA"
+    },
+    "usage": {
+      "title": "Consommation",
+      "patients": "Patients",
+      "caregivers": "Soignants",
+      "vehicles": "Véhicules",
+      "unlimited": "illimité",
+      "ofLimit": "{used} sur {limit}"
+    },
+    "grace": {
+      "title": "Paiement en retard",
+      "message": "Votre dernier paiement a échoué. Merci de mettre à jour votre moyen de paiement, sans quoi l'accès sera suspendu automatiquement le {deadline}.",
+      "daysRemaining": "Encore {days} jours",
+      "lastDay": "Dernier jour"
+    },
+    "suspended": {
+      "title": "Accès suspendu",
+      "message": "Votre accès est suspendu en raison d'un paiement en attente. La création de patients, soignants et véhicules est bloquée. Merci de régler la facture ouverte."
+    },
+    "canceled": {
+      "title": "Abonnement résilié",
+      "message": "Votre abonnement a pris fin. Choisissez un plan pour continuer."
+    },
+    "actions": {
+      "upgrade": "Passer au supérieur",
+      "downgrade": "Changer",
+      "choose": "Choisir ce plan",
+      "current": "Plan actuel",
+      "portal": "Gérer le moyen de paiement et les factures",
+      "redirecting": "Redirection vers Stripe …"
+    },
+    "checkout": {
+      "success": "Paiement réussi. Votre abonnement sera activé sous peu.",
+      "canceled": "Checkout annulé. Aucun montant n'a été débité."
+    },
+    "invoices": {
+      "title": "Factures",
+      "empty": "Aucune facture pour le moment.",
+      "error": "Impossible de charger les factures.",
+      "columns": {
+        "number": "Numéro",
+        "date": "Date",
+        "amount": "Montant",
+        "status": "Statut",
+        "actions": "Actions"
+      },
+      "status": {
+        "PAID": "Payée",
+        "OPEN": "Ouverte",
+        "FAILED": "Échouée",
+        "VOID": "Annulée"
+      },
+      "view": "Voir",
+      "pdf": "PDF"
     }
   }
 }
