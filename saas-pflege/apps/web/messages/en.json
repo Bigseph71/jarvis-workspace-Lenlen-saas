@@ -276,7 +276,8 @@
     "distanceToPatient": "{meters} m from patient",
     "noVisit": "No active visit",
     "lastSeen": "Last {time}",
-    "mapHint": "Schematic map (relative positions). Google Maps tile background to follow separately.",
+    "mapHint": "Live caregiver positions on Google Maps.",
+    "mapFallbackHint": "Schematic view (no Google Maps key configured).",
     "activeCount": "{count} active caregivers",
     "alertsCount": "{count} geofence alerts",
     "columns": {

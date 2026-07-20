@@ -1,3 +1,8 @@
+// Lädt apps/backend/.env in process.env, BEVOR config/env.ts validiert wird
+// (tsx/node laden .env nicht automatisch). Überschreibt keine bereits gesetzten
+// Variablen – in Docker gewinnt weiterhin die per env_file/environment gesetzte
+// Konfiguration.
+import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";

@@ -276,7 +276,8 @@
     "distanceToPatient": "{meters} m vom Patienten",
     "noVisit": "Kein aktiver Besuch",
     "lastSeen": "Zuletzt {time}",
-    "mapHint": "Schematische Karte (relative Positionen). Google-Maps-Kachelhintergrund folgt separat.",
+    "mapHint": "Live-Positionen der Fachkräfte auf Google Maps.",
+    "mapFallbackHint": "Schematische Ansicht (kein Google-Maps-Schlüssel konfiguriert).",
     "activeCount": "{count} aktive Fachkräfte",
     "alertsCount": "{count} Geofence-Alarme",
     "columns": {
