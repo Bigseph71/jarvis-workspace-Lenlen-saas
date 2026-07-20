@@ -51,6 +51,9 @@ importers:
       bullmq:
         specifier: ^5.20.0
         version: 5.79.1
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.7
       fastify:
         specifier: ^5.0.0
         version: 5.8.5
@@ -217,6 +220,9 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
+      '@types/google.maps':
+        specifier: ^3.58.1
+        version: 3.65.2
       '@types/node':
         specifier: ^22.7.5
         version: 22.20.0
@@ -2245,6 +2251,9 @@ packages:
 
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
+
+  '@types/google.maps@3.65.2':
+    resolution: {integrity: sha512-e52bmOhGCQSNabFpL48iQlwJybq6rfns8NUVJ20MR7CdPlHQ2RmSCnPbJfrUYJfogrE4OiHQTZ4LXpop+eer1w==}
 
   '@types/graceful-fs@4.1.9':
     resolution: {integrity: sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ==}
@@ -7473,6 +7482,8 @@ snapshots:
       '@types/responselike': 1.0.3
 
   '@types/estree@1.0.9': {}
+
+  '@types/google.maps@3.65.2': {}
 
   '@types/graceful-fs@4.1.9':
     dependencies:

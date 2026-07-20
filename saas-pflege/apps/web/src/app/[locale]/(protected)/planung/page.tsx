@@ -10,29 +10,11 @@ import {
 } from "@len-len/api-client";
 import { getAccessToken } from "@/lib/auth/tokens";
 import { useAuth } from "@/lib/auth/auth-context";
+import { LiveMap } from "@/components/LiveMap";
 
 type ConnState = "connecting" | "connected" | "disconnected";
 
 const MAP_HEIGHT = 420;
-
-/** Projiziert lat/lng auf 0..1 innerhalb der Bounding-Box aller Positionen. */
-function project(
-  positions: LivePosition[],
-): (p: LivePosition) => { x: number; y: number } {
-  const lats = positions.map((p) => p.latitude);
-  const lngs = positions.map((p) => p.longitude);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
-  const spanLat = maxLat - minLat || 1;
-  const spanLng = maxLng - minLng || 1;
-  // 8 % Rand, damit Marker nicht am Kartenrand kleben.
-  return (p) => ({
-    x: 0.08 + 0.84 * ((p.longitude - minLng) / spanLng),
-    y: 0.08 + 0.84 * ((maxLat - p.latitude) / spanLat), // lat invertiert (Norden oben)
-  });
-}
 
 export default function PlanungPage() {
   const t = useTranslations("tracking");
@@ -133,7 +115,6 @@ export default function PlanungPage() {
       ),
     [positions],
   );
-  const projectFn = useMemo(() => project(list), [list]);
   const alerts = list.filter((p) => p.geofenceBreach).length;
 
   const timeFmt = (iso: string) =>
@@ -169,42 +150,22 @@ export default function PlanungPage() {
         ) : null}
       </div>
 
-      {/* Schematische Karte: relative Positionen der Fachkräfte. */}
-      <div
-        className="relative mt-4 overflow-hidden rounded-lg border border-gray-200 bg-[linear-gradient(0deg,#f8fafc_1px,transparent_1px),linear-gradient(90deg,#f8fafc_1px,transparent_1px)] bg-[length:32px_32px]"
-        style={{ height: MAP_HEIGHT }}
-      >
-        {error ? (
-          <div className="flex h-full items-center justify-center text-red-600">{t("error")}</div>
-        ) : list.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-gray-400">{t("empty")}</div>
-        ) : (
-          list.map((p) => {
-            const { x, y } = projectFn(p);
-            const name = `${p.caregiver.firstName} ${p.caregiver.lastName}`.trim() || p.caregiverId.slice(0, 8);
-            return (
-              <div
-                key={p.caregiverId}
-                className="absolute -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
-              >
-                <div className="flex flex-col items-center">
-                  <span
-                    className={`h-4 w-4 rounded-full border-2 border-white shadow ${
-                      p.geofenceBreach ? "bg-red-500 ring-4 ring-red-200" : "bg-green-500"
-                    }`}
-                    title={name}
-                  />
-                  <span className="mt-1 whitespace-nowrap rounded bg-white/90 px-1.5 py-0.5 text-[11px] font-medium text-gray-700 shadow-sm">
-                    {name}
-                  </span>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-      <p className="mt-2 text-xs text-gray-400">{t("mapHint")}</p>
+      {/* Echte Google-Maps-Karte mit den Live-Positionen der Fachkräfte
+          (Fallback auf schematische Karte, wenn kein Maps-Schlüssel gesetzt ist). */}
+      {error ? (
+        <div
+          className="mt-4 flex items-center justify-center rounded-lg border border-gray-200 text-red-600"
+          style={{ height: MAP_HEIGHT }}
+        >
+          {t("error")}
+        </div>
+      ) : (
+        <LiveMap
+          positions={list}
+          height={MAP_HEIGHT}
+          labels={{ empty: t("empty"), error: t("error"), fallbackHint: t("mapFallbackHint") }}
+        />
+      )}
 
       {/* Tabelle mit Geofence-Alarmen. */}
       <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
