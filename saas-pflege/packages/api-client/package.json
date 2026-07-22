@@ -9,9 +9,12 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@len-len/eslint-config": "workspace:*",
+    "eslint": "^9.13.0",
     "typescript": "^5.6.3"
   }
 }
