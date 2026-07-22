@@ -22,7 +22,7 @@ defaults:
 
 jobs:
   verify:
-    name: typecheck → test → build
+    name: lint → typecheck → test → build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -48,6 +48,9 @@ jobs:
       # und build der DB-Konsumenten (Backend) benötigt.
       - name: Generate Prisma client
         run: pnpm db:generate
+
+      - name: Lint
+        run: pnpm lint
 
       - name: Typecheck
         run: pnpm typecheck
