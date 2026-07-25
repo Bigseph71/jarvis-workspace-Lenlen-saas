@@ -1,0 +1,19 @@
+{
+  "cli": {
+    "version": ">= 12.0.0"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.178.20:4000"
+      }
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  }
+}
