@@ -15,6 +15,7 @@ COPY packages ./packages
 COPY apps/backend ./apps/backend
 
 RUN pnpm db:generate
+RUN npm install -g tsx
 
 EXPOSE 4000
-CMD ["node_modules/.bin/tsx", "apps/backend/src/index.ts"]
+CMD ["tsx", "apps/backend/src/index.ts"]
