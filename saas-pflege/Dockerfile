@@ -15,7 +15,6 @@ COPY packages ./packages
 COPY apps/backend ./apps/backend
 
 RUN pnpm db:generate
-RUN pnpm --filter @len-len/backend build
 
 EXPOSE 4000
-CMD ["node", "apps/backend/dist/index.js"]
+CMD ["node_modules/.bin/tsx", "apps/backend/src/index.ts"]
