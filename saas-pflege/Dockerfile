@@ -14,7 +14,7 @@ RUN pnpm install --frozen-lockfile
 COPY packages ./packages
 COPY apps/backend ./apps/backend
 
-RUN pnpm --filter @len-len/database db:generate
+RUN pnpm db:generate
 RUN pnpm --filter @len-len/backend build
 
 EXPOSE 4000
