@@ -19,10 +19,27 @@
 *.pfx
 id_rsa
 id_rsa.*
-*credentials*
-*secret*
-*secrets*
 *.token
+
+# --- Fichiers d'identifiants et de secrets -----------------------------------
+# Motifs volontairement restreints aux formats de données et aux noms usuels.
+# Ne JAMAIS revenir à "*credentials*" / "*secret*" nus : ils capturent aussi le
+# code source (un composant "fachkraft-credentials.tsx" a ainsi disparu d'un
+# commit). git add -A écarte les fichiers ignorés sans avertir et git status ne
+# les affiche pas : la perte est silencieuse et se découvre en CI.
+*credential*.json
+*credential*.yaml
+*credential*.yml
+*credential*.txt
+*credential*.csv
+*secret*.json
+*secret*.yaml
+*secret*.yml
+*secret*.txt
+*secret*.csv
+client_secret*.json
+*service-account*.json
+secrets/
 
 # --- Fichiers système --------------------------------------------------------
 Thumbs.db
