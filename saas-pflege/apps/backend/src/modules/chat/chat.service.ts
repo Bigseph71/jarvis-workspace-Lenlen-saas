@@ -112,6 +112,31 @@ export async function listMessages(
   });
 }
 
+/**
+ * Ungelesene Nachrichten je Konversation (Badge pro Fachkraft in der Liste).
+ *
+ * Nur für Planer: die Fachkraft hat genau eine Konversation und nutzt dafür
+ * unreadCount. Konversationen ohne ungelesene Nachrichten fehlen im Ergebnis –
+ * der Aufrufer behandelt sie als 0.
+ */
+export async function unreadByCaregiver(
+  ctx: TenantContext,
+  actor: ChatActor,
+): Promise<Array<{ caregiverId: string; count: number }>> {
+  if (actor.role === UserRole.FACHKRAFT) {
+    throw new ForbiddenError("Fachkräfte haben nur eine Konversation");
+  }
+
+  return withTenant(ctx.organizationId, async (tx) => {
+    const rows = await tx.message.groupBy({
+      by: ["caregiverId"],
+      where: { organizationId: ctx.organizationId, readAt: null, ...incomingFilter(actor) },
+      _count: { _all: true },
+    });
+    return rows.map((r) => ({ caregiverId: r.caregiverId, count: r._count._all }));
+  });
+}
+
 /** Anzahl ungelesener eingehender Nachrichten (Badge). */
 export async function unreadCount(ctx: TenantContext, actor: ChatActor): Promise<unknown> {
   return withTenant(ctx.organizationId, async (tx) => {

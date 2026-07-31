@@ -4,7 +4,7 @@ import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
 import type { TenantContext } from "../../lib/context.js";
 import { listMessagesQuerySchema, sendMessageSchema } from "./chat.schemas.js";
-import { listMessages, sendMessage, unreadCount } from "./chat.service.js";
+import { listMessages, sendMessage, unreadCount, unreadByCaregiver } from "./chat.service.js";
 
 // Chat: Fachkraft + Planungsebene (HR hat keinen Zugriff).
 const canChat = requireRole(
@@ -40,5 +40,11 @@ export async function chatRoutes(app: FastifyInstance): Promise<void> {
   // Badge: ungelesene eingehende Nachrichten.
   app.get("/chat/unread-count", { preHandler: [canChat] }, async (request) => {
     return unreadCount(ctxFrom(request), actorFrom(request));
+  });
+
+  // Badge je Konversation (Planer-Liste). Bewusst ein eigener Pfad statt eines
+  // Flags auf /chat/unread-count: andere Antwortform, anderes Publikum.
+  app.get("/chat/unread-by-caregiver", { preHandler: [canChat] }, async (request) => {
+    return unreadByCaregiver(ctxFrom(request), actorFrom(request));
   });
 }
