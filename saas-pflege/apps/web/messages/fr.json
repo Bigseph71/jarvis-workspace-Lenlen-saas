@@ -37,6 +37,7 @@
     "visits": "Planning",
     "leasing": "Leasing",
     "tracking": "Suivi temps réel",
+    "chat": "Messagerie",
     "billing": "Facturation"
   },
   "patients": {
@@ -192,6 +193,23 @@
       "resetHint": "Nouveau mot de passe temporaire. Il n'est affiché qu'une fois, l'ancien est désormais invalide.",
       "resetFailed": "Le mot de passe n'a pas pu être réinitialisé. Veuillez réessayer plus tard."
     }
+  },
+  "chat": {
+    "title": "Messagerie",
+    "subtitle": "Échanges avec les soignants sur le terrain.",
+    "unread": "{count} non lus",
+    "searchPlaceholder": "Rechercher un soignant …",
+    "searchHint": "Tous les soignants ne sont pas chargés. Utilisez la recherche.",
+    "loading": "Chargement …",
+    "caregiversError": "Impossible de charger les soignants.",
+    "noCaregivers": "Aucun soignant trouvé.",
+    "noSelection": "Sélectionnez un soignant à gauche pour ouvrir la conversation.",
+    "empty": "Aucun message dans cette conversation.",
+    "error": "Impossible de charger les messages.",
+    "placeholder": "Message au soignant …",
+    "send": "Envoyer",
+    "sending": "Envoi …",
+    "sendError": "Le message n'a pas pu être envoyé. Veuillez réessayer."
   },
   "visits": {
     "title": "Planning",

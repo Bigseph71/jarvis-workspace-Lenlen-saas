@@ -37,6 +37,7 @@
     "visits": "Planning",
     "leasing": "Leasing",
     "tracking": "Real-time tracking",
+    "chat": "Chat",
     "billing": "Billing"
   },
   "patients": {
@@ -192,6 +193,23 @@
       "resetHint": "New temporary password. It is shown only once, and the previous one is now invalid.",
       "resetFailed": "The password could not be reset. Please try again later."
     }
+  },
+  "chat": {
+    "title": "Chat",
+    "subtitle": "Messages with the caregivers in the field.",
+    "unread": "{count} unread",
+    "searchPlaceholder": "Search caregiver …",
+    "searchHint": "Not all caregivers loaded. Please use the search.",
+    "loading": "Loading …",
+    "caregiversError": "Caregivers could not be loaded.",
+    "noCaregivers": "No caregivers found.",
+    "noSelection": "Select a caregiver on the left to open the conversation.",
+    "empty": "No messages in this conversation yet.",
+    "error": "Messages could not be loaded.",
+    "placeholder": "Message to the caregiver …",
+    "send": "Send",
+    "sending": "Sending …",
+    "sendError": "The message could not be sent. Please try again."
   },
   "visits": {
     "title": "Planning",

@@ -37,6 +37,7 @@
     "visits": "Planung",
     "leasing": "Leasing",
     "tracking": "Echtzeit-Tracking",
+    "chat": "Chat",
     "billing": "Abrechnung"
   },
   "patients": {
@@ -192,6 +193,23 @@
       "resetHint": "Neues temporäres Passwort. Es wird nur einmal angezeigt, das bisherige ist ab sofort ungültig.",
       "resetFailed": "Das Passwort konnte nicht zurückgesetzt werden. Bitte später erneut versuchen."
     }
+  },
+  "chat": {
+    "title": "Chat",
+    "subtitle": "Nachrichten mit den Fachkräften im Einsatz.",
+    "unread": "{count} ungelesen",
+    "searchPlaceholder": "Fachkraft suchen …",
+    "searchHint": "Nicht alle Fachkräfte geladen. Bitte die Suche verwenden.",
+    "loading": "Wird geladen …",
+    "caregiversError": "Fachkräfte konnten nicht geladen werden.",
+    "noCaregivers": "Keine Fachkräfte gefunden.",
+    "noSelection": "Wählen Sie links eine Fachkraft, um die Konversation zu öffnen.",
+    "empty": "Noch keine Nachrichten in dieser Konversation.",
+    "error": "Nachrichten konnten nicht geladen werden.",
+    "placeholder": "Nachricht an die Fachkraft …",
+    "send": "Senden",
+    "sending": "Wird gesendet …",
+    "sendError": "Die Nachricht konnte nicht gesendet werden. Bitte erneut versuchen."
   },
   "visits": {
     "title": "Planung",

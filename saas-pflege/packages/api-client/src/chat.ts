@@ -55,3 +55,16 @@ export async function chatUnreadCount(): Promise<number> {
   const res = await apiFetch<{ count: number }>("/chat/unread-count");
   return res.count;
 }
+
+export interface CaregiverUnread {
+  caregiverId: string;
+  count: number;
+}
+
+/**
+ * Ungelesene Nachrichten je Konversation (nur Planer).
+ * Konversationen ohne Ungelesene fehlen in der Liste – als 0 behandeln.
+ */
+export async function chatUnreadByCaregiver(): Promise<CaregiverUnread[]> {
+  return apiFetch<CaregiverUnread[]>("/chat/unread-by-caregiver");
+}
