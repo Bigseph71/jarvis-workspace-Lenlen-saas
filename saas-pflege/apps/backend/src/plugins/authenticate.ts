@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { verifyAccessToken } from "../lib/tokens.js";
+import { isAccessTokenRevoked } from "../lib/token-revocation.js";
 import { AppError, UnauthorizedError } from "../lib/errors.js";
 
 /**
@@ -22,6 +23,15 @@ export async function authenticate(request: FastifyRequest, _reply: FastifyReply
     throw new UnauthorizedError("Authorization-Header fehlt");
   }
   const claims = verifyAccessToken(header.slice("Bearer ".length));
+
+  // Passwort-Reset o.ä. kann das Token vorzeitig entwertet haben. 401 statt 403,
+  // damit der Client wie bei einem abgelaufenen Token reagiert: Refresh
+  // versuchen (schlägt fehl, die Refresh-Token sind mit-widerrufen) und den
+  // Nutzer zur Anmeldung schicken.
+  if (await isAccessTokenRevoked(claims.sub, claims.iat)) {
+    throw new UnauthorizedError("Sitzung wurde beendet");
+  }
+
   request.user = {
     userId: claims.sub,
     organizationId: claims.org,
