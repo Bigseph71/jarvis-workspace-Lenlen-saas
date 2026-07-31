@@ -1,6 +1,7 @@
 -- Modul Leasing (Phase 2) : table vehicles.
--- Additif et idempotent. Appliqué via prisma db execute (voir note dans
--- 2026-07-04-add-pointage-gps.sql sur le moteur de diff et Supavisor).
+-- Additif et idempotent. Appliqué en 2026-07 via prisma db execute — cette
+-- commande ne fonctionne plus : voir la note d'application dans
+-- 2026-07-04-add-pointage-gps.sql.
 CREATE TABLE IF NOT EXISTS "public"."vehicles" (
   "id"               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "organization_id"  UUID NOT NULL REFERENCES "public"."organizations"("id") ON DELETE CASCADE,

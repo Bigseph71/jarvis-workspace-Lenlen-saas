@@ -1,7 +1,7 @@
 -- Stripe-Billing (Phase 2) : Karenzzeit, Rechnungs-Historie, Webhook-Idempotenz.
--- Additif et idempotent. Appliqué via prisma db execute (le moteur de diff
--- Prisma est peu fiable à travers le pooler Supavisor ; cf.
--- 2026-07-04-add-pointage-gps.sql).
+-- Additif et idempotent. Appliqué en 2026-07 via prisma db execute — cette
+-- commande ne fonctionne plus : voir la note d'application dans
+-- 2026-07-04-add-pointage-gps.sql.
 
 -- ── Karenzzeit (Regel 8) ─────────────────────────────────────────────────
 -- Début de la période de grâce : posé au premier échec de paiement, effacé au
