@@ -8,7 +8,7 @@ import {
   ApiError,
   type UserRole,
 } from "@len-len/api-client";
-import { FachkraftCredentials } from "./fachkraft-credentials";
+import { FachkraftAccessData } from "./fachkraft-access-data";
 
 // Spiegelt die Rollen, die das Backend auf /users/* zulässt – damit kein
 // Button erscheint, der beim Klick zwangsläufig 403 liefert.
@@ -108,7 +108,7 @@ export function CaregiverAccountPanel({
 
       {issued ? (
         <div className="mt-3">
-          <FachkraftCredentials
+          <FachkraftAccessData
             email={issued.email}
             temporaryPassword={issued.temporaryPassword}
             hint={issued.source === "reset" ? t("account.resetHint") : undefined}

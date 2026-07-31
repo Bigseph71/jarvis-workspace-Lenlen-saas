@@ -7,7 +7,7 @@ import {
   CaregiverCreateForm,
   type CaregiverCreateSubmit,
 } from "@/components/caregiver-create-form";
-import { FachkraftCredentials } from "@/components/fachkraft-credentials";
+import { FachkraftAccessData } from "@/components/fachkraft-access-data";
 import { createCaregiver, createFachkraftAccount, ApiError } from "@len-len/api-client";
 
 interface CreatedAccount {
@@ -88,7 +88,7 @@ export default function NewCaregiverPage() {
       <section>
         <h1 className="text-2xl font-bold text-gray-900">{t("accountCreatedTitle")}</h1>
         <div className="mt-4 max-w-lg">
-          <FachkraftCredentials
+          <FachkraftAccessData
             email={account.email}
             temporaryPassword={account.temporaryPassword}
           />
