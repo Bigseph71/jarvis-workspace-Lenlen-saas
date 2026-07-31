@@ -7,6 +7,38 @@
 
 ---
 
+## 2026-07-31
+
+### Len Len : les deux trous fonctionnels du MVP comblés (5 PR fusionnées)
+Session partie d'un audit de deux fonctionnalités supposées présentes. Constat : ni le formulaire de création de compte Fachkraft, ni l'écran de chat Koordinator n'existaient. Le chat était **unidirectionnel dans les faits** (backend, client API et app mobile prêts, aucune page web) et une Fachkraft créée dans le web n'avait aucun compte, donc aucun accès à l'app mobile.
+
+#### Comptes Fachkraft et cycle de vie des mots de passe (#11, #13)
+- **Module `users`** : `POST /users/fachkraft` crée un compte rôle FACHKRAFT avec mot de passe temporaire généré (Argon2id, 16 caractères, sans caractères ambigus) et le lie au caregiver. Création et liaison dans une seule transaction tenant, donc pas de compte orphelin
+- **`POST /users/:id/reset-password`** : restreint aux comptes FACHKRAFT, sinon HR pourrait réinitialiser un Struktur-Admin, lire le mot de passe dans la réponse et se connecter à sa place
+- **Changement forcé au premier login** : colonne `must_change_password`, flag porté par le JWT (pas de lecture base par requête), tout endpoint bloqué en 403 sauf `/auth/change-password` et `/auth/me`. Écran mobile dédié, sans lequel le blocage aurait verrouillé les Fachkräfte hors de l'app
+- **Liste de révocation Redis** : un test de bout en bout a révélé qu'après un reset, l'access token courant restait valide jusqu'à 15 min. Clé `auth:revoked-before:<userId>`, comparaison stricte en secondes, fail open si Redis tombe
+- Web : email optionnel à la création, panneau « App-Zugang » sur la fiche Fachkraft, refus des comptes FACHKRAFT au login web
+
+#### Chat Koordinator côté web (#14)
+- Page `/chat` en deux volets (le backend exige un `caregiverId` pour les planificateurs), polling 30 s comme le mobile, i18n DE/EN/FR
+- Nouvel endpoint **`GET /chat/unread-by-caregiver`** : le total global existant ne permettait pas de savoir *quelle* Fachkraft attend une réponse. Badge par conversation
+
+#### Hygiène du dépôt (#12, #15)
+- **`.gitignore`** : les motifs `*credentials*` et `*secret*` capturaient aussi le code source. Un composant `fachkraft-credentials.tsx` a disparu d'un commit sans aucun signal (`git add -A` écarte les fichiers ignorés en silence), découvert seulement en CI. Motifs resserrés aux formats de données
+- **Migrations SQL** : `prisma db execute` ne fonctionne plus à travers le pooler Supabase Supavisor, il reste bloqué jusqu'au timeout. Les six fichiers de `prisma/sql/` le recommandaient. Note de référence corrigée + mention du dossier dans le README
+
+### Validations
+- Migration `must_change_password` appliquée sur la base Supabase via `prisma.$executeRawUnsafe`, aucun des 5 comptes existants impacté
+- Railway confirmé sur la **même base** et déployant déjà le nouveau code (blocage 403 vérifié en production)
+- **Test mobile validé en réel** : mot de passe temporaire accepté, écran de changement imposé, reste de l'app inaccessible avant le changement
+
+### Reste à faire
+- Test du chat de bout en bout (web ↔ mobile)
+- Aucune interface ne crée les comptes **Koordinator et HR** ; aucun recours pour un admin ayant perdu son mot de passe
+- Envoi des identifiants par email : pas d'infra mail, le mot de passe transite par la réponse API et l'écran admin
+- La désactivation d'un compte ne coupe pas le jeton en cours (le mécanisme Redis est en place pour l'y brancher)
+- Le CI ne joue aucune migration : rien n'alerte si l'une manque sur un environnement
+
 ## 2026-06-27
 
 ### Backend Phase 1 (MVP) de « Len Len » terminé et validé localement
