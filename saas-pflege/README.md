@@ -49,6 +49,12 @@ pnpm --filter @len-len/database seed      # données de démo (optionnel)
 pnpm dev                                  # lance les apps via Turborepo
 ```
 
+Les évolutions de schéma appliquées sur les bases existantes vivent dans
+`packages/database/prisma/sql/`, écrites à la main et jouées manuellement.
+Lire la note d'application en tête de `2026-07-04-add-pointage-gps.sql` avant
+d'en créer ou d'en rejouer une : `prisma db execute` ne fonctionne plus à
+travers le pooler Supabase, et le CI ne joue aucune migration.
+
 ## Multi-tenant & sécurité
 
 - Chaque table métier porte `organization_id`.

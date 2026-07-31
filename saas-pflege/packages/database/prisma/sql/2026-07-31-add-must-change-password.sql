@@ -1,7 +1,7 @@
 -- Erzwungener Passwortwechsel beim ersten Login.
--- Additif et idempotent. Appliqué via prisma db execute (le moteur de diff
--- Prisma est peu fiable à travers le pooler Supavisor ; cf.
--- 2026-07-13-add-gps-positions.sql).
+-- Additif et idempotent. Appliqué le 2026-07-31 via prisma.$executeRawUnsafe :
+-- prisma db execute reste bloqué sur le pooler. Voir la note d'application dans
+-- 2026-07-04-add-pointage-gps.sql.
 --
 -- Le flag est posé à true par le backend chaque fois qu'un admin génère un mot
 -- de passe temporaire (POST /users/fachkraft et POST /users/:id/reset-password)
