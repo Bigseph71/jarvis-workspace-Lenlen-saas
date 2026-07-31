@@ -17,7 +17,7 @@ import { ROLE_NOT_ALLOWED, useAuth } from "@/lib/auth-context";
 export default function LoginScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { status, login } = useAuth();
+  const { status, user, login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +25,7 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   if (status === "authenticated") {
-    return <Redirect href="/today" />;
+    return <Redirect href={user?.mustChangePassword ? "/change-password" : "/today"} />;
   }
 
   const canSubmit = email.trim().length > 0 && password.length > 0 && !submitting;
@@ -35,8 +35,8 @@ export default function LoginScreen() {
     setSubmitting(true);
     setError(null);
     try {
-      await login({ email: email.trim(), password });
-      router.replace("/today");
+      const loggedIn = await login({ email: email.trim(), password });
+      router.replace(loggedIn.mustChangePassword ? "/change-password" : "/today");
     } catch (err) {
       if (err instanceof Error && err.message === ROLE_NOT_ALLOWED) {
         setError(t("auth.login.fachkraftOnly"));

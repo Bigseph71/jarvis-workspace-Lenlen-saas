@@ -17,6 +17,7 @@ import { registerMetrics } from "./lib/metrics.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { patientRoutes } from "./modules/patients/patient.routes.js";
 import { caregiverRoutes } from "./modules/caregivers/caregiver.routes.js";
+import { userRoutes } from "./modules/users/user.routes.js";
 import { visitRoutes } from "./modules/visits/visit.routes.js";
 import { geocodingRoutes } from "./modules/geocoding/geocoding.routes.js";
 import { startGeocodingWorker } from "./modules/geocoding/geocoding.worker.js";
@@ -103,6 +104,7 @@ app.get("/health", async (_request, reply) => {
 await app.register(authRoutes);
 await app.register(patientRoutes);
 await app.register(caregiverRoutes);
+await app.register(userRoutes);
 await app.register(visitRoutes);
 await app.register(geocodingRoutes);
 await app.register(billingRoutes);

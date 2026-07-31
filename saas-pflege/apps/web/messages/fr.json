@@ -20,7 +20,8 @@
       "organizationIdHint": "Nécessaire uniquement si le même e-mail existe dans plusieurs organisations.",
       "submit": "Se connecter",
       "submitting": "Connexion …",
-      "invalidCredentials": "Identifiants invalides."
+      "invalidCredentials": "Identifiants invalides.",
+      "mobileOnly": "Les soignants se connectent via l'app mobile, pas ici."
     }
   },
   "dashboard": {
@@ -143,7 +144,8 @@
       "contractType": "Type de contrat",
       "weeklyHours": "Heures hebdomadaires",
       "workDays": "Jours travaillés",
-      "maxPatients": "Patients max."
+      "maxPatients": "Patients max.",
+      "email": "E-mail"
     },
     "form": {
       "newTitle": "Nouveau soignant",
@@ -154,14 +156,41 @@
       "saving": "Enregistrement …",
       "cancel": "Annuler",
       "loadError": "Impossible de charger le soignant.",
-      "limitReached": "Limite du plan atteinte. Veuillez mettre à niveau l'abonnement."
+      "limitReached": "Limite du plan atteinte. Veuillez mettre à niveau l'abonnement.",
+      "optional": "(facultatif)",
+      "accountHint": "Avec un e-mail, un compte avec mot de passe temporaire est créé pour l'app mobile. Sans e-mail, seule la fiche personnel est créée, sans accès à l'app.",
+      "accountCreatedTitle": "Soignant et compte créés",
+      "accountCreatedHint": "Ces identifiants ne sont affichés qu'une seule fois. Transmettez-les maintenant au soignant.",
+      "accountEmail": "E-mail",
+      "accountPassword": "Mot de passe temporaire",
+      "accountCopy": "Copier le mot de passe",
+      "accountCopied": "Copié",
+      "accountDone": "Retour à la liste",
+      "accountFailedTitle": "Compte non créé",
+      "accountFailed": "Le soignant a été créé, mais pas le compte utilisateur. Veuillez réessayer plus tard.",
+      "accountEmailTaken": "Le soignant a été créé, mais cet e-mail est déjà utilisé dans cette organisation. Aucun compte n'a été créé."
     },
     "errors": {
       "firstName": "Prénom : 1 à 80 caractères.",
       "lastName": "Nom : 1 à 80 caractères.",
       "weeklyHours": "Heures hebdo. : de plus de 0 à 60.",
       "workDays": "Sélectionnez au moins un jour travaillé.",
-      "maxPatients": "Patients max. : 0 à 500."
+      "maxPatients": "Patients max. : 0 à 500.",
+      "email": "Veuillez saisir une adresse e-mail valide."
+    },
+    "account": {
+      "title": "Accès à l'app",
+      "existing": "Compte existant :",
+      "none": "Ce soignant n'a pas encore accès à l'app mobile.",
+      "create": "Créer l'accès",
+      "creating": "Création …",
+      "emailTaken": "Cet e-mail est déjà utilisé dans cette organisation.",
+      "failed": "L'accès n'a pas pu être créé. Veuillez réessayer plus tard.",
+      "reset": "Réinitialiser le mot de passe",
+      "resetting": "Réinitialisation …",
+      "resetConfirm": "Générer un nouveau mot de passe temporaire pour {email} ? L'ancien mot de passe sera invalidé et toutes les sessions actives seront fermées.",
+      "resetHint": "Nouveau mot de passe temporaire. Il n'est affiché qu'une fois, l'ancien est désormais invalide.",
+      "resetFailed": "Le mot de passe n'a pas pu être réinitialisé. Veuillez réessayer plus tard."
     }
   },
   "visits": {

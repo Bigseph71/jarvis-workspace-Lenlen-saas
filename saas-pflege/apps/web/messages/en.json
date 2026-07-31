@@ -20,7 +20,8 @@
       "organizationIdHint": "Only needed if the same email exists in several organizations.",
       "submit": "Sign in",
       "submitting": "Signing in …",
-      "invalidCredentials": "Invalid credentials."
+      "invalidCredentials": "Invalid credentials.",
+      "mobileOnly": "Caregivers sign in via the mobile app, not here."
     }
   },
   "dashboard": {
@@ -143,7 +144,8 @@
       "contractType": "Contract type",
       "weeklyHours": "Weekly hours",
       "workDays": "Work days",
-      "maxPatients": "Max. patients"
+      "maxPatients": "Max. patients",
+      "email": "Email"
     },
     "form": {
       "newTitle": "New caregiver",
@@ -154,14 +156,41 @@
       "saving": "Saving …",
       "cancel": "Cancel",
       "loadError": "Caregiver could not be loaded.",
-      "limitReached": "Plan limit reached. Please upgrade the subscription."
+      "limitReached": "Plan limit reached. Please upgrade the subscription.",
+      "optional": "(optional)",
+      "accountHint": "With an email, an account with a temporary password is created for the mobile app. Without one, only the personnel record is created, with no app access.",
+      "accountCreatedTitle": "Caregiver and account created",
+      "accountCreatedHint": "These credentials are shown only once. Please pass them on to the caregiver now.",
+      "accountEmail": "Email",
+      "accountPassword": "Temporary password",
+      "accountCopy": "Copy password",
+      "accountCopied": "Copied",
+      "accountDone": "Back to list",
+      "accountFailedTitle": "Account not created",
+      "accountFailed": "The caregiver was created, but the user account was not. Please try again later.",
+      "accountEmailTaken": "The caregiver was created, but the email is already taken in this organisation. No account was created."
     },
     "errors": {
       "firstName": "First name: 1–80 characters.",
       "lastName": "Last name: 1–80 characters.",
       "weeklyHours": "Weekly hours: above 0 up to 60.",
       "workDays": "Select at least one work day.",
-      "maxPatients": "Max. patients: 0–500."
+      "maxPatients": "Max. patients: 0–500.",
+      "email": "Please enter a valid email address."
+    },
+    "account": {
+      "title": "App access",
+      "existing": "Account:",
+      "none": "This caregiver has no access to the mobile app yet.",
+      "create": "Create access",
+      "creating": "Creating …",
+      "emailTaken": "This email is already taken in this organisation.",
+      "failed": "The access could not be created. Please try again later.",
+      "reset": "Reset password",
+      "resetting": "Resetting …",
+      "resetConfirm": "Generate a new temporary password for {email}? The current password becomes invalid and all active sessions are ended.",
+      "resetHint": "New temporary password. It is shown only once, and the previous one is now invalid.",
+      "resetFailed": "The password could not be reset. Please try again later."
     }
   },
   "visits": {

@@ -12,6 +12,12 @@ export interface AccessTokenClaims {
   /** organizationId – trägt den Tenant durch jeden Request */
   org: string;
   role: UserRole;
+  /**
+   * Erzwungener Passwortwechsel. Bewusst im Token statt per DB-Abfrage bei
+   * jedem Request. Der Wechsel widerruft alle Sitzungen und gibt neue Token
+   * aus, das Flag ist also nie länger als eine Access-Token-Laufzeit veraltet.
+   */
+  chpw?: boolean;
 }
 
 export function signAccessToken(claims: AccessTokenClaims): string {
@@ -33,6 +39,7 @@ export function verifyAccessToken(token: string): AccessTokenClaims {
       sub: decoded.sub,
       org: (decoded as jwt.JwtPayload).org as string,
       role: (decoded as jwt.JwtPayload).role as UserRole,
+      chpw: (decoded as jwt.JwtPayload).chpw === true,
     };
   } catch {
     throw new UnauthorizedError("Token ungültig oder abgelaufen");

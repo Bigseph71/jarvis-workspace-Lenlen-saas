@@ -18,12 +18,26 @@ const QUALIFICATIONS: Qualification[] = [
   "AUSZUBILDENDE",
 ];
 
+/**
+ * Beim Anlegen entsteht immer die Fachkraft, das Login-Konto nur bei
+ * angegebener E-Mail (z.B. Auszubildende brauchen keinen App-Zugang).
+ * Das temporäre Passwort erzeugt das Backend, nie der Client.
+ */
+export interface CaregiverCreateSubmit {
+  caregiver: CreateCaregiverInput;
+  /** undefined = kein Konto anlegen. */
+  email?: string;
+}
+
 interface CaregiverCreateFormProps {
   submitting: boolean;
   error?: string | null;
-  onSubmit: (input: CreateCaregiverInput) => void;
+  onSubmit: (input: CaregiverCreateSubmit) => void;
   onCancel: () => void;
 }
+
+// Bewusst permissiv: die verbindliche Prüfung macht Zod im Backend.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const fieldClass =
   "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none";
@@ -34,10 +48,13 @@ export function CaregiverCreateForm({ submitting, error, onSubmit, onCancel }: C
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
   const [qualification, setQualification] = useState<Qualification>("PFLEGEFACHKRAFT");
   const [contract, setContract] = useState<ContractFieldsValue>(EMPTY_CONTRACT);
 
-  const [idErrors, setIdErrors] = useState<Partial<Record<"firstName" | "lastName", string>>>({});
+  const [idErrors, setIdErrors] = useState<
+    Partial<Record<"firstName" | "lastName" | "email", string>>
+  >({});
   const [contractErrors, setContractErrors] = useState<Partial<Record<ContractErrorKey, string>>>({});
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -45,9 +62,14 @@ export function CaregiverCreateForm({ submitting, error, onSubmit, onCancel }: C
 
     const fn = firstName.trim();
     const ln = lastName.trim();
+    const mail = email.trim().toLowerCase();
     const nextIdErrors: typeof idErrors = {};
     if (fn.length < 1 || fn.length > 80) nextIdErrors.firstName = t("errors.firstName");
     if (ln.length < 1 || ln.length > 80) nextIdErrors.lastName = t("errors.lastName");
+    // Optional: nur prüfen, wenn überhaupt etwas eingetragen wurde.
+    if (mail && (!EMAIL_PATTERN.test(mail) || mail.length > 254)) {
+      nextIdErrors.email = t("errors.email");
+    }
 
     const { errors: rawContract, parsed } = validateContract(contract);
     const nextContractErrors: typeof contractErrors = {
@@ -60,7 +82,10 @@ export function CaregiverCreateForm({ submitting, error, onSubmit, onCancel }: C
     setContractErrors(nextContractErrors);
 
     if (Object.keys(nextIdErrors).length > 0 || !parsed) return;
-    onSubmit({ firstName: fn, lastName: ln, qualification, ...parsed });
+    onSubmit({
+      caregiver: { firstName: fn, lastName: ln, qualification, ...parsed },
+      email: mail || undefined,
+    });
   }
 
   return (
@@ -89,6 +114,23 @@ export function CaregiverCreateForm({ submitting, error, onSubmit, onCancel }: C
           className={fieldClass}
         />
         {idErrors.lastName ? <p className="mt-1 text-sm text-red-600">{idErrors.lastName}</p> : null}
+      </div>
+
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          {t("fields.email")}{" "}
+          <span className="font-normal text-gray-500">{t("form.optional")}</span>
+        </label>
+        <input
+          id="email"
+          type="email"
+          autoComplete="off"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={fieldClass}
+        />
+        <p className="mt-1 text-xs text-gray-500">{t("form.accountHint")}</p>
+        {idErrors.email ? <p className="mt-1 text-sm text-red-600">{idErrors.email}</p> : null}
       </div>
 
       <div>

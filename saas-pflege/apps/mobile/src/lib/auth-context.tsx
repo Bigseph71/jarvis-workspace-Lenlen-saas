@@ -2,8 +2,10 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import {
   login as apiLogin,
   logout as apiLogout,
+  changePassword as apiChangePassword,
   restoreSession,
   type AuthUser,
+  type ChangePasswordInput,
   type LoginCredentials,
 } from "@len-len/api-client";
 
@@ -20,7 +22,10 @@ type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 interface AuthContextValue {
   user: AuthUser | null;
   status: AuthStatus;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  /** Liefert den angemeldeten Nutzer zurück, damit der Aufrufer auf
+   *  mustChangePassword reagieren kann. */
+  login: (credentials: LoginCredentials) => Promise<AuthUser>;
+  changePassword: (input: ChangePasswordInput) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -62,6 +67,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setUser(loggedIn);
     setStatus("authenticated");
+    return loggedIn;
+  }, []);
+
+  // Nach dem Wechsel liefert das Backend frische Token; die Sitzung bleibt
+  // bestehen, nur ohne mustChangePassword.
+  const changePassword = useCallback(async (input: ChangePasswordInput) => {
+    const updated = await apiChangePassword(input);
+    setUser(updated);
+    setStatus("authenticated");
   }, []);
 
   const logout = useCallback(async () => {
@@ -71,7 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, status, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, status, login, changePassword, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

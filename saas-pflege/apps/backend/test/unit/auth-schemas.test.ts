@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  changePasswordSchema,
   loginSchema,
   registerOrganizationSchema,
 } from "../../src/modules/auth/auth.schemas.js";
@@ -30,5 +31,39 @@ describe("registerOrganizationSchema", () => {
   it("akzeptiert ein konformes Passwort und setzt country-Default", () => {
     const parsed = registerOrganizationSchema.parse({ ...base, adminPassword: "Sehr-Sicher-123" });
     expect(parsed.country).toBe("DE");
+  });
+});
+
+describe("changePasswordSchema", () => {
+  it("akzeptiert einen gültigen Wechsel", () => {
+    const parsed = changePasswordSchema.parse({
+      currentPassword: "TempAbc23xyzQ",
+      newPassword: "Sehr-Sicher-123",
+    });
+    expect(parsed.newPassword).toBe("Sehr-Sicher-123");
+  });
+
+  it("erzwingt die Passwortrichtlinie für das neue Passwort", () => {
+    expect(() =>
+      changePasswordSchema.parse({ currentPassword: "TempAbc23xyzQ", newPassword: "kurz" }),
+    ).toThrow();
+    expect(() =>
+      changePasswordSchema.parse({ currentPassword: "TempAbc23xyzQ", newPassword: "alllowercase1" }),
+    ).toThrow();
+  });
+
+  it("lehnt ein unverändertes Passwort ab", () => {
+    expect(() =>
+      changePasswordSchema.parse({
+        currentPassword: "Sehr-Sicher-123",
+        newPassword: "Sehr-Sicher-123",
+      }),
+    ).toThrow();
+  });
+
+  it("verlangt das aktuelle Passwort", () => {
+    expect(() =>
+      changePasswordSchema.parse({ currentPassword: "", newPassword: "Sehr-Sicher-123" }),
+    ).toThrow();
   });
 });

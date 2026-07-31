@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { CaregiverEditForm, type CaregiverIdentity } from "@/components/caregiver-edit-form";
+import { CaregiverAccountPanel } from "@/components/caregiver-account-panel";
+import { useAuth } from "@/lib/auth/auth-context";
 import { getCaregiver, updateCaregiver } from "@len-len/api-client";
 
 type LoadState = "loading" | "ready" | "error";
@@ -16,7 +18,10 @@ export default function EditCaregiverPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
 
+  const { user } = useAuth();
+
   const [initial, setInitial] = useState<CaregiverIdentity | null>(null);
+  const [account, setAccount] = useState<{ id: string; email: string } | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +33,7 @@ export default function EditCaregiverPage() {
       .then((c) => {
         if (!active) return;
         setInitial({ firstName: c.firstName, lastName: c.lastName, qualification: c.qualification });
+        setAccount(c.user ? { id: c.user.id, email: c.user.email } : null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -60,13 +66,20 @@ export default function EditCaregiverPage() {
         ) : loadState === "error" || !initial ? (
           <p className="text-red-600">{t("loadError")}</p>
         ) : (
-          <CaregiverEditForm
-            initial={initial}
-            submitting={submitting}
-            error={error}
-            onSubmit={handleSubmit}
-            onCancel={() => router.replace("/caregivers")}
-          />
+          <>
+            <CaregiverEditForm
+              initial={initial}
+              submitting={submitting}
+              error={error}
+              onSubmit={handleSubmit}
+              onCancel={() => router.replace("/caregivers")}
+            />
+            <CaregiverAccountPanel
+              caregiverId={id}
+              account={account}
+              currentRole={user?.role}
+            />
+          </>
         )}
       </div>
     </section>

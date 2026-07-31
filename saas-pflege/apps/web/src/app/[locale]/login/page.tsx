@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useAuth } from "@/lib/auth/auth-context";
+import { ROLE_NOT_ALLOWED, useAuth } from "@/lib/auth/auth-context";
 import { ApiError } from "@len-len/api-client";
 
 export default function LoginPage() {
@@ -30,7 +30,9 @@ export default function LoginPage() {
       });
       router.replace("/dashboard");
     } catch (err) {
-      if (err instanceof ApiError && (err.status === 401 || err.status === 400)) {
+      if (err instanceof Error && err.message === ROLE_NOT_ALLOWED) {
+        setError(t("mobileOnly"));
+      } else if (err instanceof ApiError && (err.status === 401 || err.status === 400)) {
         setError(t("invalidCredentials"));
       } else {
         setError(tc("errorGeneric"));

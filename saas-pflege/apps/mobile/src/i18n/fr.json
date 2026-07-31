@@ -18,6 +18,18 @@
       "invalidCredentials": "Identifiants invalides.",
       "fachkraftOnly": "Cette application est réservée aux soignants. Veuillez utiliser l'application web.",
       "networkError": "Serveur injoignable. Vérifiez votre connexion (sur un appareil, EXPO_PUBLIC_API_URL doit pointer vers l'IP LAN de votre ordinateur)."
+    },
+    "changePassword": {
+      "title": "Changer le mot de passe",
+      "subtitle": "Votre mot de passe a été attribué par l'administration. Veuillez en définir un personnel.",
+      "current": "Mot de passe temporaire",
+      "new": "Nouveau mot de passe",
+      "confirm": "Confirmer le nouveau mot de passe",
+      "submit": "Changer le mot de passe",
+      "rules": "Au moins 12 caractères, dont une minuscule, une majuscule et un chiffre.",
+      "mismatch": "Les deux mots de passe ne correspondent pas.",
+      "sameAsCurrent": "Le nouveau mot de passe doit être différent de l'actuel.",
+      "wrongCurrent": "Le mot de passe temporaire est incorrect."
     }
   },
   "today": {

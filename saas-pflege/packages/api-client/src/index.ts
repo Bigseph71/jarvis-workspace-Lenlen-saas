@@ -9,6 +9,7 @@ export * from "./client";
 export * from "./auth";
 export * from "./patients";
 export * from "./caregivers";
+export * from "./users";
 export * from "./visits";
 export * from "./chat";
 export * from "./vehicles";

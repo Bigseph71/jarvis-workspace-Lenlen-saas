@@ -10,6 +10,12 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   organizationId: string;
+  /**
+   * true = das Konto hat ein temporäres Passwort. Bis zum Wechsel per
+   * changePassword() beantwortet das Backend jeden anderen Endpoint mit 403
+   * (Code "PasswordChangeRequired").
+   */
+  mustChangePassword: boolean;
 }
 
 interface AuthResult {
@@ -31,6 +37,28 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
     method: "POST",
     body: credentials,
     auth: false,
+  });
+  const { storage } = getApiConfig();
+  await storage.setAccessToken(result.accessToken);
+  await storage.setRefreshToken(result.refreshToken);
+  return result.user;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/**
+ * Wechselt das Passwort des angemeldeten Kontos (auch der erzwungene Wechsel
+ * beim ersten Login). Das Backend beendet dabei alle Sitzungen und liefert ein
+ * frisches Token-Paar – das wird hier direkt persistiert, der Nutzer bleibt
+ * also angemeldet.
+ */
+export async function changePassword(input: ChangePasswordInput): Promise<AuthUser> {
+  const result = await apiFetch<AuthResult>("/auth/change-password", {
+    method: "POST",
+    body: input,
   });
   const { storage } = getApiConfig();
   await storage.setAccessToken(result.accessToken);

@@ -18,6 +18,18 @@
       "invalidCredentials": "Ungültige Anmeldedaten.",
       "fachkraftOnly": "Diese App ist nur für Fachkräfte. Bitte nutzen Sie die Web-Anwendung.",
       "networkError": "Server nicht erreichbar. Prüfen Sie Ihre Verbindung (auf dem Gerät muss EXPO_PUBLIC_API_URL auf die LAN-IP des Rechners zeigen)."
+    },
+    "changePassword": {
+      "title": "Passwort ändern",
+      "subtitle": "Ihr Passwort wurde von der Verwaltung vergeben. Bitte legen Sie jetzt ein eigenes fest.",
+      "current": "Temporäres Passwort",
+      "new": "Neues Passwort",
+      "confirm": "Neues Passwort bestätigen",
+      "submit": "Passwort ändern",
+      "rules": "Mindestens 12 Zeichen, davon ein Klein-, ein Großbuchstabe und eine Ziffer.",
+      "mismatch": "Die beiden Passwörter stimmen nicht überein.",
+      "sameAsCurrent": "Das neue Passwort muss sich vom bisherigen unterscheiden.",
+      "wrongCurrent": "Das temporäre Passwort ist falsch."
     }
   },
   "today": {
