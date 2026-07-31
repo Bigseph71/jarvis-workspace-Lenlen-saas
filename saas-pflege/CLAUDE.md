@@ -31,7 +31,12 @@ Multi-Tenant SaaS für KMU im Bereich ambulante Pflege (20–200 Fachkräfte pro
 - **TypeScript strict:** Kein `any`, keine impliziten Types.
 - **Zod** für Input-Validierung auf allen API-Endpoints.
 - **Argon2id** für Passwort-Hashing.
-- **AES-256** für sensible Patientendaten im Ruhezustand.
+- **Verschlüsselung im Ruhezustand:** über den Hoster (Supabase / AWS verschlüsselt
+  die Volumes), nicht auf Feldebene. Es gibt **keine** anwendungsseitige
+  Verschlüsselung einzelner Spalten – Patientendaten stehen im Klartext in
+  PostgreSQL. Die Trennung zwischen Tenants leistet die RLS, nicht Kryptografie.
+  Wer feldweise Verschlüsselung einführt, muss zuerst klären, wie damit noch
+  gesucht und sortiert werden soll (Adressen, Namen).
 - **JWT** (15 min) + Refresh Token mit Rotation.
 - Alle internen Microservices sind netzwerkisoliert (kein direkter Internetzugang).
 - **Keine hardcodierten Strings** im Frontend (next-intl erzwingen).
@@ -134,7 +139,8 @@ Trois modèles indépendants, isolés réseau, accessibles via REST interne :
 ## Sécurité (checklist)
 
 - [ ] Argon2id (hachage mots de passe)
-- [ ] AES-256 (données sensibles au repos)
+- [ ] Chiffrement au repos délégué à l'hébergeur (Supabase/AWS). Pas de
+      chiffrement applicatif champ par champ : décision assumée, pas un oubli
 - [ ] TLS 1.3 + HSTS
 - [ ] CSP strict (pas d'inline script)
 - [ ] Rate limiting Redis sur tous les endpoints

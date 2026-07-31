@@ -62,7 +62,13 @@ travers le pooler Supabase, et le CI ne joue aucune migration.
   l'isolation : l'app exécute ses requêtes via `withTenant(orgId, ...)` qui pose
   `app.current_org` au niveau transaction.
 - TypeScript strict partout, validation Zod côté API, Argon2id pour les mots de
-  passe, AES-256 pour les données patients sensibles.
+  passe.
+- **Chiffrement au repos** : assuré par l'hébergeur (Supabase / AWS chiffre les
+  volumes de stockage), et TLS pour les données en transit. Il n'y a **pas** de
+  chiffrement applicatif champ par champ : les adresses, coordonnées GPS et noms
+  de patients sont lisibles en clair par quiconque accède à la base. La
+  protection contre les accès inter-tenants repose sur la RLS, pas sur du
+  chiffrement.
 
 ## État
 
