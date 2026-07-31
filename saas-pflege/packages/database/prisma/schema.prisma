@@ -133,6 +133,9 @@ model User {
   passwordHash   String   @map("password_hash")
   mfaEnabled     Boolean  @default(false) @map("mfa_enabled")
   mfaSecret      String?  @map("mfa_secret")
+  // Erzwingt den Passwortwechsel beim nächsten Login. Gesetzt, sobald ein
+  // Admin ein temporäres Passwort erzeugt (Anlegen oder Reset eines Kontos).
+  mustChangePassword Boolean @default(false) @map("must_change_password")
   language       Locale   @default(DE)
   isActive       Boolean  @default(true) @map("is_active")
   lastLoginAt    DateTime? @map("last_login_at")

@@ -20,7 +20,8 @@
       "organizationIdHint": "Nur nötig, wenn dieselbe E-Mail in mehreren Organisationen existiert.",
       "submit": "Anmelden",
       "submitting": "Wird angemeldet …",
-      "invalidCredentials": "Ungültige Anmeldedaten."
+      "invalidCredentials": "Ungültige Anmeldedaten.",
+      "mobileOnly": "Fachkräfte melden sich in der mobilen App an, nicht hier."
     }
   },
   "dashboard": {
@@ -143,7 +144,8 @@
       "contractType": "Vertragsart",
       "weeklyHours": "Wochenstunden",
       "workDays": "Arbeitstage",
-      "maxPatients": "Max. Patienten"
+      "maxPatients": "Max. Patienten",
+      "email": "E-Mail"
     },
     "form": {
       "newTitle": "Neue Fachkraft",
@@ -154,14 +156,41 @@
       "saving": "Wird gespeichert …",
       "cancel": "Abbrechen",
       "loadError": "Fachkraft konnte nicht geladen werden.",
-      "limitReached": "Plan-Limit erreicht. Bitte das Abonnement upgraden."
+      "limitReached": "Plan-Limit erreicht. Bitte das Abonnement upgraden.",
+      "optional": "(optional)",
+      "accountHint": "Mit E-Mail wird ein Konto mit temporärem Passwort für die mobile App angelegt. Ohne E-Mail entsteht nur die Personalakte, ohne App-Zugang.",
+      "accountCreatedTitle": "Fachkraft und Konto angelegt",
+      "accountCreatedHint": "Diese Zugangsdaten werden nur einmal angezeigt. Bitte jetzt an die Fachkraft weitergeben.",
+      "accountEmail": "E-Mail",
+      "accountPassword": "Temporäres Passwort",
+      "accountCopy": "Passwort kopieren",
+      "accountCopied": "Kopiert",
+      "accountDone": "Zur Übersicht",
+      "accountFailedTitle": "Konto nicht angelegt",
+      "accountFailed": "Die Fachkraft wurde angelegt, das Benutzerkonto jedoch nicht. Bitte später erneut versuchen.",
+      "accountEmailTaken": "Die Fachkraft wurde angelegt, aber die E-Mail ist in dieser Organisation bereits vergeben. Es wurde kein Konto erstellt."
     },
     "errors": {
       "firstName": "Vorname: 1–80 Zeichen.",
       "lastName": "Nachname: 1–80 Zeichen.",
       "weeklyHours": "Wochenstunden: über 0 bis 60.",
       "workDays": "Mindestens einen Arbeitstag wählen.",
-      "maxPatients": "Max. Patienten: 0–500."
+      "maxPatients": "Max. Patienten: 0–500.",
+      "email": "Bitte eine gültige E-Mail-Adresse angeben."
+    },
+    "account": {
+      "title": "App-Zugang",
+      "existing": "Konto vorhanden:",
+      "none": "Diese Fachkraft hat noch keinen Zugang zur mobilen App.",
+      "create": "Zugang anlegen",
+      "creating": "Wird angelegt …",
+      "emailTaken": "Diese E-Mail ist in dieser Organisation bereits vergeben.",
+      "failed": "Der Zugang konnte nicht angelegt werden. Bitte später erneut versuchen.",
+      "reset": "Passwort zurücksetzen",
+      "resetting": "Wird zurückgesetzt …",
+      "resetConfirm": "Neues temporäres Passwort für {email} erzeugen? Das bisherige Passwort wird ungültig und alle aktiven Sitzungen werden beendet.",
+      "resetHint": "Neues temporäres Passwort. Es wird nur einmal angezeigt, das bisherige ist ab sofort ungültig.",
+      "resetFailed": "Das Passwort konnte nicht zurückgesetzt werden. Bitte später erneut versuchen."
     }
   },
   "visits": {

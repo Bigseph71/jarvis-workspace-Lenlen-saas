@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 
 /** Verteiler: je nach Sitzung zur Anmeldung oder zur Tagesroute. */
 export default function Index() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
 
   if (status === "loading") {
     return (
@@ -13,7 +13,11 @@ export default function Index() {
       </View>
     );
   }
-  return <Redirect href={status === "authenticated" ? "/today" : "/login"} />;
+  if (status !== "authenticated") {
+    return <Redirect href="/login" />;
+  }
+  // Temporäres Passwort: alles andere ist ohnehin serverseitig blockiert.
+  return <Redirect href={user?.mustChangePassword ? "/change-password" : "/today"} />;
 }
 
 const styles = StyleSheet.create({

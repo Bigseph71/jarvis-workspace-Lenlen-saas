@@ -1,5 +1,6 @@
-import { prisma, withTenant, UserRole, type User } from "@len-len/database";
+import { prisma, withTenant, AuditAction, UserRole, type User } from "@len-len/database";
 import { hashPassword, verifyPassword } from "../../lib/password.js";
+import { writeAudit } from "../../lib/audit.js";
 import {
   signAccessToken,
   generateRefreshToken,
@@ -10,6 +11,7 @@ import { AppError, ConflictError, UnauthorizedError } from "../../lib/errors.js"
 import type {
   RegisterOrganizationInput,
   LoginInput,
+  ChangePasswordInput,
 } from "./auth.schemas.js";
 
 export interface AuthTokens {
@@ -23,6 +25,8 @@ export interface AuthResult extends AuthTokens {
     email: string;
     role: UserRole;
     organizationId: string;
+    /** true = der Client muss zuerst das Passwort wechseln. */
+    mustChangePassword: boolean;
   };
 }
 
@@ -32,12 +36,18 @@ function toPublicUser(user: User): AuthResult["user"] {
     email: user.email,
     role: user.role,
     organizationId: user.organizationId,
+    mustChangePassword: user.mustChangePassword,
   };
 }
 
 /** Erstellt Access- + Refresh-Token und persistiert den Refresh-Hash. */
 async function issueTokens(user: User): Promise<AuthTokens> {
-  const accessToken = signAccessToken({ sub: user.id, org: user.organizationId, role: user.role });
+  const accessToken = signAccessToken({
+    sub: user.id,
+    org: user.organizationId,
+    role: user.role,
+    chpw: user.mustChangePassword,
+  });
   const { token: refreshToken, tokenHash } = generateRefreshToken();
 
   await prisma.refreshToken.create({
@@ -149,7 +159,12 @@ export async function rotateRefreshToken(rawToken: string): Promise<AuthResult> 
 
   // Rotation: altes Token widerrufen, neues Paar ausgeben (atomar).
   const { user } = existing;
-  const accessToken = signAccessToken({ sub: user.id, org: user.organizationId, role: user.role });
+  const accessToken = signAccessToken({
+    sub: user.id,
+    org: user.organizationId,
+    role: user.role,
+    chpw: user.mustChangePassword,
+  });
   const next = generateRefreshToken();
 
   await prisma.$transaction([
@@ -172,6 +187,64 @@ export async function logout(rawToken: string): Promise<void> {
     where: { tokenHash, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+}
+
+/**
+ * Passwortwechsel des eingeloggten Users. Deckt auch den erzwungenen Wechsel
+ * beim ersten Login ab (mustChangePassword), den der authenticate-Hook
+ * durchsetzt.
+ *
+ * Alle bestehenden Sitzungen werden widerrufen (ein temporäres Passwort war
+ * einem Admin bekannt und könnte anderswo aktiv sein). Damit der Client danach
+ * nicht abgemeldet ist, wird direkt ein frisches Token-Paar ausgegeben – dessen
+ * Access-Token trägt das zurückgesetzte chpw-Flag.
+ */
+export async function changePassword(
+  userId: string,
+  organizationId: string,
+  input: ChangePasswordInput,
+): Promise<AuthResult> {
+  const user = await prisma.user.findFirst({ where: { id: userId, organizationId } });
+  if (!user || !user.isActive) {
+    throw new UnauthorizedError("Konto nicht gefunden oder deaktiviert");
+  }
+
+  const ok = await verifyPassword(user.passwordHash, input.currentPassword);
+  if (!ok) {
+    throw new UnauthorizedError("Aktuelles Passwort ist falsch");
+  }
+
+  const passwordHash = await hashPassword(input.newPassword);
+
+  const updated = await withTenant(organizationId, async (tx) => {
+    const next = await tx.user.update({
+      where: { id: user.id },
+      data: { passwordHash, mustChangePassword: false },
+    });
+
+    // Alle Sitzungen beenden – inklusive der aufrufenden. Das neue Paar unten
+    // ersetzt sie.
+    await tx.refreshToken.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    await writeAudit(
+      tx,
+      { organizationId, userId: user.id },
+      {
+        action: AuditAction.UPDATE,
+        entityType: "user",
+        entityId: user.id,
+        metadata: { operation: "password_change" },
+      },
+    );
+
+    return next;
+  });
+
+  const tokens = await issueTokens(updated);
+  return { ...tokens, user: toPublicUser(updated) };
 }
 
 /**

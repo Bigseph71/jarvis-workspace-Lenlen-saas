@@ -7,6 +7,7 @@ import {
   loginSchema,
   refreshSchema,
   logoutSchema,
+  changePasswordSchema,
 } from "./auth.schemas.js";
 import {
   registerOrganization,
@@ -14,6 +15,7 @@ import {
   rotateRefreshToken,
   logout,
   getProfile,
+  changePassword,
 } from "./auth.service.js";
 
 // Strengeres Limit für Auth-Endpoints (Brute-Force-Schutz).
@@ -53,6 +55,18 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const { userId, organizationId } = request.user!;
     return getProfile(userId, organizationId);
   });
+
+  // Passwortwechsel (auch der beim ersten Login erzwungene). Bleibt trotz
+  // gesetztem chpw-Flag erreichbar – siehe PASSWORD_CHANGE_EXEMPT.
+  app.post(
+    "/auth/change-password",
+    { ...strictLimit, preHandler: [authenticate] },
+    async (request) => {
+      const input = changePasswordSchema.parse(request.body);
+      const { userId, organizationId } = request.user!;
+      return changePassword(userId, organizationId, input);
+    },
+  );
 
   // Beispiel einer rollengeschützten Route (nur Admin-Ebene).
   app.get(

@@ -20,7 +20,7 @@ const POLL_INTERVAL_MS = 30_000;
 export default function ChatScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
 
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [draft, setDraft] = useState("");
@@ -63,6 +63,8 @@ export default function ChatScreen() {
   }, [draft, sending, load, t]);
 
   if (status === "unauthenticated") return <Redirect href="/login" />;
+  // Ohne Passwortwechsel liefert das Backend hier nur 403.
+  if (user?.mustChangePassword) return <Redirect href="/change-password" />;
 
   const timeOf = (iso: string) =>
     new Date(iso).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" });

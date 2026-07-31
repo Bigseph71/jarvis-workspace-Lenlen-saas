@@ -27,6 +27,9 @@ export interface Caregiver {
 
 export interface CaregiverDetail extends Caregiver {
   _count?: { assignedPatients: number };
+  /** Verknüpftes Login-Konto, null solange kein App-Zugang besteht. */
+  userId: string | null;
+  user: { id: string; email: string; isActive: boolean } | null;
 }
 
 /** Vertrags-Block (Regel métier 5: bei jeder Fachkraft Pflicht). */

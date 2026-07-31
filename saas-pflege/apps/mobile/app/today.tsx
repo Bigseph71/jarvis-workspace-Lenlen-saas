@@ -106,6 +106,8 @@ export default function TodayScreen() {
   );
 
   if (status === "unauthenticated") return <Redirect href="/login" />;
+  // Ohne Passwortwechsel liefert das Backend hier nur 403.
+  if (user?.mustChangePassword) return <Redirect href="/change-password" />;
   if (status === "loading" || !user) {
     return (
       <View style={styles.center}>

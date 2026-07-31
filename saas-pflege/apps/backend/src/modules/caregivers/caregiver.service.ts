@@ -55,7 +55,12 @@ export async function getCaregiver(ctx: TenantContext, id: string): Promise<unkn
   return withTenant(ctx.organizationId, async (tx) => {
     const caregiver = await tx.caregiver.findFirst({
       where: { id, organizationId: ctx.organizationId },
-      include: { _count: { select: { assignedPatients: true } } },
+      include: {
+        _count: { select: { assignedPatients: true } },
+        // Verknüpftes Login-Konto (ohne Hash), damit die Oberfläche zeigen
+        // kann, ob bereits ein App-Zugang besteht.
+        user: { select: { id: true, email: true, isActive: true } },
+      },
     });
     if (!caregiver) throw new AppError(404, "Fachkraft nicht gefunden", "NotFound");
     return caregiver;
