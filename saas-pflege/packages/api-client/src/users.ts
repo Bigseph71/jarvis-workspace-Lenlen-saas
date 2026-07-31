@@ -44,6 +44,12 @@ export interface PasswordReset {
   temporaryPassword: string;
   /** Beendete Sitzungen – der Reset widerruft alle aktiven Anmeldungen. */
   revokedSessions: number;
+  /**
+   * false = die Sperrliste war nicht erreichbar. Passwort und Refresh-Token sind
+   * zurückgesetzt, ein bereits ausgestelltes Access-Token bleibt aber bis zu
+   * seinem Ablauf gültig (max. eine Access-Token-Laufzeit).
+   */
+  accessRevokedImmediately: boolean;
 }
 
 /**

@@ -18,10 +18,17 @@ export interface AccessTokenClaims {
    * aus, das Flag ist also nie länger als eine Access-Token-Laufzeit veraltet.
    */
   chpw?: boolean;
+  /**
+   * Ausstellungszeitpunkt (Sekunden). Von jsonwebtoken automatisch gesetzt, beim
+   * Signieren daher nicht anzugeben. Wird gegen die Sperrliste geprüft
+   * (token-revocation.ts).
+   */
+  iat?: number;
 }
 
 export function signAccessToken(claims: AccessTokenClaims): string {
-  const { sub, ...rest } = claims;
+  // iat setzt jsonwebtoken selbst; ein mitgegebener Wert würde kollidieren.
+  const { sub, iat: _iat, ...rest } = claims;
   return jwt.sign(rest, env.JWT_ACCESS_SECRET, {
     subject: sub,
     expiresIn: env.JWT_ACCESS_TTL as jwt.SignOptions["expiresIn"],
@@ -40,6 +47,7 @@ export function verifyAccessToken(token: string): AccessTokenClaims {
       org: (decoded as jwt.JwtPayload).org as string,
       role: (decoded as jwt.JwtPayload).role as UserRole,
       chpw: (decoded as jwt.JwtPayload).chpw === true,
+      iat: (decoded as jwt.JwtPayload).iat,
     };
   } catch {
     throw new UnauthorizedError("Token ungültig oder abgelaufen");

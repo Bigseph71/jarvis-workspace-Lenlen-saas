@@ -1,6 +1,7 @@
 import { prisma, withTenant, AuditAction, UserRole, type User } from "@len-len/database";
 import { hashPassword, verifyPassword } from "../../lib/password.js";
 import { writeAudit } from "../../lib/audit.js";
+import { revokeAccessTokensBefore } from "../../lib/token-revocation.js";
 import {
   signAccessToken,
   generateRefreshToken,
@@ -242,6 +243,11 @@ export async function changePassword(
 
     return next;
   });
+
+  // Auch die bereits ausgestellten Access-Token entwerten – ein Wechsel wird oft
+  // aus Verdacht ausgelöst. Muss VOR issueTokens laufen: der Vergleich ist
+  // sekundengenau und strikt, das neue Token überlebt seine eigene Sperre.
+  await revokeAccessTokensBefore(updated.id);
 
   const tokens = await issueTokens(updated);
   return { ...tokens, user: toPublicUser(updated) };

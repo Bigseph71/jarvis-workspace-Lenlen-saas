@@ -1,6 +1,7 @@
 import { AuditAction, UserRole, withTenant, type Locale } from "@len-len/database";
 import { AppError, ConflictError, ForbiddenError } from "../../lib/errors.js";
 import { generateTemporaryPassword, hashPassword } from "../../lib/password.js";
+import { revokeAccessTokensBefore } from "../../lib/token-revocation.js";
 import { writeAudit } from "../../lib/audit.js";
 import type { TenantContext } from "../../lib/context.js";
 import type { CreateFachkraftUserInput } from "./user.schemas.js";
@@ -97,6 +98,12 @@ export interface PasswordReset {
   temporaryPassword: string;
   /** Anzahl der dabei beendeten Sitzungen (widerrufene Refresh-Token). */
   revokedSessions: number;
+  /**
+   * false = die Sperrliste war nicht erreichbar. Passwort und Refresh-Token sind
+   * trotzdem zurückgesetzt, ein bereits ausgestelltes Access-Token bleibt aber
+   * bis zu seinem Ablauf gültig.
+   */
+  accessRevokedImmediately: boolean;
 }
 
 /**
@@ -117,7 +124,7 @@ export async function resetFachkraftPassword(
   const temporaryPassword = generateTemporaryPassword();
   const passwordHash = await hashPassword(temporaryPassword);
 
-  return withTenant(ctx.organizationId, async (tx) => {
+  const result = await withTenant(ctx.organizationId, async (tx) => {
     const existing = await tx.user.findFirst({
       where: { id: userId, organizationId: ctx.organizationId },
       select: { id: true, role: true },
@@ -148,4 +155,11 @@ export async function resetFachkraftPassword(
 
     return { user, temporaryPassword, revokedSessions: revoked.count };
   });
+
+  // Nach dem Commit: bereits ausgestellte Access-Token sofort entwerten. Vor dem
+  // Commit wäre der Schnitt umsonst, falls die Transaktion noch scheitert – und
+  // ein Redis-Aufruf hätte die Transaktion unnötig offen gehalten.
+  const accessRevokedImmediately = await revokeAccessTokensBefore(result.user.id);
+
+  return { ...result, accessRevokedImmediately };
 }
