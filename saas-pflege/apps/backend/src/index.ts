@@ -31,6 +31,7 @@ import { vrptwWsRoutes } from "./modules/vrptw/vrptw.ws.js";
 import { startVrptwWorker } from "./modules/vrptw/vrptw.worker.js";
 import { trackingRoutes } from "./modules/tracking/tracking.routes.js";
 import { trackingWsRoutes } from "./modules/tracking/tracking.ws.js";
+import { hrRoutes } from "./modules/hr/hr.routes.js";
 
 const isProduction = env.NODE_ENV === "production";
 
@@ -115,6 +116,7 @@ await app.register(vrptwRoutes);
 await app.register(vrptwWsRoutes);
 await app.register(trackingRoutes);
 await app.register(trackingWsRoutes);
+await app.register(hrRoutes);
 
 // Async Geocoding-Worker (in-process für MVP). In Test-Umgebung aus.
 if (env.NODE_ENV !== "test") {

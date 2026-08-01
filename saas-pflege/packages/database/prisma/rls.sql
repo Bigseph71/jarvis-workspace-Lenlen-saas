@@ -40,7 +40,10 @@ DECLARE
   tenant_tables text[] := ARRAY[
     'users', 'caregivers', 'patients', 'visits',
     'vehicles', 'routes', 'audit_logs', 'messages',
-    'gps_positions', 'invoices'
+    'gps_positions', 'invoices',
+    -- HR-Modul. Auch die Integrationspfade (CSV-Import, Personio) laufen
+    -- über withTenant() und unterliegen diesen Policies.
+    'contracts', 'work_schedules', 'absences'
   ];
 BEGIN
   FOREACH tbl IN ARRAY tenant_tables LOOP

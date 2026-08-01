@@ -87,6 +87,31 @@ enum AuditAction {
   DELETE
 }
 
+enum AbsenceType {
+  VACATION
+  SICK
+  TRAINING
+  PARENTAL
+  UNPAID
+  OTHER
+}
+
+enum AbsenceStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  CANCELED
+}
+
+// Herkunftssystem eines HR-Datensatzes. Zusammen mit external_id bildet es den
+// Abgleichschlüssel für Importe und Konnektoren (CLAUDE.md, "Intégrations HR
+// tierces"): derselbe Satz zweimal importiert aktualisiert, statt zu doppeln.
+enum ExternalSource {
+  MANUAL
+  CSV
+  PERSONIO
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 //  Tenant-Wurzel
 // ─────────────────────────────────────────────────────────────────────────
@@ -107,16 +132,19 @@ model Organization {
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
-  users      User[]
-  caregivers Caregiver[]
-  patients   Patient[]
-  visits     Visit[]
-  vehicles   Vehicle[]
-  routes     Route[]
-  auditLogs  AuditLog[]
-  messages   Message[]
-  gpsPositions GpsPosition[]
-  invoices   Invoice[]
+  users         User[]
+  caregivers    Caregiver[]
+  patients      Patient[]
+  visits        Visit[]
+  vehicles      Vehicle[]
+  routes        Route[]
+  auditLogs     AuditLog[]
+  messages      Message[]
+  gpsPositions  GpsPosition[]
+  invoices      Invoice[]
+  contracts     Contract[]
+  workSchedules WorkSchedule[]
+  absences      Absence[]
 
   @@map("organizations")
 }
@@ -126,27 +154,28 @@ model Organization {
 // ─────────────────────────────────────────────────────────────────────────
 
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
-  role           UserRole
-  email          String
-  passwordHash   String   @map("password_hash")
-  mfaEnabled     Boolean  @default(false) @map("mfa_enabled")
-  mfaSecret      String?  @map("mfa_secret")
+  id                 String    @id @default(uuid()) @db.Uuid
+  organizationId     String    @map("organization_id") @db.Uuid
+  role               UserRole
+  email              String
+  passwordHash       String    @map("password_hash")
+  mfaEnabled         Boolean   @default(false) @map("mfa_enabled")
+  mfaSecret          String?   @map("mfa_secret")
   // Erzwingt den Passwortwechsel beim nächsten Login. Gesetzt, sobald ein
   // Admin ein temporäres Passwort erzeugt (Anlegen oder Reset eines Kontos).
-  mustChangePassword Boolean @default(false) @map("must_change_password")
-  language       Locale   @default(DE)
-  isActive       Boolean  @default(true) @map("is_active")
-  lastLoginAt    DateTime? @map("last_login_at")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  language           Locale    @default(DE)
+  isActive           Boolean   @default(true) @map("is_active")
+  lastLoginAt        DateTime? @map("last_login_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  caregiver     Caregiver?
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
-  sentMessages  Message[]
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caregiver       Caregiver?
+  refreshTokens   RefreshToken[]
+  auditLogs       AuditLog[]
+  sentMessages    Message[]
+  decidedAbsences Absence[]      @relation("AbsenceDecider")
 
   // E-Mail eindeutig pro Tenant
   @@unique([organizationId, email])
@@ -155,12 +184,12 @@ model User {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  tokenHash String   @unique @map("token_hash")
-  expiresAt DateTime @map("expires_at")
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
   revokedAt DateTime? @map("revoked_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -179,6 +208,10 @@ model Caregiver {
   firstName      String        @map("first_name")
   lastName       String        @map("last_name")
   qualification  Qualification
+  // Vertrags-Momentaufnahme: Kopie des AKTUELL gültigen Contract-Satzes.
+  // Quelle der Wahrheit ist die Tabelle contracts (versioniert über
+  // valid_from/valid_until); diese Felder werden vom HR-Service mitgeführt,
+  // damit Planung und VRPTW ohne Join auf den geltenden Vertrag zugreifen.
   contractType   ContractType  @map("contract_type")
   weeklyHours    Decimal       @map("weekly_hours") @db.Decimal(5, 2)
   workDays       Json          @default("[]") @map("work_days") // z.B. ["MON","TUE","WED"]
@@ -187,17 +220,121 @@ model Caregiver {
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user              User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  assignedPatients  Patient[]    @relation("AssignedCaregiver")
-  performedVisits   Visit[]      @relation("PerformingCaregiver")
-  assignedVisits    Visit[]      @relation("AssignedVisitCaregiver")
-  routes            Route[]
-  messages          Message[]
-  gpsPositions      GpsPosition[]
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user             User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignedPatients Patient[]      @relation("AssignedCaregiver")
+  performedVisits  Visit[]        @relation("PerformingCaregiver")
+  assignedVisits   Visit[]        @relation("AssignedVisitCaregiver")
+  routes           Route[]
+  messages         Message[]
+  gpsPositions     GpsPosition[]
+  contracts        Contract[]
+  workSchedules    WorkSchedule[]
+  absences         Absence[]
 
   @@index([organizationId])
   @@map("caregivers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  HR-Modul (Verträge, Dienstpläne, Abwesenheiten)
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Alle drei Entitäten tragen external_id + external_source + updated_at. Das
+// ist die Vorbedingung dafür, dass CSV-Import, Personio-Konnektor und
+// DATEV-Webhook (Phase 3) andocken, ohne das Modell umzubauen:
+//   - external_id/external_source = Abgleichschlüssel (idempotenter Re-Import)
+//   - updated_at                  = inkrementelle Synchronisation
+// Siehe CLAUDE.md, Abschnitt "Intégrations HR tierces (Phase 3)".
+
+// Versionierter Vertrag einer Fachkraft. Zu einem Zeitpunkt gilt genau ein
+// Vertrag (Überschneidungen weist der Service zurück, siehe hr.rules.ts).
+// valid_until = null bedeutet laufend.
+model Contract {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  caregiverId    String         @map("caregiver_id") @db.Uuid
+  contractType   ContractType   @map("contract_type")
+  weeklyHours    Decimal        @map("weekly_hours") @db.Decimal(5, 2)
+  workDays       Json           @default("[]") @map("work_days")
+  maxPatients    Int            @default(0) @map("max_patients")
+  validFrom      DateTime       @map("valid_from") @db.Date
+  validUntil     DateTime?      @map("valid_until") @db.Date
+  externalId     String?        @map("external_id")
+  externalSource ExternalSource @default(MANUAL) @map("external_source")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caregiver    Caregiver    @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Abgleichschlüssel. Mehrere NULL-external_id sind in Postgres erlaubt,
+  // manuell angelegte Verträge kollidieren also nie miteinander.
+  @@unique([organizationId, externalSource, externalId])
+  @@index([organizationId])
+  @@index([organizationId, caregiverId, validFrom])
+  @@index([organizationId, updatedAt])
+  @@map("contracts")
+}
+
+// Geplante Arbeitszeit an einem Tag (Soll, nicht Ist). Zeiten als Minuten seit
+// 00:00 lokaler Zeit: rechenbar (Ist-Stunden, Auslastung) und frei von
+// Zeitzonen-Fallen, die ein TIME-Feld mit sich brächte.
+model WorkSchedule {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  caregiverId    String         @map("caregiver_id") @db.Uuid
+  date           DateTime       @db.Date
+  startMinute    Int            @map("start_minute")
+  endMinute      Int            @map("end_minute")
+  breakMinutes   Int            @default(0) @map("break_minutes")
+  note           String?
+  externalId     String?        @map("external_id")
+  externalSource ExternalSource @default(MANUAL) @map("external_source")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caregiver    Caregiver    @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Natürlicher Schlüssel: eine Schicht je Fachkraft, Tag und Startzeit. Ein
+  // Re-Import derselben Datei aktualisiert damit auch ohne external_id.
+  @@unique([organizationId, caregiverId, date, startMinute])
+  @@unique([organizationId, externalSource, externalId])
+  @@index([organizationId])
+  @@index([organizationId, date])
+  @@index([organizationId, updatedAt])
+  @@map("work_schedules")
+}
+
+// Abwesenheit (Urlaub, Krankheit, Fortbildung ...). Genehmigte Abwesenheiten
+// blockieren die Planung; der DATEV-Webhook exportiert genau diese (Phase 3).
+model Absence {
+  id              String         @id @default(uuid()) @db.Uuid
+  organizationId  String         @map("organization_id") @db.Uuid
+  caregiverId     String         @map("caregiver_id") @db.Uuid
+  type            AbsenceType
+  status          AbsenceStatus  @default(REQUESTED)
+  startDate       DateTime       @map("start_date") @db.Date
+  endDate         DateTime       @map("end_date") @db.Date
+  reason          String?
+  decidedByUserId String?        @map("decided_by_user_id") @db.Uuid
+  decidedAt       DateTime?      @map("decided_at")
+  externalId      String?        @map("external_id")
+  externalSource  ExternalSource @default(MANUAL) @map("external_source")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caregiver    Caregiver    @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  decidedBy    User?        @relation("AbsenceDecider", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, externalSource, externalId])
+  @@index([organizationId])
+  @@index([organizationId, caregiverId, startDate])
+  @@index([organizationId, status, startDate])
+  @@index([organizationId, updatedAt])
+  @@map("absences")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -260,35 +397,35 @@ model Patient {
 // ─────────────────────────────────────────────────────────────────────────
 
 model Visit {
-  id                  String      @id @default(uuid()) @db.Uuid
-  organizationId      String      @map("organization_id") @db.Uuid
-  patientId           String      @map("patient_id") @db.Uuid
+  id                   String      @id @default(uuid()) @db.Uuid
+  organizationId       String      @map("organization_id") @db.Uuid
+  patientId            String      @map("patient_id") @db.Uuid
   // caregiverId = effektiv durchgeführt (kann Vertretung sein)
-  caregiverId         String?     @map("caregiver_id") @db.Uuid
+  caregiverId          String?     @map("caregiver_id") @db.Uuid
   // assignedCaregiverId = attitré (Stamm-Fachkraft)
-  assignedCaregiverId String?     @map("assigned_caregiver_id") @db.Uuid
-  routeId             String?     @map("route_id") @db.Uuid
-  scheduledAt         DateTime    @map("scheduled_at")
-  status              VisitStatus @default(PLANNED)
-  isEmergency         Boolean     @default(false) @map("is_emergency")
-  emergencyReason     String?     @map("emergency_reason")
-  gpsArrivalAt        DateTime?   @map("gps_arrival_at")
-  gpsDepartureAt      DateTime?   @map("gps_departure_at")
+  assignedCaregiverId  String?     @map("assigned_caregiver_id") @db.Uuid
+  routeId              String?     @map("route_id") @db.Uuid
+  scheduledAt          DateTime    @map("scheduled_at")
+  status               VisitStatus @default(PLANNED)
+  isEmergency          Boolean     @default(false) @map("is_emergency")
+  emergencyReason      String?     @map("emergency_reason")
+  gpsArrivalAt         DateTime?   @map("gps_arrival_at")
+  gpsDepartureAt       DateTime?   @map("gps_departure_at")
   // Position beim Pointage (Mobile-App). Genauigkeit in Metern.
-  gpsArrivalLat       Decimal?    @map("gps_arrival_lat") @db.Decimal(9, 6)
-  gpsArrivalLng       Decimal?    @map("gps_arrival_lng") @db.Decimal(9, 6)
-  gpsArrivalAccuracy  Float?      @map("gps_arrival_accuracy")
-  gpsDepartureLat     Decimal?    @map("gps_departure_lat") @db.Decimal(9, 6)
-  gpsDepartureLng     Decimal?    @map("gps_departure_lng") @db.Decimal(9, 6)
-  gpsDepartureAccuracy Float?     @map("gps_departure_accuracy")
-  createdAt           DateTime    @default(now()) @map("created_at")
-  updatedAt           DateTime    @updatedAt @map("updated_at")
+  gpsArrivalLat        Decimal?    @map("gps_arrival_lat") @db.Decimal(9, 6)
+  gpsArrivalLng        Decimal?    @map("gps_arrival_lng") @db.Decimal(9, 6)
+  gpsArrivalAccuracy   Float?      @map("gps_arrival_accuracy")
+  gpsDepartureLat      Decimal?    @map("gps_departure_lat") @db.Decimal(9, 6)
+  gpsDepartureLng      Decimal?    @map("gps_departure_lng") @db.Decimal(9, 6)
+  gpsDepartureAccuracy Float?      @map("gps_departure_accuracy")
+  createdAt            DateTime    @default(now()) @map("created_at")
+  updatedAt            DateTime    @updatedAt @map("updated_at")
 
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  patient           Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  caregiver         Caregiver?   @relation("PerformingCaregiver", fields: [caregiverId], references: [id], onDelete: SetNull)
-  assignedCaregiver Caregiver?   @relation("AssignedVisitCaregiver", fields: [assignedCaregiverId], references: [id], onDelete: SetNull)
-  route             Route?       @relation(fields: [routeId], references: [id], onDelete: SetNull)
+  organization      Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  patient           Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  caregiver         Caregiver?    @relation("PerformingCaregiver", fields: [caregiverId], references: [id], onDelete: SetNull)
+  assignedCaregiver Caregiver?    @relation("AssignedVisitCaregiver", fields: [assignedCaregiverId], references: [id], onDelete: SetNull)
+  route             Route?        @relation(fields: [routeId], references: [id], onDelete: SetNull)
   gpsPositions      GpsPosition[]
 
   @@index([organizationId])
@@ -355,19 +492,19 @@ model Route {
 // mit Zeitstempel, tenant-isoliert per RLS. distanceToPatientM/geofenceBreach
 // werden beim Ingest berechnet (Geofencing 500 m um den geplanten Patienten).
 model GpsPosition {
-  id                 String    @id @default(uuid()) @db.Uuid
-  organizationId     String    @map("organization_id") @db.Uuid
-  caregiverId        String    @map("caregiver_id") @db.Uuid
-  visitId            String?   @map("visit_id") @db.Uuid
-  latitude           Decimal   @db.Decimal(9, 6)
-  longitude          Decimal   @db.Decimal(9, 6)
+  id                 String   @id @default(uuid()) @db.Uuid
+  organizationId     String   @map("organization_id") @db.Uuid
+  caregiverId        String   @map("caregiver_id") @db.Uuid
+  visitId            String?  @map("visit_id") @db.Uuid
+  latitude           Decimal  @db.Decimal(9, 6)
+  longitude          Decimal  @db.Decimal(9, 6)
   accuracy           Float?
   // Entfernung zum geplanten Patienten (m) + Geofence-Verletzung (>500 m).
-  distanceToPatientM Float?    @map("distance_to_patient_m")
-  geofenceBreach     Boolean   @default(false) @map("geofence_breach")
+  distanceToPatientM Float?   @map("distance_to_patient_m")
+  geofenceBreach     Boolean  @default(false) @map("geofence_breach")
   // recordedAt = Zeitpunkt auf dem Gerät; createdAt = Eingang im Backend.
-  recordedAt         DateTime  @map("recorded_at")
-  createdAt          DateTime  @default(now()) @map("created_at")
+  recordedAt         DateTime @map("recorded_at")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   caregiver    Caregiver    @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
