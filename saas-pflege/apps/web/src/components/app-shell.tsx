@@ -7,11 +7,20 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 
 // Navigationspunkte des angemeldeten Bereichs. `roles` beschränkt die Sichtbarkeit.
+//
+// Diese Listen spiegeln die requireRole()-Wächter des Backends. Sie sind KEINE
+// Absicherung – die leistet das Backend – sondern verhindern, dass jemand einen
+// Menüpunkt sieht, der ihm nur einen 403 liefert. Wer eine Route absichert,
+// pflegt hier mit.
 interface NavItem {
   href: string;
   key: string;
   roles?: readonly UserRole[];
 }
+
+/** Rollen des jeweiligen Backend-Wächters, als benannte Konstanten. */
+const PLANNING: readonly UserRole[] = ["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"];
+const PLANNING_AND_HR: readonly UserRole[] = [...PLANNING, "HR"];
 
 /**
  * Sichtbar bleiben die Stammdaten und die Planung – das, was täglich
@@ -19,11 +28,17 @@ interface NavItem {
  */
 const PRIMARY_ITEMS: NavItem[] = [
   { href: "/dashboard", key: "dashboard" },
-  { href: "/patients", key: "patients" },
-  { href: "/caregivers", key: "caregivers" },
-  { href: "/visits", key: "visits" },
-  // HR: Abwesenheiten. Lesen darf auch die Koordination, die Planung hängt davon ab.
-  { href: "/absences", key: "absences", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "HR", "KOORDINATOR"] },
+  // Patientendaten: laut RBAC-Tabelle nichts für die HR-Rolle
+  // (patient.routes.ts: canManage).
+  { href: "/patients", key: "patients", roles: PLANNING },
+  // Fachkräfte: HR braucht sie für das Vertragsmodul (caregiver.routes.ts: canRead).
+  { href: "/caregivers", key: "caregivers", roles: PLANNING_AND_HR },
+  // Besuchsplanung (visit.routes.ts: canPlan). Die Fachkraft plant nicht, sie
+  // sieht ihre Tour in der mobilen App.
+  { href: "/visits", key: "visits", roles: PLANNING },
+  // Abwesenheiten: HR pflegt sie, die Koordination liest sie – die Planung
+  // hängt davon ab.
+  { href: "/absences", key: "absences", roles: PLANNING_AND_HR },
 ];
 
 /**
@@ -32,8 +47,8 @@ const PRIMARY_ITEMS: NavItem[] = [
  * jedem neuen Modul weiter (die Dienstpläne kommen noch).
  */
 const SECONDARY_ITEMS: NavItem[] = [
-  { href: "/planung", key: "tracking", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"] },
-  { href: "/chat", key: "chat", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"] },
+  { href: "/planung", key: "tracking", roles: PLANNING },
+  { href: "/chat", key: "chat", roles: PLANNING },
   { href: "/leasing", key: "leasing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
   { href: "/billing", key: "billing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
 ];
