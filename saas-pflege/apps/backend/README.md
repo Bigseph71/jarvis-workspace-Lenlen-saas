@@ -78,12 +78,19 @@ Lecture : `+ HR` et `KOORDINATOR`. Écriture / contrat : `STRUKTUR_ADMIN`, `HR`.
 | GET | `/caregivers/:id` | détail (+ nb de patients attitrés) |
 | POST | `/caregivers` | création (avec bloc contrat obligatoire) |
 | PATCH | `/caregivers/:id` | mise à jour profil (nom, qualification, lien user) |
-| PUT | `/caregivers/:id/contract` | **module Vertrag** : type, heures, jours, max patients |
+| PUT | `/caregivers/:id/contract` | **module Vertrag** : type, heures, jours, max patients, `validFrom` optionnel |
 | DELETE | `/caregivers/:id` | soft-delete |
 
 Règles appliquées : la fachkraft attitrée à un patient doit appartenir au tenant
 et être active ; un compte utilisateur ne peut être lié qu'à une seule fachkraft.
 Chaque création/modification/suppression écrit un **audit log** (DSGVO).
+
+Le bloc contrat n'est pas écrit directement sur la fachkraft : la création et
+`PUT /caregivers/:id/contract` passent par le service HR, qui écrit une version
+dans `contracts` puis resynchronise les champs de `caregivers` (une simple
+copie du contrat en vigueur). `validFrom` est la date d'effet, aujourd'hui par
+défaut ; le contrat précédent est clôturé la veille. Voir `/hr/contracts` pour
+l'historique complet.
 
 ### Besuche / Planification (`/visits`)
 

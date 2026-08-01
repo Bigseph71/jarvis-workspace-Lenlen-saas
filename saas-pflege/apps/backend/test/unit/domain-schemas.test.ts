@@ -42,6 +42,19 @@ describe("createCaregiverSchema", () => {
     expect(() => createCaregiverSchema.parse({ ...base, workDays: [] })).toThrow();
     expect(() => createCaregiverSchema.parse({ ...base, weeklyHours: -1 })).toThrow();
   });
+
+  it("validFrom ist optional – ohne Angabe gilt der Vertrag ab heute", () => {
+    expect(createCaregiverSchema.parse(base).validFrom).toBeUndefined();
+  });
+
+  it("nimmt einen Stichtag an und normalisiert ihn auf UTC-Mitternacht", () => {
+    const parsed = createCaregiverSchema.parse({ ...base, validFrom: "2026-10-01" });
+    expect(parsed.validFrom?.toISOString()).toBe("2026-10-01T00:00:00.000Z");
+  });
+
+  it("weist einen unmöglichen Stichtag ab", () => {
+    expect(() => createCaregiverSchema.parse({ ...base, validFrom: "2026-02-31" })).toThrow();
+  });
 });
 
 describe("visit schemas", () => {

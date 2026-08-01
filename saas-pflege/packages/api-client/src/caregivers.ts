@@ -38,6 +38,11 @@ export interface ContractInput {
   weeklyHours: number;
   workDays: WeekDay[];
   maxPatients: number;
+  /**
+   * Stichtag der Änderung (YYYY-MM-DD), ohne Angabe ab heute. Das Backend legt
+   * daraus eine Vertragsversion an und beendet die vorherige am Vortag.
+   */
+  validFrom?: string;
 }
 
 export interface CreateCaregiverInput extends ContractInput {

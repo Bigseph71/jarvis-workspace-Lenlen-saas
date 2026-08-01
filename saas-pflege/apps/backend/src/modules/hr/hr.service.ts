@@ -45,6 +45,7 @@ import type {
   AbsenceBatchInput,
   AbsenceDecisionInput,
   ContractBatchInput,
+  ContractItemInput,
   EndContractInput,
   ListAbsencesQuery,
   ListContractsQuery,
@@ -135,6 +136,16 @@ function dayKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
 function weekKey(caregiverId: string, date: Date): string {
   return `${caregiverId}|${dayKey(startOfISOWeek(date))}`;
 }
@@ -198,6 +209,161 @@ async function syncContractSnapshot(
       workDays: current.workDays as Prisma.InputJsonValue,
       maxPatients: current.maxPatients,
     },
+  });
+}
+
+// ── Geltender Vertrag (Vertragsmodul der Fachkraft) ───────────────────────
+
+/** Vertragsdaten, wie sie das Vertragsformular einer Fachkraft liefert. */
+export interface ContractChangeInput {
+  contractType: ContractItemInput["contractType"];
+  weeklyHours: number;
+  workDays: string[];
+  maxPatients: number;
+  /** Stichtag der Änderung; ohne Angabe ab heute. */
+  validFrom?: Date;
+}
+
+/**
+ * Setzt den zum Stichtag geltenden Vertrag einer Fachkraft. Läuft INNERHALB
+ * einer bestehenden Transaktion, damit Aufrufer (Fachkraft anlegen,
+ * Vertragsmodul) ihre eigene Klammer behalten.
+ *
+ * Drei Fälle, ein Zeitstrahl:
+ *   - Stichtag = Beginn des geltenden Vertrags -> Korrektur desselben Satzes.
+ *   - Es gibt einen geltenden Vertrag -> er endet am Vortag, eine neue Version
+ *     beginnt am Stichtag.
+ *   - Existiert bereits ein SPÄTERER Vertrag, wird die neue Version an dessen
+ *     Vortag begrenzt, statt mit ihm zu kollidieren. Eine Änderung "ab heute"
+ *     überschreibt also keine bereits vereinbarte Zukunft.
+ */
+export async function applyContractChange(
+  tx: TenantTx,
+  ctx: TenantContext,
+  caregiverId: string,
+  input: ContractChangeInput,
+  emit: EmitFn,
+): Promise<{ contractId: string }> {
+  const validFrom = input.validFrom ?? startOfUtcDay(new Date());
+
+  const rows = await tx.contract.findMany({
+    where: { organizationId: ctx.organizationId, caregiverId },
+    select: { id: true, validFrom: true, validUntil: true },
+  });
+  const periods = rows.map((r) => ({ id: r.id, start: r.validFrom, end: r.validUntil }));
+  const active = activeAt(periods, validFrom);
+
+  const fields = {
+    contractType: input.contractType,
+    weeklyHours: input.weeklyHours,
+    workDays: input.workDays as Prisma.InputJsonValue,
+    maxPatients: input.maxPatients,
+  };
+
+  if (active && dayKey(active.start) === dayKey(validFrom)) {
+    const record = await tx.contract.update({ where: { id: active.id }, data: fields });
+    emit({
+      name: "contract.updated",
+      entityType: "contract",
+      entityId: record.id,
+      payload: {
+        caregiverId,
+        contractType: input.contractType,
+        weeklyHours: input.weeklyHours,
+        validFrom: dayKey(validFrom),
+      },
+    });
+    return { contractId: record.id };
+  }
+
+  if (active) {
+    const endOfPrevious = addDays(validFrom, -1);
+    await tx.contract.update({
+      where: { id: active.id },
+      data: { validUntil: endOfPrevious },
+    });
+    emit({
+      name: "contract.ended",
+      entityType: "contract",
+      entityId: active.id,
+      payload: { caregiverId, validUntil: dayKey(endOfPrevious) },
+    });
+  }
+
+  const next = periods
+    .filter((p) => p.id !== active?.id && p.start.getTime() > validFrom.getTime())
+    .sort((a, b) => a.start.getTime() - b.start.getTime())[0];
+  const validUntil = next ? addDays(next.start, -1) : null;
+
+  // Verteidigung in der Tiefe: dieselbe Regel wie im Lot-Pfad, gegen den
+  // bereits fortgeschriebenen Zeitstrahl geprüft.
+  const others = periods
+    .filter((p) => p.id !== active?.id)
+    .concat(active ? [{ ...active, end: addDays(validFrom, -1) }] : []);
+  const violations = contractViolations({ start: validFrom, end: validUntil }, others);
+  if (violations.length > 0) {
+    throw new AppError(409, violations.join("; "), "Conflict");
+  }
+
+  const record = await tx.contract.create({
+    data: {
+      organizationId: ctx.organizationId,
+      caregiverId,
+      ...fields,
+      validFrom,
+      validUntil,
+    },
+  });
+
+  emit({
+    name: "contract.created",
+    entityType: "contract",
+    entityId: record.id,
+    payload: {
+      caregiverId,
+      contractType: input.contractType,
+      weeklyHours: input.weeklyHours,
+      validFrom: dayKey(validFrom),
+      validUntil: validUntil ? dayKey(validUntil) : null,
+    },
+  });
+
+  return { contractId: record.id };
+}
+
+/**
+ * Vertragsmodul einer Fachkraft (PUT /caregivers/:id/contract). Schreibt eine
+ * Vertragsversion und zieht die Momentaufnahme nach; gibt die Fachkraft
+ * zurück, wie es die Oberfläche erwartet.
+ */
+export async function setActiveContract(
+  ctx: TenantContext,
+  caregiverId: string,
+  input: ContractChangeInput,
+): Promise<unknown> {
+  return withDomainEvents(ctx, async (tx, emit) => {
+    const caregiver = await tx.caregiver.findFirst({
+      where: { id: caregiverId, organizationId: ctx.organizationId },
+      select: { id: true },
+    });
+    if (!caregiver) throw new AppError(404, "Fachkraft nicht gefunden", "NotFound");
+
+    const { contractId } = await applyContractChange(tx, ctx, caregiverId, input, emit);
+    await syncContractSnapshot(tx, ctx, caregiverId, new Date());
+
+    await writeAudit(tx, ctx, {
+      action: AuditAction.UPDATE,
+      entityType: "hr_contract",
+      entityId: contractId,
+      metadata: {
+        caregiverId,
+        contractType: input.contractType,
+        weeklyHours: input.weeklyHours,
+        validFrom: dayKey(input.validFrom ?? startOfUtcDay(new Date())),
+      },
+    });
+
+    return tx.caregiver.findFirstOrThrow({ where: { id: caregiverId } });
   });
 }
 

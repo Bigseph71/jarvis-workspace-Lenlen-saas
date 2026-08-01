@@ -1,15 +1,22 @@
 import { z } from "zod";
 import { Qualification, ContractType } from "@len-len/database";
 import { paginationSchema, booleanQuery } from "../../lib/pagination.js";
+import { dateOnlySchema } from "../../lib/schemas.js";
 
 export const weekDaySchema = z.enum(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]);
 
 // Vertrags-Block: bei jeder Fachkraft Pflicht (Regel métier 5).
+//
+// validFrom ist der Stichtag der Änderung. Ohne Angabe gilt sie ab heute. Der
+// Block landet nicht mehr direkt auf der Fachkraft, sondern erzeugt über den
+// HR-Service eine Vertragsversion (siehe setActiveContract) – die Felder auf
+// caregivers sind nur noch deren Momentaufnahme.
 const contractFields = {
   contractType: z.nativeEnum(ContractType),
   weeklyHours: z.number().positive().max(60),
   workDays: z.array(weekDaySchema).min(1).max(7),
   maxPatients: z.number().int().min(0).max(500),
+  validFrom: dateOnlySchema.optional(),
 };
 
 export const createCaregiverSchema = z.object({

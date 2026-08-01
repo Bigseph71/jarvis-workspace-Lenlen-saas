@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AbsenceStatus, AbsenceType, ContractType, ExternalSource } from "@len-len/database";
 import { paginationSchema } from "../../lib/pagination.js";
+import { dateOnlySchema, isoDateTimeSchema } from "../../lib/schemas.js";
 import { weekDaySchema } from "../caregivers/caregiver.schemas.js";
 import { parseTimeToMinutes } from "./hr.rules.js";
 
@@ -11,23 +12,7 @@ import { parseTimeToMinutes } from "./hr.rules.js";
  */
 export const MAX_BATCH_SIZE = 500;
 
-/**
- * Datum ohne Uhrzeit, auf UTC-Mitternacht normalisiert (die DB-Spalten sind
- * DATE).
- *
- * Der Rückweg-Vergleich ist kein Zierrat: V8 nimmt "2026-02-31" klaglos an und
- * macht daraus den 3. März. Ein Tippfehler in einer CSV-Zeile würde sonst als
- * gültiges, nur falsches Datum durchlaufen. Nur wenn das geparste Datum
- * denselben Tag zurückliefert, war die Eingabe wirklich einer.
- */
-const dateOnly = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Datum im Format YYYY-MM-DD erwartet")
-  .refine((v) => {
-    const parsed = new Date(`${v}T00:00:00.000Z`);
-    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === v;
-  }, "Ungültiges Datum")
-  .transform((v) => new Date(`${v}T00:00:00.000Z`));
+const dateOnly = dateOnlySchema;
 
 /** "08:30" -> 510 (Minuten seit Mitternacht). */
 const timeOfDay = z
@@ -73,7 +58,7 @@ export const listContractsQuerySchema = paginationSchema.extend({
   /** Nur der zu diesem Datum geltende Vertrag. */
   activeOn: dateOnly.optional(),
   /** Inkrementelle Synchronisation: alles, was seither geändert wurde. */
-  updatedSince: z.string().datetime().transform((v) => new Date(v)).optional(),
+  updatedSince: isoDateTimeSchema.optional(),
 });
 
 // ── Dienstpläne ───────────────────────────────────────────────────────────
@@ -97,7 +82,7 @@ export const listSchedulesQuerySchema = paginationSchema.extend({
   caregiverId: z.string().uuid().optional(),
   from: dateOnly.optional(),
   to: dateOnly.optional(),
-  updatedSince: z.string().datetime().transform((v) => new Date(v)).optional(),
+  updatedSince: isoDateTimeSchema.optional(),
 });
 
 // ── Abwesenheiten ─────────────────────────────────────────────────────────
@@ -126,7 +111,7 @@ export const listAbsencesQuerySchema = paginationSchema.extend({
   status: z.nativeEnum(AbsenceStatus).optional(),
   from: dateOnly.optional(),
   to: dateOnly.optional(),
-  updatedSince: z.string().datetime().transform((v) => new Date(v)).optional(),
+  updatedSince: isoDateTimeSchema.optional(),
 });
 
 export type ContractItemInput = z.infer<typeof contractItemSchema>;

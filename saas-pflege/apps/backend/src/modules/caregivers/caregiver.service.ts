@@ -2,7 +2,9 @@ import { AuditAction, withTenant, type Prisma } from "@len-len/database";
 import { AppError, ConflictError } from "../../lib/errors.js";
 import { writeAudit } from "../../lib/audit.js";
 import { paginated, toSkipTake, type Paginated } from "../../lib/pagination.js";
+import { withDomainEvents } from "../../lib/domain-events.js";
 import { assertWithinPlan } from "../billing/limits.js";
+import { applyContractChange, setActiveContract } from "../hr/hr.service.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
 import type {
   CreateCaregiverInput,
@@ -68,7 +70,7 @@ export async function getCaregiver(ctx: TenantContext, id: string): Promise<unkn
 }
 
 export async function createCaregiver(ctx: TenantContext, input: CreateCaregiverInput): Promise<unknown> {
-  return withTenant(ctx.organizationId, async (tx) => {
+  return withDomainEvents(ctx, async (tx, emit) => {
     await assertWithinPlan(tx, ctx.organizationId, "caregivers");
     if (input.userId) await assertUserLinkable(tx, input.userId);
 
@@ -85,6 +87,11 @@ export async function createCaregiver(ctx: TenantContext, input: CreateCaregiver
         maxPatients: input.maxPatients,
       },
     });
+
+    // Erstvertrag anlegen (Stichtag = Eintrittsdatum, sonst heute). Ohne ihn
+    // hätte die Fachkraft eine Momentaufnahme ohne Vertragshistorie – genau
+    // die Lücke, die das Vertragsmodul später wieder auseinanderlaufen ließe.
+    await applyContractChange(tx, ctx, caregiver.id, input, emit);
 
     await writeAudit(tx, ctx, {
       action: AuditAction.CREATE,
@@ -115,33 +122,21 @@ export async function updateCaregiver(
   });
 }
 
-/** Vertragsmodul: aktualisiert nur den Vertrags-Block. */
+/**
+ * Vertragsmodul: schreibt eine Vertragsversion über den HR-Service.
+ *
+ * Früher schrieb diese Funktion direkt die Vertragsfelder der Fachkraft. Seit
+ * das HR-Modul existiert, sind das nur noch Momentaufnahmen des geltenden
+ * Vertrags – zwei Schreibpfade auf dieselben Felder hätten die Fachkraft von
+ * ihrer eigenen Vertragshistorie abgekoppelt. Die Antwort bleibt unverändert
+ * die Fachkraft.
+ */
 export async function updateContract(
   ctx: TenantContext,
   id: string,
   input: UpdateContractInput,
 ): Promise<unknown> {
-  return withTenant(ctx.organizationId, async (tx) => {
-    const result = await tx.caregiver.updateMany({
-      where: { id, organizationId: ctx.organizationId },
-      data: {
-        contractType: input.contractType,
-        weeklyHours: input.weeklyHours,
-        workDays: input.workDays,
-        maxPatients: input.maxPatients,
-      },
-    });
-    if (result.count === 0) throw new AppError(404, "Fachkraft nicht gefunden", "NotFound");
-
-    await writeAudit(tx, ctx, {
-      action: AuditAction.UPDATE,
-      entityType: "caregiver_contract",
-      entityId: id,
-      metadata: { contractType: input.contractType, weeklyHours: input.weeklyHours },
-    });
-
-    return tx.caregiver.findFirstOrThrow({ where: { id } });
-  });
+  return setActiveContract(ctx, id, input);
 }
 
 /** Soft-Delete: deaktiviert die Fachkraft. */
