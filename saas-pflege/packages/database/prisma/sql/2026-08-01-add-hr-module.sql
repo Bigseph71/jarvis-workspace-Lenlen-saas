@@ -1,7 +1,13 @@
 -- Module HR (Phase 1) : contrats versionnés, plannings prévisionnels, absences.
--- Additif et idempotent. NON APPLIQUÉ à ce jour : voir la note d'application
--- des migrations dans 2026-07-04-add-pointage-gps.sql (prisma db execute ne
--- fonctionne plus, passer par $executeRawUnsafe depuis un script tsx).
+-- Additif et idempotent. Appliqué le 2026-08-01 sur la base Supabase du projet
+-- (celle que Railway utilise), via $executeRawUnsafe depuis un script tsx
+-- jetable : `prisma db execute` reste bloqué sur le pooler Supavisor, voir la
+-- note d'application dans 2026-07-04-add-pointage-gps.sql.
+--
+-- Le script découpait le fichier en instructions sur les `;` de premier niveau
+-- (en respectant les blocs $$ ... $$) et les jouait dans une transaction. Les
+-- 19 instructions sont passées, vérifiées ensuite dans pg_class, pg_policies
+-- et pg_enum.
 --
 -- Les trois tables portent external_id + external_source + updated_at, la
 -- condition posée par CLAUDE.md pour brancher l'import CSV, le connecteur
