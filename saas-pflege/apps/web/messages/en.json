@@ -38,7 +38,8 @@
     "leasing": "Leasing",
     "tracking": "Real-time tracking",
     "chat": "Chat",
-    "billing": "Billing"
+    "billing": "Billing",
+    "absences": "Absences"
   },
   "patients": {
     "title": "Patients",
@@ -146,7 +147,9 @@
       "weeklyHours": "Weekly hours",
       "workDays": "Work days",
       "maxPatients": "Max. patients",
-      "email": "Email"
+      "email": "Email",
+      "validFrom": "Valid from",
+      "validFromHint": "Effective date of the change. Left empty it applies from today; the running contract ends the day before."
     },
     "form": {
       "newTitle": "New caregiver",
@@ -177,7 +180,8 @@
       "weeklyHours": "Weekly hours: above 0 up to 60.",
       "workDays": "Select at least one work day.",
       "maxPatients": "Max. patients: 0–500.",
-      "email": "Please enter a valid email address."
+      "email": "Please enter a valid email address.",
+      "validFrom": "Please provide a valid date"
     },
     "account": {
       "title": "App access",
@@ -192,6 +196,18 @@
       "resetConfirm": "Generate a new temporary password for {email}? The current password becomes invalid and all active sessions are ended.",
       "resetHint": "New temporary password. It is shown only once, and the previous one is now invalid.",
       "resetFailed": "The password could not be reset. Please try again later."
+    },
+    "history": {
+      "title": "Contract history",
+      "empty": "No contract version recorded yet.",
+      "open": "running",
+      "current": "current",
+      "columns": {
+        "period": "Period",
+        "type": "Contract type",
+        "hours": "Weekly hours",
+        "days": "Working days"
+      }
     }
   },
   "chat": {
@@ -413,6 +429,68 @@
       },
       "view": "View",
       "pdf": "PDF"
+    }
+  },
+  "absences": {
+    "title": "Absences",
+    "new": "Record absence",
+    "loading": "Loading …",
+    "error": "Absences could not be loaded.",
+    "empty": "No absences found.",
+    "count": "{total} entries",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {totalPages}",
+    "confirmReject": "Really reject this absence?",
+    "confirmCancel": "Really withdraw this absence?",
+    "columns": {
+      "caregiver": "Caregiver",
+      "type": "Type",
+      "period": "Period",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "REQUESTED": "Requested",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "CANCELED": "Withdrawn"
+    },
+    "types": {
+      "VACATION": "Holiday",
+      "SICK": "Sick leave",
+      "TRAINING": "Training",
+      "PARENTAL": "Parental leave",
+      "UNPAID": "Unpaid",
+      "OTHER": "Other"
+    },
+    "filters": {
+      "all": "All"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "cancel": "Withdraw"
+    },
+    "fields": {
+      "caregiver": "Caregiver",
+      "selectCaregiver": "Please select",
+      "type": "Type",
+      "startDate": "From",
+      "endDate": "To",
+      "reason": "Reason (optional)"
+    },
+    "errors": {
+      "caregiver": "Please select a caregiver",
+      "startDate": "Please provide a start date",
+      "endDate": "Please provide an end date",
+      "endBeforeStart": "The end date is before the start date"
+    },
+    "form": {
+      "save": "Save",
+      "saving": "Saving …",
+      "cancel": "Cancel",
+      "close": "Close"
     }
   }
 }

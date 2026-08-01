@@ -38,7 +38,8 @@
     "leasing": "Leasing",
     "tracking": "Suivi temps réel",
     "chat": "Messagerie",
-    "billing": "Facturation"
+    "billing": "Facturation",
+    "absences": "Absences"
   },
   "patients": {
     "title": "Patients",
@@ -146,7 +147,9 @@
       "weeklyHours": "Heures hebdomadaires",
       "workDays": "Jours travaillés",
       "maxPatients": "Patients max.",
-      "email": "E-mail"
+      "email": "E-mail",
+      "validFrom": "Prend effet le",
+      "validFromHint": "Date d'effet du changement. Sans indication, à partir d'aujourd'hui ; le contrat en cours se termine la veille."
     },
     "form": {
       "newTitle": "Nouveau soignant",
@@ -177,7 +180,8 @@
       "weeklyHours": "Heures hebdo. : de plus de 0 à 60.",
       "workDays": "Sélectionnez au moins un jour travaillé.",
       "maxPatients": "Patients max. : 0 à 500.",
-      "email": "Veuillez saisir une adresse e-mail valide."
+      "email": "Veuillez saisir une adresse e-mail valide.",
+      "validFrom": "Merci d'indiquer une date valide"
     },
     "account": {
       "title": "Accès à l'app",
@@ -192,6 +196,18 @@
       "resetConfirm": "Générer un nouveau mot de passe temporaire pour {email} ? L'ancien mot de passe sera invalidé et toutes les sessions actives seront fermées.",
       "resetHint": "Nouveau mot de passe temporaire. Il n'est affiché qu'une fois, l'ancien est désormais invalide.",
       "resetFailed": "Le mot de passe n'a pas pu être réinitialisé. Veuillez réessayer plus tard."
+    },
+    "history": {
+      "title": "Historique des contrats",
+      "empty": "Aucune version de contrat enregistrée.",
+      "open": "en cours",
+      "current": "actuel",
+      "columns": {
+        "period": "Période",
+        "type": "Type de contrat",
+        "hours": "Heures hebdo",
+        "days": "Jours travaillés"
+      }
     }
   },
   "chat": {
@@ -413,6 +429,68 @@
       },
       "view": "Voir",
       "pdf": "PDF"
+    }
+  },
+  "absences": {
+    "title": "Absences",
+    "new": "Saisir une absence",
+    "loading": "Chargement …",
+    "error": "Les absences n'ont pas pu être chargées.",
+    "empty": "Aucune absence trouvée.",
+    "count": "{total} entrées",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageOf": "Page {page} sur {totalPages}",
+    "confirmReject": "Refuser vraiment cette absence ?",
+    "confirmCancel": "Annuler vraiment cette absence ?",
+    "columns": {
+      "caregiver": "Fachkraft",
+      "type": "Type",
+      "period": "Période",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "REQUESTED": "Demandée",
+      "APPROVED": "Approuvée",
+      "REJECTED": "Refusée",
+      "CANCELED": "Annulée"
+    },
+    "types": {
+      "VACATION": "Congés",
+      "SICK": "Maladie",
+      "TRAINING": "Formation",
+      "PARENTAL": "Congé parental",
+      "UNPAID": "Sans solde",
+      "OTHER": "Autre"
+    },
+    "filters": {
+      "all": "Toutes"
+    },
+    "actions": {
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "cancel": "Annuler"
+    },
+    "fields": {
+      "caregiver": "Fachkraft",
+      "selectCaregiver": "Sélectionner",
+      "type": "Type",
+      "startDate": "Du",
+      "endDate": "Au",
+      "reason": "Motif (facultatif)"
+    },
+    "errors": {
+      "caregiver": "Merci de choisir une fachkraft",
+      "startDate": "Merci d'indiquer une date de début",
+      "endDate": "Merci d'indiquer une date de fin",
+      "endBeforeStart": "La date de fin précède la date de début"
+    },
+    "form": {
+      "save": "Enregistrer",
+      "saving": "Enregistrement …",
+      "cancel": "Annuler",
+      "close": "Fermer"
     }
   }
 }

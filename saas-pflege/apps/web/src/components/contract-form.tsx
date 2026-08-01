@@ -32,6 +32,7 @@ export function ContractForm({ initial, submitting, error, onSubmit, onCancel }:
         weeklyHours: raw.weeklyHours ? t("errors.weeklyHours") : undefined,
         workDays: raw.workDays ? t("errors.workDays") : undefined,
         maxPatients: raw.maxPatients ? t("errors.maxPatients") : undefined,
+        validFrom: raw.validFrom ? t("errors.validFrom") : undefined,
       });
       return;
     }

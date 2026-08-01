@@ -18,6 +18,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/patients", key: "patients" },
   { href: "/caregivers", key: "caregivers" },
   { href: "/visits", key: "visits" },
+  // HR: Abwesenheiten. Lesen darf auch die Koordination, die Planung hängt davon ab.
+  { href: "/absences", key: "absences", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "HR", "KOORDINATOR"] },
   { href: "/planung", key: "tracking", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"] },
   { href: "/chat", key: "chat", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"] },
   { href: "/leasing", key: "leasing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },

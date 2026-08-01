@@ -38,7 +38,8 @@
     "leasing": "Leasing",
     "tracking": "Echtzeit-Tracking",
     "chat": "Chat",
-    "billing": "Abrechnung"
+    "billing": "Abrechnung",
+    "absences": "Abwesenheiten"
   },
   "patients": {
     "title": "Patienten",
@@ -146,7 +147,9 @@
       "weeklyHours": "Wochenstunden",
       "workDays": "Arbeitstage",
       "maxPatients": "Max. Patienten",
-      "email": "E-Mail"
+      "email": "E-Mail",
+      "validFrom": "Gültig ab",
+      "validFromHint": "Stichtag der Änderung. Ohne Angabe ab heute; der laufende Vertrag endet am Vortag."
     },
     "form": {
       "newTitle": "Neue Fachkraft",
@@ -177,7 +180,8 @@
       "weeklyHours": "Wochenstunden: über 0 bis 60.",
       "workDays": "Mindestens einen Arbeitstag wählen.",
       "maxPatients": "Max. Patienten: 0–500.",
-      "email": "Bitte eine gültige E-Mail-Adresse angeben."
+      "email": "Bitte eine gültige E-Mail-Adresse angeben.",
+      "validFrom": "Bitte ein gültiges Datum angeben"
     },
     "account": {
       "title": "App-Zugang",
@@ -192,6 +196,18 @@
       "resetConfirm": "Neues temporäres Passwort für {email} erzeugen? Das bisherige Passwort wird ungültig und alle aktiven Sitzungen werden beendet.",
       "resetHint": "Neues temporäres Passwort. Es wird nur einmal angezeigt, das bisherige ist ab sofort ungültig.",
       "resetFailed": "Das Passwort konnte nicht zurückgesetzt werden. Bitte später erneut versuchen."
+    },
+    "history": {
+      "title": "Vertragshistorie",
+      "empty": "Noch keine Vertragsversion erfasst.",
+      "open": "laufend",
+      "current": "aktuell",
+      "columns": {
+        "period": "Zeitraum",
+        "type": "Vertragsart",
+        "hours": "Wochenstunden",
+        "days": "Arbeitstage"
+      }
     }
   },
   "chat": {
@@ -413,6 +429,68 @@
       },
       "view": "Ansehen",
       "pdf": "PDF"
+    }
+  },
+  "absences": {
+    "title": "Abwesenheiten",
+    "new": "Abwesenheit erfassen",
+    "loading": "Wird geladen …",
+    "error": "Abwesenheiten konnten nicht geladen werden.",
+    "empty": "Keine Abwesenheiten gefunden.",
+    "count": "{total} Einträge",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "pageOf": "Seite {page} von {totalPages}",
+    "confirmReject": "Diese Abwesenheit wirklich ablehnen?",
+    "confirmCancel": "Diese Abwesenheit wirklich zurückziehen?",
+    "columns": {
+      "caregiver": "Fachkraft",
+      "type": "Art",
+      "period": "Zeitraum",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "REQUESTED": "Beantragt",
+      "APPROVED": "Genehmigt",
+      "REJECTED": "Abgelehnt",
+      "CANCELED": "Zurückgezogen"
+    },
+    "types": {
+      "VACATION": "Urlaub",
+      "SICK": "Krankheit",
+      "TRAINING": "Fortbildung",
+      "PARENTAL": "Elternzeit",
+      "UNPAID": "Unbezahlt",
+      "OTHER": "Sonstiges"
+    },
+    "filters": {
+      "all": "Alle"
+    },
+    "actions": {
+      "approve": "Genehmigen",
+      "reject": "Ablehnen",
+      "cancel": "Zurückziehen"
+    },
+    "fields": {
+      "caregiver": "Fachkraft",
+      "selectCaregiver": "Bitte wählen",
+      "type": "Art",
+      "startDate": "Von",
+      "endDate": "Bis",
+      "reason": "Grund (optional)"
+    },
+    "errors": {
+      "caregiver": "Bitte eine Fachkraft wählen",
+      "startDate": "Bitte ein Startdatum angeben",
+      "endDate": "Bitte ein Enddatum angeben",
+      "endBeforeStart": "Das Enddatum liegt vor dem Startdatum"
+    },
+    "form": {
+      "save": "Speichern",
+      "saving": "Wird gespeichert …",
+      "cancel": "Abbrechen",
+      "close": "Schließen"
     }
   }
 }

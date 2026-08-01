@@ -9,18 +9,29 @@ export interface ContractFieldsValue {
   weeklyHours: string;
   workDays: WeekDay[];
   maxPatients: string;
+  /** Stichtag YYYY-MM-DD. Leer = ab heute (Backend-Vorgabe). */
+  validFrom: string;
 }
 
-export type ContractErrorKey = "weeklyHours" | "workDays" | "maxPatients";
+export type ContractErrorKey = "weeklyHours" | "workDays" | "maxPatients" | "validFrom";
 
 export const CONTRACT_TYPES: ContractType[] = ["FULL_100", "PART_80", "PART_50", "MINIJOB", "CUSTOM"];
 export const WEEK_DAYS: WeekDay[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
+/** Heute als YYYY-MM-DD (lokal), passend zum date-Input. */
+export function todayISO(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
 
 export const EMPTY_CONTRACT: ContractFieldsValue = {
   contractType: "FULL_100",
   weeklyHours: "",
   workDays: [],
   maxPatients: "",
+  validFrom: "",
 };
 
 /** Validierung spiegelt das Backend (contractFields in caregiver.schemas.ts). */
@@ -41,11 +52,23 @@ export function validateContract(value: ContractFieldsValue): {
   if (!Number.isInteger(maxPatients) || maxPatients < 0 || maxPatients > 500) {
     errors.maxPatients = true;
   }
+  // Leer ist erlaubt (das Backend nimmt dann heute). Gefüllt muss es ein
+  // echtes Datum sein – der date-Input liefert das, eine Tastatureingabe nicht
+  // zwingend.
+  if (value.validFrom !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(value.validFrom)) {
+    errors.validFrom = true;
+  }
 
   if (Object.keys(errors).length > 0) return { errors, parsed: null };
   return {
     errors,
-    parsed: { contractType: value.contractType, weeklyHours, workDays: value.workDays, maxPatients },
+    parsed: {
+      contractType: value.contractType,
+      weeklyHours,
+      workDays: value.workDays,
+      maxPatients,
+      ...(value.validFrom ? { validFrom: value.validFrom } : {}),
+    },
   };
 }
 
@@ -146,6 +169,21 @@ export function ContractFields({ value, onChange, errors }: ContractFieldsProps)
           className={fieldClass}
         />
         {errors.maxPatients ? <p className="mt-1 text-sm text-red-600">{errors.maxPatients}</p> : null}
+      </div>
+
+      <div>
+        <label htmlFor="validFrom" className="block text-sm font-medium text-gray-700">
+          {t("fields.validFrom")}
+        </label>
+        <input
+          id="validFrom"
+          type="date"
+          value={value.validFrom}
+          onChange={(e) => onChange({ ...value, validFrom: e.target.value })}
+          className={fieldClass}
+        />
+        <p className="mt-1 text-xs text-gray-500">{t("fields.validFromHint")}</p>
+        {errors.validFrom ? <p className="mt-1 text-sm text-red-600">{errors.validFrom}</p> : null}
       </div>
     </>
   );

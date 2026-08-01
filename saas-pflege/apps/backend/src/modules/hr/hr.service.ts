@@ -1137,7 +1137,14 @@ export async function listAbsences(
     };
 
     const [data, total] = await Promise.all([
-      tx.absence.findMany({ where, orderBy: { startDate: "desc" }, ...toSkipTake(query) }),
+      tx.absence.findMany({
+        where,
+        orderBy: { startDate: "desc" },
+        // Der Name der Fachkraft gehört zur Liste; ohne ihn müsste die
+        // Oberfläche für jede Zeile nachladen oder alle Fachkräfte spiegeln.
+        include: { caregiver: { select: { id: true, firstName: true, lastName: true } } },
+        ...toSkipTake(query),
+      }),
       tx.absence.count({ where }),
     ]);
     return paginated(data, total, query);

@@ -76,6 +76,7 @@ export function CaregiverCreateForm({ submitting, error, onSubmit, onCancel }: C
       weeklyHours: rawContract.weeklyHours ? t("errors.weeklyHours") : undefined,
       workDays: rawContract.workDays ? t("errors.workDays") : undefined,
       maxPatients: rawContract.maxPatients ? t("errors.maxPatients") : undefined,
+      validFrom: rawContract.validFrom ? t("errors.validFrom") : undefined,
     };
 
     setIdErrors(nextIdErrors);

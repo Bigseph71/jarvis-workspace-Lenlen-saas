@@ -10,6 +10,7 @@
 
 import { z } from "zod";
 import { AbsenceStatus, UserRole } from "@len-len/database";
+import { AppError } from "../../lib/errors.js";
 import type { FastifyInstance } from "fastify";
 import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
@@ -27,6 +28,7 @@ import {
   scheduleBatchSchema,
   scheduleItemSchema,
 } from "./hr.schemas.js";
+import type { BatchOutcome } from "./hr.service.js";
 import {
   decideAbsence,
   deleteSchedule,
@@ -64,6 +66,23 @@ const singleAsBatch = <T>(item: T): { items: T[]; dryRun: boolean } => ({
   dryRun: false,
 });
 
+/**
+ * Übersetzt das Lot-Ergebnis einer Einzel-Anlage in eine HTTP-Antwort: den
+ * angelegten Datensatz, oder 422 mit dem Grund.
+ *
+ * Ein Umschlag mit `rejected: [...]` ist der richtige Bericht für einen Import,
+ * aber die falsche Antwort auf "lege diesen einen Vertrag an": der Client
+ * müsste ihn auspacken, und ein Fehlerstatus ohne verwertbare Meldung bliebe
+ * beim Benutzer als "es hat nicht geklappt" stehen.
+ */
+function singleResult<T>(outcome: BatchOutcome<T>): T {
+  const rejection = outcome.rejected[0];
+  if (rejection) {
+    throw new AppError(422, rejection.reasons.join(" ; "), "UnprocessableEntity");
+  }
+  return outcome.applied[0]!.record;
+}
+
 export async function hrRoutes(app: FastifyInstance): Promise<void> {
   app.addHook("preHandler", authenticate);
 
@@ -77,7 +96,7 @@ export async function hrRoutes(app: FastifyInstance): Promise<void> {
   app.post("/hr/contracts", { preHandler: [canWrite] }, async (request, reply) => {
     const item = contractItemSchema.parse(request.body);
     const result = await upsertContracts(ctxFrom(request), singleAsBatch(item));
-    return reply.status(result.summary.rejected > 0 ? 422 : 201).send(result);
+    return reply.status(201).send(singleResult(result));
   });
 
   // Lot + Dry-Run: der Einstiegspunkt für CSV-Import und Konnektoren.
@@ -102,7 +121,7 @@ export async function hrRoutes(app: FastifyInstance): Promise<void> {
   app.post("/hr/schedules", { preHandler: [canWrite] }, async (request, reply) => {
     const item = scheduleItemSchema.parse(request.body);
     const result = await upsertSchedules(ctxFrom(request), singleAsBatch(item));
-    return reply.status(result.summary.rejected > 0 ? 422 : 201).send(result);
+    return reply.status(201).send(singleResult(result));
   });
 
   app.post("/hr/schedules/batch", { preHandler: [canWrite] }, async (request) => {
@@ -126,7 +145,7 @@ export async function hrRoutes(app: FastifyInstance): Promise<void> {
   app.post("/hr/absences", { preHandler: [canWrite] }, async (request, reply) => {
     const item = absenceItemSchema.parse(request.body);
     const result = await upsertAbsences(ctxFrom(request), singleAsBatch(item));
-    return reply.status(result.summary.rejected > 0 ? 422 : 201).send(result);
+    return reply.status(201).send(singleResult(result));
   });
 
   app.post("/hr/absences/batch", { preHandler: [canWrite] }, async (request) => {
