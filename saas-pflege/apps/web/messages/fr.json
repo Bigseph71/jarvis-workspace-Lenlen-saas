@@ -39,7 +39,8 @@
     "tracking": "Temps réel",
     "chat": "Messagerie",
     "billing": "Facturation",
-    "absences": "Absences"
+    "absences": "Absences",
+    "more": "Plus"
   },
   "patients": {
     "title": "Patients",

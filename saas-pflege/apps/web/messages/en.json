@@ -39,7 +39,8 @@
     "tracking": "Live tracking",
     "chat": "Chat",
     "billing": "Billing",
-    "absences": "Absences"
+    "absences": "Absences",
+    "more": "More"
   },
   "patients": {
     "title": "Patients",

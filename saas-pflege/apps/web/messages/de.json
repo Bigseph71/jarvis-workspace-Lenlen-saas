@@ -39,7 +39,8 @@
     "tracking": "Live-Tracking",
     "chat": "Chat",
     "billing": "Abrechnung",
-    "absences": "Abwesenheiten"
+    "absences": "Abwesenheiten",
+    "more": "Mehr"
   },
   "patients": {
     "title": "Patienten",
