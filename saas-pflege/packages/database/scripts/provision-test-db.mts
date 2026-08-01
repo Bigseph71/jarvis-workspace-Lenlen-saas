@@ -2,12 +2,20 @@
  * Prépare une base de test : schéma complet + policies RLS.
  *
  *   pnpm --filter @len-len/database provision:test
+ *   pnpm --filter @len-len/database provision:test -- --reset
  *
  * Lit TEST_DATABASE_URL (environnement ou apps/backend/.env). Le schéma est
  * poussé avec `prisma db push` plutôt que `migrate deploy` : ce dépôt n'a pas
  * de dossier migrations, schema.prisma est la référence. Les policies de
  * prisma/rls.sql sont appliquées ensuite, sinon l'isolation multi-tenant ne
  * serait pas testée du tout.
+ *
+ * --reset vide le schéma public avant de pousser. Nécessaire pour remettre à
+ * niveau une base de test DÉJÀ peuplée : à travers le pooler Supabase, le
+ * moteur de schéma de Prisma ne voit pas l'existant et régénère un CREATE
+ * complet, qui échoue sur « type ... already exists ». Repartir de zéro est de
+ * toute façon ce qu'on veut d'une base de test : reproductible, pas rapiécée.
+ * Au CI la base est neuve à chaque run, le drapeau y est inutile.
  *
  * Refuse de tourner si TEST_DATABASE_URL vaut la DATABASE_URL applicative :
  * `db push` aligne le schéma sur le fichier et peut détruire des données.
@@ -50,7 +58,21 @@ if (appUrl && testUrl === appUrl) {
 }
 
 const host = new URL(testUrl).hostname;
-console.log(`Base de test : ${host}\n`);
+const reset = process.argv.slice(2).includes("--reset");
+console.log(`Base de test : ${host}${reset ? "  (remise à zéro demandée)" : ""}\n`);
+
+// ── 0. Remise à zéro ──────────────────────────────────────────────────────
+
+if (reset) {
+  const client = new PrismaClient({ datasources: { db: { url: testUrl } }, log: ["error"] });
+  const [{ n }] = await client.$queryRawUnsafe<{ n: number }[]>(
+    `SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema = 'public'`,
+  );
+  console.log(`[0/2] DROP SCHEMA public CASCADE — ${n} table(s) détruite(s)`);
+  await client.$executeRawUnsafe(`DROP SCHEMA public CASCADE`);
+  await client.$executeRawUnsafe(`CREATE SCHEMA public`);
+  await client.$disconnect();
+}
 
 // ── 1. Schéma ─────────────────────────────────────────────────────────────
 

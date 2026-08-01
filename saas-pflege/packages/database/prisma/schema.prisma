@@ -217,6 +217,10 @@ model Caregiver {
   workDays       Json          @default("[]") @map("work_days") // z.B. ["MON","TUE","WED"]
   maxPatients    Int           @default(0) @map("max_patients")
   isActive       Boolean       @default(true) @map("is_active")
+  // Austrittsdatum. Getrennt von updatedAt, das sich bei jeder Änderung
+  // verschiebt und daher kein verlässliches Austrittsdatum ist. Der geltende
+  // Vertrag wird auf diesen Tag beendet (siehe deactivateCaregiver).
+  deactivatedAt  DateTime?     @map("deactivated_at")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 

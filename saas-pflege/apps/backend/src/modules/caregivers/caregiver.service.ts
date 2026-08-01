@@ -4,7 +4,7 @@ import { writeAudit } from "../../lib/audit.js";
 import { paginated, toSkipTake, type Paginated } from "../../lib/pagination.js";
 import { withDomainEvents } from "../../lib/domain-events.js";
 import { assertWithinPlan } from "../billing/limits.js";
-import { applyContractChange, setActiveContract } from "../hr/hr.service.js";
+import { applyContractChange, endActiveContract, setActiveContract } from "../hr/hr.service.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
 import type {
   CreateCaregiverInput,
@@ -139,15 +139,32 @@ export async function updateContract(
   return setActiveContract(ctx, id, input);
 }
 
-/** Soft-Delete: deaktiviert die Fachkraft. */
+/**
+ * Soft-Delete: deaktiviert die Fachkraft und beendet ihren Vertrag.
+ *
+ * Das Austrittsdatum wird eigens festgehalten (deactivatedAt) statt aus
+ * updatedAt abgeleitet – letzteres verschiebt sich bei jeder Änderung der
+ * Stammdaten und taugt nicht als Austrittsdatum.
+ */
 export async function deactivateCaregiver(ctx: TenantContext, id: string): Promise<void> {
-  await withTenant(ctx.organizationId, async (tx) => {
+  await withDomainEvents(ctx, async (tx, emit) => {
+    const deactivatedAt = new Date();
+
     const result = await tx.caregiver.updateMany({
       where: { id, organizationId: ctx.organizationId, isActive: true },
-      data: { isActive: false },
+      data: { isActive: false, deactivatedAt },
     });
     if (result.count === 0) throw new AppError(404, "Fachkraft nicht gefunden", "NotFound");
 
-    await writeAudit(tx, ctx, { action: AuditAction.DELETE, entityType: "caregiver", entityId: id });
+    // Ohne diese Zeile bliebe der Vertrag "laufend": die ausgetretene
+    // Fachkraft tauchte weiter in Stundenberichten und im DATEV-Export auf.
+    const endedContractId = await endActiveContract(tx, ctx, id, deactivatedAt, emit);
+
+    await writeAudit(tx, ctx, {
+      action: AuditAction.DELETE,
+      entityType: "caregiver",
+      entityId: id,
+      metadata: { deactivatedAt: deactivatedAt.toISOString(), endedContractId },
+    });
   });
 }

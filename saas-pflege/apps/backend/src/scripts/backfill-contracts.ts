@@ -19,6 +19,11 @@
  *   pnpm backfill:contracts -- --apply --valid-from=2026-01-01
  *   pnpm backfill:contracts -- --apply --include-inactive
  *
+ * Avec --include-inactive, le contrat d'une fachkraft sortie est borné à sa
+ * date de sortie (`deactivated_at`) au lieu de rester ouvert. Celles qui ont
+ * été désactivées avant l'existence de cette colonne sont signalées, pas
+ * devinées.
+ *
  * Idempotent : une fachkraft qui a déjà au moins un contrat est ignorée, le
  * script peut donc être rejoué sans risque.
  */
@@ -121,12 +126,41 @@ async function backfillOrganization(
       const emit: EmitFn = () => {};
 
       for (const caregiver of caregivers) {
+        const name = `${caregiver.firstName} ${caregiver.lastName}`;
         const workDays = toWeekDays(caregiver.workDays);
         if (workDays.length === 0) {
           result.skipped.push({
             caregiverId: caregiver.id,
-            name: `${caregiver.firstName} ${caregiver.lastName}`,
+            name,
             reason: "aucun jour travaillé dans la copie",
+          });
+          continue;
+        }
+
+        // Une fachkraft sortie ne doit pas hériter d'un contrat ouvert : il
+        // est borné à sa date de sortie. Sans cette date (désactivation
+        // antérieure à la colonne deactivated_at), on ne l'invente pas.
+        let validUntil: Date | null = null;
+        if (!caregiver.isActive) {
+          if (!caregiver.deactivatedAt) {
+            result.skipped.push({
+              caregiverId: caregiver.id,
+              name,
+              reason:
+                "fachkraft inactive sans date de sortie connue — clôturer son contrat à la main " +
+                "(POST /hr/contracts/:id/end) après l'avoir créé avec --valid-from",
+            });
+            continue;
+          }
+          validUntil = startOfUtcDay(caregiver.deactivatedAt);
+        }
+
+        const validFrom = options.validFrom ?? startOfUtcDay(caregiver.createdAt);
+        if (validUntil && validUntil.getTime() < validFrom.getTime()) {
+          result.skipped.push({
+            caregiverId: caregiver.id,
+            name,
+            reason: `date de sortie (${validUntil.toISOString().slice(0, 10)}) antérieure au début du contrat (${validFrom.toISOString().slice(0, 10)})`,
           });
           continue;
         }
@@ -140,7 +174,8 @@ async function backfillOrganization(
             weeklyHours: Number(caregiver.weeklyHours),
             workDays,
             maxPatients: caregiver.maxPatients,
-            validFrom: options.validFrom ?? startOfUtcDay(caregiver.createdAt),
+            validFrom,
+            validUntil,
           },
           emit,
         );

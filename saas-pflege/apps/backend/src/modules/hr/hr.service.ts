@@ -222,6 +222,12 @@ export interface ContractChangeInput {
   maxPatients: number;
   /** Stichtag der Änderung; ohne Angabe ab heute. */
   validFrom?: Date;
+  /**
+   * Festes Vertragsende. Ohne Angabe läuft der Vertrag offen, bzw. bis zum
+   * Vortag eines bereits erfassten Folgevertrags. Gesetzt z.B. beim Rattrapage
+   * ausgetretener Fachkräfte, deren Vertrag nicht offen bleiben darf.
+   */
+  validUntil?: Date | null;
 }
 
 /**
@@ -293,7 +299,14 @@ export async function applyContractChange(
   const next = periods
     .filter((p) => p.id !== active?.id && p.start.getTime() > validFrom.getTime())
     .sort((a, b) => a.start.getTime() - b.start.getTime())[0];
-  const validUntil = next ? addDays(next.start, -1) : null;
+  const derivedEnd = next ? addDays(next.start, -1) : null;
+  // Das FRÜHERE der beiden Enden gewinnt: ein vorgegebenes Ende darf einen
+  // Folgevertrag nicht überschreiben, und ein Folgevertrag darf ein
+  // vorgegebenes Ende nicht verlängern.
+  const validUntil =
+    input.validUntil && derivedEnd
+      ? new Date(Math.min(input.validUntil.getTime(), derivedEnd.getTime()))
+      : (input.validUntil ?? derivedEnd);
 
   // Verteidigung in der Tiefe: dieselbe Regel wie im Lot-Pfad, gegen den
   // bereits fortgeschriebenen Zeitstrahl geprüft.
@@ -365,6 +378,48 @@ export async function setActiveContract(
 
     return tx.caregiver.findFirstOrThrow({ where: { id: caregiverId } });
   });
+}
+
+/**
+ * Beendet den zum Stichtag geltenden Vertrag. Läuft INNERHALB einer
+ * Transaktion; Rückgabe ist die id des beendeten Vertrags, oder null wenn zu
+ * diesem Tag keiner galt.
+ *
+ * Bereits erfasste ZUKÜNFTIGE Verträge bleiben bewusst unberührt: sie zu
+ * löschen hieße, stillschweigend Daten wegzuwerfen. Ein Vertrag, der nach dem
+ * Austritt beginnt, ist ein Widerspruch, den die Koordination auflösen muss –
+ * nicht dieser Code.
+ */
+export async function endActiveContract(
+  tx: TenantTx,
+  ctx: TenantContext,
+  caregiverId: string,
+  endDate: Date,
+  emit: EmitFn,
+): Promise<string | null> {
+  const day = startOfUtcDay(endDate);
+
+  const rows = await tx.contract.findMany({
+    where: { organizationId: ctx.organizationId, caregiverId },
+    select: { id: true, validFrom: true, validUntil: true },
+  });
+  const active = activeAt(
+    rows.map((r) => ({ id: r.id, start: r.validFrom, end: r.validUntil })),
+    day,
+  );
+  if (!active) return null;
+  if (active.end && dayKey(active.end) === dayKey(day)) return active.id; // schon so beendet
+
+  await tx.contract.update({ where: { id: active.id }, data: { validUntil: day } });
+
+  emit({
+    name: "contract.ended",
+    entityType: "contract",
+    entityId: active.id,
+    payload: { caregiverId, validUntil: dayKey(day) },
+  });
+
+  return active.id;
 }
 
 // ── Verträge ──────────────────────────────────────────────────────────────
