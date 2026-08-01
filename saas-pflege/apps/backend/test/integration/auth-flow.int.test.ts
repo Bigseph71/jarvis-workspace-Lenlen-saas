@@ -35,9 +35,18 @@ describe.skipIf(!runDbTests)("Auth-Flow (DB)", () => {
   });
 
   afterAll(async () => {
-    if (organizationId) {
-      await prisma.organization.delete({ where: { id: organizationId } }).catch(() => undefined);
-    }
+    // Der Tenant wird über die E-Mail nachgeschlagen, falls organizationId
+    // nicht steht: registerOrganization committet den Tenant, bevor es die
+    // Token ausstellt – scheitert dieser zweite Schritt, existiert der Tenant
+    // trotzdem und bliebe sonst als Leiche in der DB zurück.
+    const orgId =
+      organizationId ??
+      (await prisma.user.findFirst({ where: { email }, select: { organizationId: true } }))
+        ?.organizationId;
+
+    // Bewusst ohne catch: ein misslungenes Aufräumen MUSS auffallen, sonst
+    // sammeln sich Test-Tenants unbemerkt an.
+    if (orgId) await prisma.organization.delete({ where: { id: orgId } });
     await prisma.$disconnect();
   });
 
