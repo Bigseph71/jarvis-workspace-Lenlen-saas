@@ -110,6 +110,67 @@ Trois modèles indépendants, isolés réseau, accessibles via REST interne :
 
 ---
 
+## Intégrations HR tierces (Phase 3)
+
+Les structures utilisent déjà un outil RH (Personio, DATEV, ou un export Excel du
+cabinet comptable). La plateforme ne les remplace pas, elle s'y branche. Trois
+canaux prévus, tous rattachés au module HR et soumis au rôle `HR` (jamais d'accès
+aux données patients).
+
+### 1. Import CSV universel
+
+- Périmètre : **contrats** (type, heures hebdo, jours travaillés), **horaires**
+  (plannings prévisionnels), **absences** (congés, maladie, formation).
+- Pas de format imposé au client : un **profil de mapping** par organisation
+  (colonne source → champ cible) est stocké en base et réutilisé à chaque import.
+- Pipeline : upload → parsing → validation Zod ligne par ligne → **table de
+  staging** → rapport (lignes OK / rejetées avec motif) → commit explicite.
+  Aucun import n'écrit directement dans les tables métier.
+- **Dry-run obligatoire** avant le commit. L'utilisateur voit le diff avant d'appliquer.
+- Idempotence via une clé externe (`external_id` fourni par le client) : ré-importer
+  le même fichier ne duplique rien, il met à jour.
+- Exécution asynchrone (**BullMQ**), les gros fichiers ne bloquent jamais l'API.
+
+### 2. Connecteur API Personio
+
+- Sens : **lecture** depuis Personio (employés, contrats, absences) vers la plateforme.
+- Auth : credentials OAuth/API par tenant, stockés chiffrés, jamais dans le code.
+- Synchronisation incrémentale planifiée (job récurrent) + déclenchement manuel.
+- Réconciliation par `external_id` Personio, même table de mapping que l'import CSV.
+  Le connecteur alimente le **même pipeline de staging**, il ne court-circuite rien.
+- Conflit de données : la source de vérité est configurable par organisation
+  (Personio maître, ou plateforme maître). Jamais d'écrasement silencieux.
+
+### 3. Webhook sortant vers DATEV
+
+- Sens : **écriture** depuis la plateforme vers la comptabilité (heures effectuées,
+  absences validées, km parcourus pour les notes de frais).
+- Signature **HMAC-SHA256** sur le payload, secret par tenant, header dédié.
+- Livraison at-least-once : file BullMQ, **retry avec backoff exponentiel**, dead
+  letter queue après N échecs, statut consultable par le Struktur-Admin.
+- Chaque envoi est tracé dans l'audit log (payload, code retour, tentatives).
+
+### Contrainte de conception (à appliquer dès la Phase 1)
+
+**Les endpoints du module HR doivent être écrits maintenant pour accueillir ces
+intégrations sans refactoring.** Concrètement :
+
+- Toute entité HR (contrat, horaire, absence) porte dès le départ un champ
+  `external_id` + `external_source` nullable, et un `updated_at` fiable pour
+  les synchronisations incrémentales.
+- La **logique métier vit dans une couche service**, pas dans les handlers HTTP.
+  Un import CSV, un connecteur API et un appel REST doivent atteindre le même
+  service, avec les mêmes validations et les mêmes règles contractuelles.
+- Les services HR acceptent le **traitement par lot** (batch), pas seulement
+  l'unitaire. Un import de 500 contrats ne doit pas être 500 appels.
+- Chaque mutation HR émet un **événement de domaine** (`contract.updated`,
+  `absence.approved`, ...). Le webhook DATEV s'abonne à ces événements, il
+  n'est pas appelé en dur depuis le code métier.
+- `organization_id` et la RLS s'appliquent à l'identique aux flux d'intégration.
+  Un connecteur n'est pas une exception au multi-tenant.
+
+---
+
 ## Rôles RBAC
 
 | Rôle | Périmètre |
