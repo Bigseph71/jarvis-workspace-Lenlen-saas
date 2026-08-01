@@ -237,7 +237,12 @@ intégrations sans refactoring.** Concrètement :
 ## Plan de développement
 
 **Phase 1 – MVP (M1–M4)** : Auth multi-tenant, gestion patients/fachkräfte/contrats, planification manuelle, Google Maps, geocodage, app mobile, i18n DE/EN/FR, Stripe Basic.
+Le module HR respecte dès maintenant la contrainte de conception décrite dans
+[Intégrations HR tierces (Phase 3)](#intégrations-hr-tierces-phase-3) : `external_id`,
+couche service, batch, événements de domaine.
 
 **Phase 2 – V1 (M5–M9)** : VRPTW async, echtzeit-tracking, geofencing, module leasing, Stripe Pro/Enterprise, CI/CD, monitoring.
 
-**Phase 3 – V2 (M10–M15)** : KI-Microservice complet, modell-governance, connecteurs API tiers, self-service onboarding, Kubernetes.
+**Phase 3 – V2 (M10–M15)** : KI-Microservice complet, modell-governance, connecteurs API tiers
+(détail : [Intégrations HR tierces (Phase 3)](#intégrations-hr-tierces-phase-3)),
+self-service onboarding, Kubernetes.
