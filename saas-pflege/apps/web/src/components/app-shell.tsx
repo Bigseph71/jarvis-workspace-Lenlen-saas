@@ -39,18 +39,25 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/*
+        Kopfzeile auf EINER Zeile, in jeder Sprache. Zwei Regeln tragen das:
+        `whitespace-nowrap` verhindert, dass ein Label in sich umbricht
+        ("Echtzeit-Tracking", "Tableau de bord"), und `overflow-x-auto` lässt
+        die Navigation notfalls scrollen, statt die Kopfzeile zu verdoppeln.
+        Ohne das zweite würde der nächste Menüpunkt den Umbruch zurückholen.
+      */}
       <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-6">
-            <span className="font-semibold text-gray-900">{tc("appName")}</span>
-            <nav className="flex gap-1">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
+          <div className="flex min-w-0 items-center gap-5">
+            <span className="whitespace-nowrap font-semibold text-gray-900">{tc("appName")}</span>
+            <nav className="flex min-w-0 gap-0.5 overflow-x-auto">
               {navItems.map((item) => {
                 const active = pathname === item.href;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`rounded-md px-3 py-1.5 text-sm transition ${
+                    className={`whitespace-nowrap rounded-md px-2 py-1.5 text-sm transition ${
                       active
                         ? "bg-gray-900 text-white"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
@@ -65,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={() => void logout()}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-100"
+            className="shrink-0 whitespace-nowrap rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-100"
           >
             {tc("logout")}
           </button>
