@@ -7,7 +7,8 @@
     "appName": "Len Len",
     "loading": "Wird geladen …",
     "logout": "Abmelden",
-    "errorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
+    "errorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+    "forbidden": "Für diese Aktion fehlt die Berechtigung."
   },
   "auth": {
     "login": {

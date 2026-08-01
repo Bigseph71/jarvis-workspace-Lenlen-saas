@@ -72,7 +72,13 @@ export default function CaregiverContractPage() {
     } catch (err) {
       // Das Backend begründet eine Ablehnung (422); diese Begründung ist für
       // den Benutzer brauchbarer als ein allgemeines "hat nicht geklappt".
-      setError(err instanceof ApiError && err.status === 422 ? err.message : tc("errorGeneric"));
+      setError(
+        err instanceof ApiError && (err.status === 422 || err.status === 403)
+          ? err.status === 403
+            ? tc("forbidden")
+            : err.message
+          : tc("errorGeneric"),
+      );
       setSubmitting(false);
     }
   }

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { useAuth } from "@/lib/auth/auth-context";
+import { canManageCaregivers } from "@/lib/auth/permissions";
 import { deactivateCaregiver, listCaregivers, type Caregiver } from "@len-len/api-client";
 
 const PAGE_SIZE = 20;
@@ -11,6 +13,10 @@ type LoadState = "loading" | "ready" | "error";
 
 export default function CaregiversPage() {
   const t = useTranslations("caregivers");
+  const { user } = useAuth();
+  // Der Koordinator liest die Liste, schreibt aber nicht (Backend: canWrite).
+  // Ohne diese Unterscheidung führen alle Aktionen bei ihm in einen 403.
+  const canManage = canManageCaregivers(user?.role);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -78,12 +84,14 @@ export default function CaregiversPage() {
             placeholder={t("searchPlaceholder")}
             className="w-64 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
           />
-          <Link
-            href="/caregivers/new"
-            className="whitespace-nowrap rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
-          >
-            {t("new")}
-          </Link>
+          {canManage ? (
+            <Link
+              href="/caregivers/new"
+              className="whitespace-nowrap rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
+            >
+              {t("new")}
+            </Link>
+          ) : null}
         </div>
       </div>
 
@@ -147,26 +155,30 @@ export default function CaregiversPage() {
                   <td className="px-4 py-3 text-gray-600">{c.weeklyHours}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-3">
-                      <Link
-                        href={`/caregivers/${c.id}/edit`}
-                        className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
-                      >
-                        {t("actions.edit")}
-                      </Link>
-                      <Link
-                        href={`/caregivers/${c.id}/contract`}
-                        className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
-                      >
-                        {t("actions.contract")}
-                      </Link>
-                      {c.isActive ? (
-                        <button
-                          type="button"
-                          onClick={() => void onDeactivate(c)}
-                          className="text-sm font-medium text-red-600 underline-offset-2 hover:underline"
-                        >
-                          {t("actions.deactivate")}
-                        </button>
+                      {canManage ? (
+                        <>
+                          <Link
+                            href={`/caregivers/${c.id}/edit`}
+                            className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
+                          >
+                            {t("actions.edit")}
+                          </Link>
+                          <Link
+                            href={`/caregivers/${c.id}/contract`}
+                            className="text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
+                          >
+                            {t("actions.contract")}
+                          </Link>
+                          {c.isActive ? (
+                            <button
+                              type="button"
+                              onClick={() => void onDeactivate(c)}
+                              className="text-sm font-medium text-red-600 underline-offset-2 hover:underline"
+                            >
+                              {t("actions.deactivate")}
+                            </button>
+                          ) : null}
+                        </>
                       ) : null}
                     </div>
                   </td>

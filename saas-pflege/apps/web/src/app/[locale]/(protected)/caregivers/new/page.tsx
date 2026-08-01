@@ -34,7 +34,13 @@ export default function NewCaregiverPage() {
       const created = await createCaregiver(caregiver);
       createdId = created.id;
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 402 ? t("limitReached") : tc("errorGeneric"));
+      setError(
+        err instanceof ApiError && err.status === 402
+          ? t("limitReached")
+          : err instanceof ApiError && err.status === 403
+            ? tc("forbidden")
+            : tc("errorGeneric"),
+      );
       setSubmitting(false);
       return;
     }

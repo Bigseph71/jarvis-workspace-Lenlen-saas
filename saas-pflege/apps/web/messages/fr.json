@@ -7,7 +7,8 @@
     "appName": "Len Len",
     "loading": "Chargement …",
     "logout": "Se déconnecter",
-    "errorGeneric": "Une erreur est survenue. Veuillez réessayer."
+    "errorGeneric": "Une erreur est survenue. Veuillez réessayer.",
+    "forbidden": "Vous n'avez pas les droits pour cette action."
   },
   "auth": {
     "login": {
