@@ -25,6 +25,29 @@ jobs:
     name: lint → typecheck → test → build
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    # Wegwerf-Postgres für die Integrationstests. Bewusst ein Service-Container
+    # und keine gemeinsam genutzte Datenbank: jeder Lauf startet leer, parallele
+    # Läufe kommen sich nicht ins Gehege, und es ist kein Zugangsdatum nötig.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lenlen_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # localhost: die Garde in test/helpers/test-database.ts lässt genau das zu.
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lenlen_test?schema=public
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,7 +78,15 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Schema (prisma db push) + RLS-Policies auf die Wegwerf-Datenbank. Ohne
+      # die Policies liefe der Tenant-Isolationstest gegen eine Datenbank, in
+      # der es gar nichts zu isolieren gibt.
+      - name: Provision test database
+        run: pnpm --filter @len-len/database provision:test
+
       - name: Test
+        env:
+          RUN_DB_TESTS: "1"
         run: pnpm test
 
       - name: Build

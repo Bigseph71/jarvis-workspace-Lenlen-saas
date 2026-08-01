@@ -15,7 +15,10 @@
       "dependsOn": ["^build"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      // Teil des Cache-Schlüssels: sonst könnte ein Lauf MIT DB-Tests das
+      // Ergebnis eines Laufs OHNE sie aus dem Cache serviert bekommen.
+      "env": ["RUN_DB_TESTS", "TEST_DATABASE_URL", "ALLOW_REMOTE_DB_TESTS"]
     }
   }
 }
