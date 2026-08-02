@@ -37,6 +37,10 @@ export default defineConfig({
       JWT_REFRESH_SECRET: "test_refresh_secret_min_16_chars",
       JWT_ACCESS_TTL: "15m",
       JWT_REFRESH_TTL: "7d",
+      // Preis-IDs für die Checkout-Tests. Keine Keys: der Provider bleibt der
+      // Stub, die Tests bauen den Stripe-Provider selbst mit einem Doppel.
+      STRIPE_PRICE_BASIC: "price_test_basic",
+      STRIPE_PRICE_PRO: "price_test_pro",
     },
     coverage: {
       provider: "v8",

@@ -41,6 +41,12 @@ const prismaMock = {
   },
   organization: {
     update: vi.fn(async (args: Record<string, unknown>) => record("organization.update", args)),
+    // Zahl der Tenants hinter einer Stripe-Customer-ID. Steuert den Rückfall
+    // auf die Abo-Metadaten, wenn die Zuordnung noch fehlt.
+    count: vi.fn(async (args: Record<string, unknown>) => {
+      record("organization.count", args);
+      return organizationForCustomer ? 1 : 0;
+    }),
     updateMany: vi.fn(async (args: Record<string, unknown>) => {
       record("organization.updateMany", args);
       return { count: 1 };
@@ -258,7 +264,7 @@ describe("handleStripeEvent – Checkout abgeschlossen", () => {
       ),
     );
 
-    const [update] = callsTo("organization.update");
+    const [update] = callsTo("organization.updateMany");
     expect(update.where).toMatchObject({ id: "org-1" });
     expect(update.data).toMatchObject({
       subscriptionStatus: "ACTIVE",
@@ -288,7 +294,7 @@ describe("handleStripeEvent – Checkout abgeschlossen", () => {
         "evt_1",
       ),
     );
-    const [update] = callsTo("organization.update");
+    const [update] = callsTo("organization.updateMany");
     expect(update.data).toMatchObject({ subscriptionStatus: "ACTIVE" });
     expect(update.data).not.toHaveProperty("subscriptionPlan");
   });

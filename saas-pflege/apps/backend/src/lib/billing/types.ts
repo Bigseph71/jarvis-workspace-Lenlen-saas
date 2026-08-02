@@ -3,7 +3,10 @@ export interface CheckoutParams {
   plan: string;
   successUrl: string;
   cancelUrl: string;
+  /** Vorbelegung der E-Mail, wenn noch kein Customer existiert. */
   customerEmail?: string;
+  /** Bestehender Stripe-Customer des Tenants, falls schon einer angelegt wurde. */
+  customerId?: string;
 }
 
 export interface CheckoutSession {

@@ -1,5 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import { getBillingProvider, type BillingEvent } from "../../lib/billing/index.js";
+import {
+  getBillingProvider,
+  type BillingEvent,
+  type BillingProvider,
+} from "../../lib/billing/index.js";
 import { handleStripeEvent } from "./billing.service.js";
 
 /**
@@ -16,9 +20,21 @@ export async function billingWebhookRoutes(app: FastifyInstance): Promise<void> 
     const signature = request.headers["stripe-signature"];
     const sig = typeof signature === "string" ? signature : undefined;
 
+    // Provider-Auswahl BEWUSST außerhalb des Signatur-try: eine fehlende
+    // Stripe-Konfiguration ist kein ungültiges Event. Als 400 getarnt hieße
+    // Stripe "verwirf das Event" und der Verlust fiele niemandem auf; als 503
+    // stellt Stripe später erneut zu, und im Log steht der wahre Grund.
+    let provider: BillingProvider;
+    try {
+      provider = getBillingProvider();
+    } catch (err) {
+      request.log.error({ err }, "Stripe-Webhook: Billing nicht konfiguriert");
+      return reply.status(503).send({ error: "BillingNotConfigured" });
+    }
+
     let event: BillingEvent;
     try {
-      event = getBillingProvider().constructEvent(request.body as Buffer, sig);
+      event = provider.constructEvent(request.body as Buffer, sig);
     } catch (err) {
       request.log.warn({ err }, "Stripe-Webhook: Signaturprüfung fehlgeschlagen");
       return reply.status(400).send({ error: "InvalidSignature" });

@@ -148,7 +148,12 @@ Convertit l'adresse d'un patient en coordonnées (Google Maps). Sans
 
 ### Billing / Stripe (`/billing`)
 
-Abonnement multi-tenant. Sans clés Stripe, un **stub** prend le relais (dev/test).
+Abonnement multi-tenant. Sans clés Stripe, un **stub** prend le relais en dev et
+en test. **En production, l'absence de clés est une erreur** : le stub ne vérifie
+aucune signature, il accepte n'importe quel JSON comme un vrai événement Stripe.
+Laissé actif en production, il permettrait à quiconque connaît l'URL de changer
+le plan d'un tenant ou de résilier son abonnement par un simple POST. Les routes
+billing répondent donc `503 BillingNotConfigured` tant que les clés manquent.
 
 - **Plans & limites** (source de vérité `billing/plan.ts`) : Basic (100 patients,
   10 fachkräfte, 5 véhicules, sans KI), Pro (1000/100/30, KI), Enterprise
@@ -170,8 +175,34 @@ Abonnement multi-tenant. Sans clés Stripe, un **stub** prend le relais (dev/tes
 | POST | `/billing/checkout` | démarre l'abonnement Stripe | admin |
 | POST | `/billing/webhook` | événements Stripe (signature vérifiée) | public (Stripe) |
 
-Note : suspension après karenzzeit (`PAST_DUE` → `SUSPENDED`) laissée en TODO ;
-le webhook passe à `PAST_DUE` à l'échec, la suspension dure restera un job planifié.
+#### Mise en service de Stripe
+
+1. **Produit et prix** dans le tableau de bord Stripe : un prix récurrent par
+   plan. Reporter les identifiants (`price_...`) dans `STRIPE_PRICE_BASIC`,
+   `STRIPE_PRICE_PRO`, `STRIPE_PRICE_ENTERPRISE`. Un plan sans prix configuré
+   fait échouer le checkout avec un message explicite.
+2. **Clé secrète** → `STRIPE_SECRET_KEY` (`sk_live_...` en production).
+3. **Endpoint webhook** vers `https://<api>/billing/webhook`, en s'abonnant à :
+   `checkout.session.completed`, `invoice.payment_succeeded`,
+   `invoice.payment_failed`, `customer.subscription.created`,
+   `customer.subscription.updated`, `customer.subscription.deleted`.
+   Le secret de signature de l'endpoint va dans `STRIPE_WEBHOOK_SECRET`.
+4. En local, `stripe listen --forward-to localhost:4000/billing/webhook` fournit
+   un `whsec_...` de test.
+
+Deux détails qui évitent des dégâts silencieux :
+
+- Le checkout réutilise le `stripeCustomerId` déjà connu du tenant. Sans cela
+  Stripe crée un second client à chaque souscription, et l'ancien abonnement
+  reste rattaché à un client devenu invisible pour l'application (portail
+  self-service et factures perdus).
+- L'identifiant d'organisation est posé sur la session **et** sur l'abonnement.
+  `customer.subscription.created` peut arriver avant
+  `checkout.session.completed` ; sans métadonnées sur l'abonnement, cet
+  événement ne serait rattachable à aucun tenant et serait ignoré.
+
+Note : la suspension après karenzzeit (`PAST_DUE` → `SUSPENDED`) est assurée par
+le worker `billing.worker.ts` (balayage périodique, cf. `grace.ts`).
 
 ## Tests
 

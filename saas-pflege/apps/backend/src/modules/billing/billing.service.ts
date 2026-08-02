@@ -29,11 +29,29 @@ export async function createCheckout(
   ctx: TenantContext,
   input: CheckoutInput,
 ): Promise<{ url: string }> {
+  // Bestehenden Customer und die E-Mail des Handelnden mitgeben: das eine
+  // verhindert doppelte Kunden bei Stripe, das andere erspart dem Admin, seine
+  // Adresse im Checkout erneut einzutippen.
+  const { customerId, email } = await withTenant(ctx.organizationId, async (tx) => {
+    const [org, user] = await Promise.all([
+      tx.organization.findFirst({
+        where: { id: ctx.organizationId },
+        select: { stripeCustomerId: true },
+      }),
+      ctx.userId
+        ? tx.user.findFirst({ where: { id: ctx.userId }, select: { email: true } })
+        : Promise.resolve(null),
+    ]);
+    return { customerId: org?.stripeCustomerId ?? undefined, email: user?.email };
+  });
+
   const session = await getBillingProvider().createCheckoutSession({
     organizationId: ctx.organizationId,
     plan: input.plan,
     successUrl: billingUrl(input.locale, "?checkout=success"),
     cancelUrl: billingUrl(input.locale, "?checkout=cancel"),
+    customerId,
+    customerEmail: email,
   });
   return { url: session.url };
 }
@@ -304,7 +322,10 @@ async function processEvent(event: BillingEvent): Promise<void> {
     const customer = str(object.customer);
     const subscription = str(object.subscription);
 
-    await prisma.organization.update({
+    // updateMany statt update: ein gelöschter Tenant darf das Event nicht
+    // werfen lassen, sonst wiederholte Stripe es tagelang gegen eine Zeile,
+    // die es nicht mehr gibt.
+    await prisma.organization.updateMany({
       where: { id: organizationId },
       data: {
         subscriptionStatus: SubscriptionStatus.ACTIVE,
@@ -333,6 +354,22 @@ async function processEvent(event: BillingEvent): Promise<void> {
     const subStatus = raw ? mapSubscriptionStatus(raw) : null;
     const customerId = str(object.customer);
     if (!subStatus || !customerId) return;
+
+    // Beim allerersten Abo kann dieses Event VOR checkout.session.completed
+    // eintreffen; die Customer-ID steht dann noch an keinem Tenant und das
+    // Event fiele ins Leere. Die Metadaten des Abos (im Checkout gesetzt)
+    // stellen die Zuordnung her.
+    const linked = await prisma.organization.count({ where: { stripeCustomerId: customerId } });
+    if (linked === 0) {
+      const metadata = (object.metadata ?? {}) as Record<string, unknown>;
+      const organizationId = str(metadata.organizationId);
+      if (organizationId) {
+        await prisma.organization.updateMany({
+          where: { id: organizationId },
+          data: { stripeCustomerId: customerId },
+        });
+      }
+    }
 
     await applyStatusByCustomer(customerId, subStatus);
 
