@@ -412,6 +412,12 @@
       "success": "Paiement réussi. Votre abonnement sera activé sous peu.",
       "canceled": "Checkout annulé. Aucun montant n'a été débité."
     },
+    "planChange": {
+      "success": "Plan modifié. La différence au prorata apparaîtra sur votre prochaine facture.",
+      "tooSmall": "Le plan choisi est trop petit pour vos données actuelles. Réduisez d'abord le nombre de patients, de soignants ou de véhicules.",
+      "customPrice": "Votre abonnement fonctionne avec un tarif négocié et ne peut pas être modifié automatiquement. Contactez le support.",
+      "error": "Le changement de plan a échoué. Veuillez réessayer."
+    },
     "invoices": {
       "title": "Factures",
       "empty": "Aucune facture pour le moment.",

@@ -67,14 +67,25 @@ export async function listInvoices(limit?: number): Promise<{ data: Invoice[]; t
 }
 
 /**
- * Startet den Stripe-Checkout und liefert die Weiterleitungs-URL. Die Locale
- * bestimmt, wohin Stripe nach Abschluss zurückführt.
+ * Ergebnis einer Plan-Auswahl.
+ *  - `checkout`    : zu `url` weiterleiten (Erst- oder Neuabschluss)
+ *  - `planChanged` : am bestehenden Abo gewechselt, keine Weiterleitung
+ */
+export type CheckoutResult =
+  | { kind: "checkout"; url: string }
+  | { kind: "planChanged"; plan: SubscriptionPlan };
+
+/**
+ * Wählt einen Plan. Hat der Tenant noch kein laufendes Abo, liefert das Backend
+ * eine Stripe-Checkout-URL (die Locale bestimmt, wohin Stripe zurückführt).
+ * Existiert bereits eines, wird der Plan direkt an diesem Abo gewechselt – ein
+ * zweiter Checkout würde bei Stripe ein zweites Abo anlegen.
  */
 export async function createCheckout(
   plan: SubscriptionPlan,
   locale: BillingLocale,
-): Promise<{ url: string }> {
-  return apiFetch<{ url: string }>("/billing/checkout", {
+): Promise<CheckoutResult> {
+  return apiFetch<CheckoutResult>("/billing/checkout", {
     method: "POST",
     body: { plan, locale },
   });

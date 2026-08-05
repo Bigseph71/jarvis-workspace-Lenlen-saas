@@ -3,7 +3,9 @@ import type {
   BillingProvider,
   CheckoutParams,
   CheckoutSession,
+  PlanChangeParams,
   PortalParams,
+  SubscriptionState,
 } from "./types.js";
 
 // Stub für Dev/Test ohne Stripe-Keys. KEINE Signaturprüfung (Body = JSON).
@@ -19,6 +21,17 @@ export class StubBillingProvider implements BillingProvider {
 
   async createPortalSession(params: PortalParams): Promise<{ url: string }> {
     return { url: `https://stub.local/portal?customer=${params.customerId}` };
+  }
+
+  // Ohne Stripe gibt es kein Abo zu ändern. Den Tenant-Plan schreibt der
+  // Service, damit Dev/Test denselben Ablauf durchlaufen wie Produktion.
+  async changeSubscriptionPlan(_params: PlanChangeParams): Promise<void> {}
+
+  // Ohne Stripe existiert kein Abo, dessen Zustand sich abfragen ließe. null ist
+  // die ehrliche Antwort: Dev/Test laufen damit über den Checkout-Zweig. Hier
+  // "läuft noch" zu behaupten hieße, einen Plan zu erfinden.
+  async getSubscriptionState(_subscriptionId: string): Promise<SubscriptionState | null> {
+    return null;
   }
 
   constructEvent(payload: Buffer): BillingEvent {

@@ -412,6 +412,12 @@
       "success": "Payment successful. Your subscription will be activated shortly.",
       "canceled": "Checkout canceled. You have not been charged."
     },
+    "planChange": {
+      "success": "Plan changed. The prorated difference will appear on your next invoice.",
+      "tooSmall": "The selected plan is too small for your current data. Please reduce the number of patients, caregivers or vehicles first.",
+      "customPrice": "Your subscription runs on an individually negotiated rate and cannot be changed automatically. Please contact support.",
+      "error": "The plan could not be changed. Please try again."
+    },
     "invoices": {
       "title": "Invoices",
       "empty": "No invoices yet.",
