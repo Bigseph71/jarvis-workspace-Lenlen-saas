@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import {
+  ApiError,
   createCheckout,
   createPortal,
   getSubscription,
@@ -149,6 +150,11 @@ export default function BillingPage() {
   const [state, setState] = useState<LoadState>("loading");
   const [busy, setBusy] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Rückmeldung zum Planwechsel am bestehenden Abo: dort gibt es keine
+  // Weiterleitung zu Stripe, die dem Nutzer sonst zeigen würde, dass etwas passiert.
+  const [planNotice, setPlanNotice] = useState<{ tone: "success" | "error"; text: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     let active = true;
@@ -184,14 +190,35 @@ export default function BillingPage() {
   const onSelectPlan = useCallback(
     async (plan: SubscriptionPlan) => {
       setBusy(true);
+      setPlanNotice(null);
       try {
-        const { url } = await createCheckout(plan, locale);
-        window.location.href = url;
-      } catch {
+        const result = await createCheckout(plan, locale);
+
+        if (result.kind === "checkout") {
+          // busy bleibt absichtlich stehen: die Weiterleitung läuft bereits.
+          window.location.href = result.url;
+          return;
+        }
+
+        // Wechsel am bestehenden Abo: kein Stripe-Redirect, nur neu laden.
+        setPlanNotice({ tone: "success", text: t("planChange.success") });
+        setReloadKey((k) => k + 1);
+        setBusy(false);
+      } catch (err) {
+        // Fehler, an denen der Nutzer etwas ändern kann, verdienen eine eigene
+        // Erklärung statt der allgemeinen Fehlermeldung.
+        const code = err instanceof ApiError ? err.code : null;
+        const key =
+          code === "PlanTooSmall"
+            ? "planChange.tooSmall"
+            : code === "PlanChangeUnsupported"
+              ? "planChange.customPrice"
+              : "planChange.error";
+        setPlanNotice({ tone: "error", text: t(key) });
         setBusy(false);
       }
     },
-    [locale],
+    [locale, t],
   );
 
   const onOpenPortal = useCallback(async () => {
@@ -253,6 +280,19 @@ export default function BillingPage() {
           </button>
         ) : null}
       </div>
+
+      {planNotice ? (
+        <p
+          role="status"
+          className={`mt-4 rounded-md border px-4 py-3 text-sm ${
+            planNotice.tone === "success"
+              ? "border-green-200 bg-green-50 text-green-800"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          {planNotice.text}
+        </p>
+      ) : null}
 
       {checkoutResult === "success" ? (
         <p className="mt-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">

@@ -10,6 +10,7 @@ import { env } from "../../config/env.js";
 import { AppError } from "../../lib/errors.js";
 import type { TenantContext } from "../../lib/context.js";
 import { getBillingProvider, type BillingEvent } from "../../lib/billing/index.js";
+import { planForPrice } from "../../lib/billing/prices.js";
 import { PLAN_LIMITS, parsePlan, resolvePlanLimits, type PlanLimits } from "./plan.js";
 import { mapEventToStatus, mapInvoiceStatus, mapSubscriptionStatus } from "./events.js";
 import { graceDaysRemaining, graceDeadline } from "./grace.js";
@@ -24,36 +25,157 @@ function billingUrl(locale: string, query = ""): string {
   return `${env.WEB_ORIGIN}/${locale}/billing${query}`;
 }
 
-/** Startet eine Stripe-Checkout-Session für den aktuellen Tenant. */
+/**
+ * Ergebnis einer Plan-Auswahl. Zwei Wege, weil ein Tenant mit laufendem Abo
+ * NICHT durch den Checkout darf (siehe createCheckout):
+ *  - `checkout`   -> Weiterleitung zu Stripe (Erstabschluss oder Neuabschluss)
+ *  - `planChanged` -> am bestehenden Abo gewechselt, keine Weiterleitung nötig
+ */
+export type CheckoutResult =
+  | { kind: "checkout"; url: string }
+  | { kind: "planChanged"; plan: SubscriptionPlan };
+
+/**
+ * Verhindert den Wechsel in einen Plan, dessen Limits der Tenant heute schon
+ * überschreitet. Ohne die Prüfung bliebe der Bestand zwar erhalten, aber jedes
+ * weitere Anlegen scheiterte an 402 (limits.ts) – der Tenant hätte bezahlt und
+ * käme trotzdem nicht weiter.
+ *
+ * Geprüft wird gegen die KATALOG-Limits des Zielplans: ein ausgehandelter
+ * Override in `planLimits` gehört zum bisherigen Vertrag und gilt für den neuen
+ * Plan nicht automatisch weiter.
+ */
+async function assertPlanFitsUsage(
+  organizationId: string,
+  plan: SubscriptionPlan,
+): Promise<void> {
+  const limits = PLAN_LIMITS[plan];
+
+  const usage = await withTenant(organizationId, async (tx) => {
+    const [patients, caregivers, vehicles] = await Promise.all([
+      tx.patient.count({ where: { organizationId, isActive: true } }),
+      tx.caregiver.count({ where: { organizationId, isActive: true } }),
+      tx.vehicle.count({ where: { organizationId, isActive: true } }),
+    ]);
+    return { patients, caregivers, vehicles };
+  });
+
+  const over: string[] = [];
+  if (usage.patients > limits.patients) {
+    over.push(`Patienten (${usage.patients} > ${limits.patients})`);
+  }
+  if (usage.caregivers > limits.caregivers) {
+    over.push(`Fachkräfte (${usage.caregivers} > ${limits.caregivers})`);
+  }
+  // null = unbegrenzt (Enterprise-Fahrzeuge), dann gibt es nichts zu prüfen.
+  if (limits.vehicles !== null && usage.vehicles > limits.vehicles) {
+    over.push(`Fahrzeuge (${usage.vehicles} > ${limits.vehicles})`);
+  }
+
+  if (over.length > 0) {
+    throw new AppError(
+      409,
+      `Der Bestand überschreitet die Limits von ${plan}: ${over.join(", ")}`,
+      "PlanTooSmall",
+    );
+  }
+}
+
+/**
+ * Wählt einen Plan: Checkout beim Erstabschluss, Wechsel am bestehenden Abo,
+ * sobald der Tenant bereits eines hat.
+ *
+ * Der Unterschied ist nicht kosmetisch. Stripe erlaubt beliebig viele Abos je
+ * Customer: ein zweiter Checkout ließe das alte Abo weiterlaufen, der Tenant
+ * würde doppelt belastet, und `stripeSubscriptionId` zeigte nur noch auf das
+ * neueste – das alte wäre für Kündigung und Statusverfolgung verloren.
+ */
 export async function createCheckout(
   ctx: TenantContext,
   input: CheckoutInput,
-): Promise<{ url: string }> {
+): Promise<CheckoutResult> {
   // Bestehenden Customer und die E-Mail des Handelnden mitgeben: das eine
   // verhindert doppelte Kunden bei Stripe, das andere erspart dem Admin, seine
   // Adresse im Checkout erneut einzutippen.
-  const { customerId, email } = await withTenant(ctx.organizationId, async (tx) => {
-    const [org, user] = await Promise.all([
+  const { org, email } = await withTenant(ctx.organizationId, async (tx) => {
+    const [organization, user] = await Promise.all([
       tx.organization.findFirst({
         where: { id: ctx.organizationId },
-        select: { stripeCustomerId: true },
+        // Plan und Status bewusst NICHT: die Entscheidung checkout-vs-Wechsel
+        // fällt weiter unten anhand des Zustands bei Stripe, nicht anhand
+        // unseres Spiegels.
+        select: { stripeCustomerId: true, stripeSubscriptionId: true },
       }),
       ctx.userId
         ? tx.user.findFirst({ where: { id: ctx.userId }, select: { email: true } })
         : Promise.resolve(null),
     ]);
-    return { customerId: org?.stripeCustomerId ?? undefined, email: user?.email };
+    return { org: organization, email: user?.email };
   });
+  if (!org) throw new AppError(404, "Organisation nicht gefunden", "NotFound");
+
+  await assertPlanFitsUsage(ctx.organizationId, input.plan);
+
+  // Ob ein zweites Abo entstünde, weiß nur Stripe. Der lokal gespeicherte Status
+  // taugt dafür nicht: SUSPENDED steht sowohl für `unpaid` (das Abo besteht,
+  // ein Checkout belastete doppelt) als auch für `incomplete_expired` (das Abo
+  // ist tot, nur ein Checkout hilft weiter). Auch ACTIVE ist keine Garantie –
+  // ein verpasster Webhook lässt den lokalen Status veralten.
+  // Deshalb hier die Rückfrage an der Quelle, statt sich auf eine
+  // Dashboard-Einstellung oder den eigenen Spiegel zu verlassen.
+  const subscriptionId = org.stripeSubscriptionId;
+  const state = subscriptionId
+    ? await getBillingProvider().getSubscriptionState(subscriptionId)
+    : null;
+
+  if (subscriptionId && state?.live) {
+    // Sonderpreis oder mehrere Positionen: der Plan hinter dem Abo ist nicht
+    // eindeutig. Ihn auf den Katalogpreis umzustellen würde eine ausgehandelte
+    // Kondition stillschweigend löschen – hier hört die Automatik auf.
+    if (state.plan === null) {
+      throw new AppError(
+        409,
+        `Dieses Abonnement läuft auf einer Sonderkondition (Stripe-Status: ${state.status}) ` +
+          "und kann nicht automatisch gewechselt werden. Bitte wenden Sie sich an den Support.",
+        "PlanChangeUnsupported",
+      );
+    }
+
+    // Gegen den Plan bei STRIPE prüfen, nicht gegen den lokalen: nur so ist die
+    // Meldung auch dann richtig, wenn der Spiegel gerade hinterherhinkt.
+    if (state.plan === input.plan) {
+      throw new AppError(409, `Plan ${input.plan} ist bereits aktiv`, "Conflict");
+    }
+
+    await getBillingProvider().changeSubscriptionPlan({
+      organizationId: ctx.organizationId,
+      subscriptionId,
+      plan: input.plan,
+    });
+
+    // Sofort spiegeln, damit die Oberfläche nicht auf den Webhook warten muss.
+    // `customer.subscription.updated` schreibt gleich darauf denselben Plan
+    // noch einmal (aus dem Preis abgeleitet) – das ist idempotent.
+    await prisma.organization.updateMany({
+      where: { id: ctx.organizationId },
+      data: {
+        subscriptionPlan: input.plan,
+        planLimits: PLAN_LIMITS[input.plan] as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    return { kind: "planChanged", plan: input.plan };
+  }
 
   const session = await getBillingProvider().createCheckoutSession({
     organizationId: ctx.organizationId,
     plan: input.plan,
     successUrl: billingUrl(input.locale, "?checkout=success"),
     cancelUrl: billingUrl(input.locale, "?checkout=cancel"),
-    customerId,
+    customerId: org.stripeCustomerId ?? undefined,
     customerEmail: email,
   });
-  return { url: session.url };
+  return { kind: "checkout", url: session.url };
 }
 
 export interface SubscriptionView {
@@ -228,6 +350,23 @@ function int(value: unknown): number | null {
 }
 
 /**
+ * Plan eines Abo-Objekts, abgeleitet aus dem Preis seiner einzigen Position.
+ * Bewusst nicht aus `metadata.plan`: ein Wechsel über das Stripe-Kundenportal
+ * ändert den Preis, nicht die Metadaten (siehe prices.ts).
+ * null = kein eindeutiger Plan (mehrere Positionen oder unbekannter Preis).
+ */
+function planFromSubscription(object: Record<string, unknown>): SubscriptionPlan | null {
+  const items = (object.items as { data?: unknown } | undefined)?.data;
+  if (!Array.isArray(items) || items.length !== 1) return null;
+
+  const price = (items[0] as { price?: { id?: unknown } } | undefined)?.price;
+  const priceId = str(price?.id);
+  if (!priceId) return null;
+
+  return parsePlan(planForPrice(priceId));
+}
+
+/**
  * Schreibt den Abo-Status auf den Tenant hinter der Stripe-Customer-ID und
  * pflegt dabei das Karenzzeit-Fenster (Regel 8):
  *  - PAST_DUE -> `pastDueSince` NUR setzen, wenn noch leer. Stripe wiederholt
@@ -372,6 +511,25 @@ async function processEvent(event: BillingEvent): Promise<void> {
     }
 
     await applyStatusByCustomer(customerId, subStatus);
+
+    // Plan nachziehen, falls er sich geändert hat. Deckt auch den Wechsel ab,
+    // den ein Kunde selbst im Stripe-Kundenportal auslöst – dort läuft nichts
+    // über unsere API.
+    //
+    // Die Bedingung `subscriptionPlan: { not: plan }` ist nicht bloß Sparsamkeit:
+    // `customer.subscription.updated` trifft auch bei Zahlungsmittel-Wechsel oder
+    // Verlängerung ein. Ohne sie würde jedes dieser Events `planLimits` auf die
+    // Katalogwerte zurücksetzen und einen ausgehandelten Override still löschen.
+    const plan = planFromSubscription(object);
+    if (plan) {
+      await prisma.organization.updateMany({
+        where: { stripeCustomerId: customerId, subscriptionPlan: { not: plan } },
+        data: {
+          subscriptionPlan: plan,
+          planLimits: PLAN_LIMITS[plan] as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
 
     const subscriptionId = str(object.id);
     if (subscriptionId) {

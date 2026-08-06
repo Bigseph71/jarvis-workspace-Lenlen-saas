@@ -1,18 +1,53 @@
 import Stripe from "stripe";
-import { env } from "../../config/env.js";
+import { AppError } from "../errors.js";
+import { planForPrice, priceForPlan } from "./prices.js";
 import type {
   BillingEvent,
   BillingProvider,
   CheckoutParams,
   CheckoutSession,
+  PlanChangeParams,
   PortalParams,
+  SubscriptionState,
 } from "./types.js";
 
-const PRICE_BY_PLAN: Record<string, string | undefined> = {
-  BASIC: env.STRIPE_PRICE_BASIC,
-  PRO: env.STRIPE_PRICE_PRO,
-  ENTERPRISE: env.STRIPE_PRICE_ENTERPRISE,
-};
+/**
+ * Stripe-Status, bei denen das Abo fortbesteht: es kann weiter (oder wieder)
+ * abrechnen, ein zweiter Checkout würde den Tenant also doppelt belasten.
+ *
+ * Bewusst enthalten:
+ *  - `unpaid`  – Stripe behält das Abo nach erschöpften Zahlungsversuchen. Ob es
+ *                stattdessen gekündigt wird, hängt an einer Dashboard-
+ *                Einstellung; darauf verlassen wir uns nicht.
+ *  - `paused`  – Einzug ausgesetzt, das Abo selbst lebt weiter.
+ *
+ * Bewusst NICHT enthalten:
+ *  - `canceled`, `incomplete_expired` – endgültig beendet.
+ *  - `incomplete` – die erste Zahlung kam nie durch. Das Abo verfällt von selbst
+ *                   nach 23 Stunden und hat nie abgerechnet; ein neuer Checkout
+ *                   kann hier nichts verdoppeln und ist der einzige Weg zurück.
+ */
+const LIVE_STATUSES = new Set<string>(["active", "trialing", "past_due", "unpaid", "paused"]);
+
+/**
+ * Preis des Plans, oder ein sprechender Fehler.
+ *
+ * 503 und nicht 500: der Dienst ist gesund, es fehlt nur eine Konfiguration –
+ * dieselbe Lesart wie beim fehlenden Stripe-Key (siehe index.ts). Die Meldung
+ * nennt die Variable, damit im Log steht, was zu setzen ist, statt dass jemand
+ * einen generischen 500 im Checkout nachstellen muss.
+ */
+function requirePrice(plan: string): string {
+  const price = priceForPlan(plan);
+  if (!price) {
+    throw new AppError(
+      503,
+      `Kein Stripe-Preis für Plan ${plan} hinterlegt (STRIPE_PRICE_${plan} fehlt)`,
+      "BillingNotConfigured",
+    );
+  }
+  return price;
+}
 
 export class StripeBillingProvider implements BillingProvider {
   readonly name = "stripe";
@@ -23,10 +58,7 @@ export class StripeBillingProvider implements BillingProvider {
   ) {}
 
   async createCheckoutSession(params: CheckoutParams): Promise<CheckoutSession> {
-    const price = PRICE_BY_PLAN[params.plan];
-    if (!price) {
-      throw new Error(`Kein Stripe-Preis für Plan ${params.plan} konfiguriert`);
-    }
+    const price = requirePrice(params.plan);
 
     const metadata = { organizationId: params.organizationId, plan: params.plan };
 
@@ -54,6 +86,71 @@ export class StripeBillingProvider implements BillingProvider {
 
     if (!session.url) throw new Error("Stripe lieferte keine Checkout-URL");
     return { id: session.id, url: session.url };
+  }
+
+  async getSubscriptionState(subscriptionId: string): Promise<SubscriptionState | null> {
+    let subscription: Stripe.Subscription;
+    try {
+      subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+    } catch (err) {
+      // resource_missing: die gespeicherte ID zeigt ins Leere (in Stripe
+      // gelöscht, oder noch aus dem Testmodus). Wie "kein Abo" behandeln, sonst
+      // käme der Tenant nie mehr zu einem Abschluss.
+      // Jeder ANDERE Fehler (Netz, falscher Key, Rate Limit) wird
+      // weitergereicht: dort wüssten wir nichts, und ein Checkout auf Verdacht
+      // ist genau die Doppelbelastung, die wir verhindern wollen.
+      if (
+        err instanceof Stripe.errors.StripeInvalidRequestError &&
+        err.code === "resource_missing"
+      ) {
+        return null;
+      }
+      throw err;
+    }
+
+    const items = subscription.items.data;
+    const item = items.length === 1 ? items[0] : undefined;
+
+    return {
+      status: subscription.status,
+      live: LIVE_STATUSES.has(subscription.status),
+      plan: item ? planForPrice(item.price.id) : null,
+    };
+  }
+
+  /**
+   * Tauscht den Preis der bestehenden Abo-Position aus. Kein zweiter Checkout:
+   * Stripe erlaubt beliebig viele Abos je Customer, ein Upgrade per Checkout
+   * ließe das alte Abo also weiterlaufen und der Tenant zahlte beide.
+   */
+  async changeSubscriptionPlan(params: PlanChangeParams): Promise<void> {
+    const price = requirePrice(params.plan);
+
+    const subscription = await this.stripe.subscriptions.retrieve(params.subscriptionId);
+    const items = subscription.items.data;
+    const item = items[0];
+    // Unsere Checkouts legen genau eine Position an. Mehrere bedeuten ein in
+    // Stripe von Hand zusammengestelltes Abo – dort blind die erste zu ersetzen
+    // könnte einen ausgehandelten Zusatzposten löschen.
+    if (items.length !== 1 || !item) {
+      throw new AppError(
+        409,
+        "Das Abonnement hat mehrere Positionen und kann nicht automatisch gewechselt werden",
+        "Conflict",
+      );
+    }
+
+    // Schon auf dem Zielpreis: nichts zu tun (idempotent bei Doppelklick).
+    if (item.price.id === price) return;
+
+    await this.stripe.subscriptions.update(params.subscriptionId, {
+      items: [{ id: item.id, price, quantity: 1 }],
+      // Anteilige Verrechnung des Restzeitraums. Die Differenz landet auf der
+      // nächsten Rechnung, statt sofort eine Zahlung auszulösen – ein Wechsel
+      // kann so nicht mitten in einer 3DS-Abfrage stecken bleiben.
+      proration_behavior: "create_prorations",
+      metadata: { organizationId: params.organizationId, plan: params.plan },
+    });
   }
 
   async createPortalSession(params: PortalParams): Promise<{ url: string }> {

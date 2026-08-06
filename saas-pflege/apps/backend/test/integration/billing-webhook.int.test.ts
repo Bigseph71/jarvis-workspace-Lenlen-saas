@@ -183,4 +183,47 @@ describe.skipIf(!runDbTests)("Abo-Lebenszyklus über Webhooks (DB)", () => {
     await billing.handleStripeEvent(replay); // même id : doit être écarté
     expect((await org()).subscriptionStatus).toBe("CANCELED");
   });
+
+  it("un changement de prix hors de notre API met à jour le plan et les limites", async () => {
+    // Cas réel : le client change de plan depuis le portail Stripe. Stripe
+    // change alors le PRIX de l'abonnement mais laisse les métadonnées posées
+    // au checkout sur l'ancien plan. Lire le plan dans les métadonnées
+    // réécrirait donc l'ancien plan à chaque passage.
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "active",
+        metadata: { organizationId, plan: "PRO" }, // périmé, doit être ignoré
+        items: { data: [{ id: "si_1", price: { id: "price_test_basic" } }] },
+      }),
+    );
+
+    const after = await org();
+    expect(after.subscriptionPlan).toBe("BASIC");
+    expect(after.subscriptionStatus).toBe("ACTIVE");
+
+    // Les limites doivent suivre le plan, sinon l'application continuerait
+    // d'autoriser les volumes de l'ancien plan (limits.ts lit planLimits).
+    const { planLimits } = await prisma.organization.findUniqueOrThrow({
+      where: { id: organizationId },
+      select: { planLimits: true },
+    });
+    expect((planLimits as { patients?: number }).patients).toBe(100);
+  });
+
+  it("un prix inconnu laisse le plan inchangé", async () => {
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "active",
+        items: { data: [{ id: "si_1", price: { id: "price_deal_negocie" } }] },
+      }),
+    );
+
+    // Un prix négocié créé à la main dans Stripe ne doit pas faire deviner un
+    // plan : mieux vaut ne rien toucher que rétrograder le tenant par erreur.
+    expect((await org()).subscriptionPlan).toBe("BASIC");
+  });
 });

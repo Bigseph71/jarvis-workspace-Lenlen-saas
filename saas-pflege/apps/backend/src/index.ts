@@ -21,6 +21,8 @@ import { userRoutes } from "./modules/users/user.routes.js";
 import { visitRoutes } from "./modules/visits/visit.routes.js";
 import { geocodingRoutes } from "./modules/geocoding/geocoding.routes.js";
 import { startGeocodingWorker } from "./modules/geocoding/geocoding.worker.js";
+import { stripeConfigured } from "./lib/billing/index.js";
+import { missingPriceEnvVars } from "./lib/billing/prices.js";
 import { billingRoutes } from "./modules/billing/billing.routes.js";
 import { billingWebhookRoutes } from "./modules/billing/webhook.routes.js";
 import { startBillingWorker } from "./modules/billing/billing.worker.js";
@@ -139,6 +141,21 @@ if (env.NODE_ENV !== "test") {
     );
   } catch (err) {
     app.log.warn({ err }, "Billing-Worker konnte nicht gestartet werden");
+  }
+}
+
+// Frühwarnung zur Billing-Konfiguration. Mit gültigen Keys, aber fehlendem
+// Preis startet der Dienst und wirkt gesund – der Fehler zeigt sich erst, wenn
+// ein Kunde den betroffenen Plan anklickt. Nur eine Warnung, kein Abbruch: die
+// übrigen Pläne bleiben buchbar, und Patienten- oder Tourenplanung darf an einer
+// Abrechnungslücke nicht scheitern.
+if (stripeConfigured()) {
+  const missing = missingPriceEnvVars();
+  if (missing.length > 0) {
+    app.log.warn(
+      `Stripe ist aktiv, aber ohne Preis für: ${missing.join(", ")}. ` +
+        "Diese Pläne sind nicht buchbar (HTTP 503 im Checkout).",
+    );
   }
 }
 

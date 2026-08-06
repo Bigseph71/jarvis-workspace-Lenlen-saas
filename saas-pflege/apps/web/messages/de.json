@@ -412,6 +412,12 @@
       "success": "Zahlung erfolgreich. Ihr Abonnement wird in Kürze aktiviert.",
       "canceled": "Checkout abgebrochen. Es wurde nichts berechnet."
     },
+    "planChange": {
+      "success": "Plan gewechselt. Die anteilige Differenz erscheint auf Ihrer nächsten Rechnung.",
+      "tooSmall": "Der gewählte Plan reicht für Ihren aktuellen Bestand nicht aus. Bitte reduzieren Sie zuerst die Zahl der Patienten, Fachkräfte oder Fahrzeuge.",
+      "customPrice": "Ihr Abonnement läuft auf einer individuell vereinbarten Kondition und kann nicht automatisch gewechselt werden. Bitte wenden Sie sich an den Support.",
+      "error": "Der Plan konnte nicht gewechselt werden. Bitte versuchen Sie es erneut."
+    },
     "invoices": {
       "title": "Rechnungen",
       "empty": "Noch keine Rechnungen vorhanden.",
