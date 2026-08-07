@@ -62,5 +62,24 @@
   "tracking": {
     "active": "Live-Standort aktiv",
     "permissionDenied": "Standortfreigabe verweigert – kein Live-Tracking."
+  },
+  "consentGps": {
+    "title": "Standorterfassung",
+    "stateGranted": "Sie haben eingewilligt. Die Standorterfassung ist während Ihrer Besuche aktiv.",
+    "stateOutdated": "Der Einwilligungstext hat sich geändert. Bitte bestätigen Sie erneut, damit die Erfassung weiterläuft.",
+    "stateMissing": "Sie haben nicht eingewilligt. Ohne Ihre Einwilligung wird kein Standort erfasst.",
+    "whatTitle": "Was erfasst wird",
+    "whatBody": "Ihr Standort (Breiten- und Längengrad), die Messgenauigkeit und der Zeitpunkt der Messung. Nicht erfasst werden Ihre Bewegungen ausserhalb der Besuche, Ihre Kontakte, Ihre Nachrichten oder sonstige Inhalte Ihres Geräts.",
+    "whenTitle": "Wann erfasst wird",
+    "whenBody": "Ausschliesslich während eines laufenden Besuchs, im Abstand von rund 30 Sekunden. Vor der Ankunft und nach der Abfahrt läuft keine Erfassung. Schliessen Sie die App, endet die Erfassung ebenfalls.",
+    "whyTitle": "Wozu",
+    "whyBody": "Die Koordination sieht, wo sich die Einsätze gerade befinden, um bei Notfällen und Verspätungen umplanen zu können. Es findet keine Leistungs- oder Verhaltenskontrolle statt, und aus den Daten werden keine Bewertungen Ihrer Arbeit abgeleitet.",
+    "retentionTitle": "Speicherdauer",
+    "retentionBody": "Die Positionen werden für die Dauer der Einsatzdokumentation gespeichert und danach gelöscht. Ihr Arbeitgeber ist für die Löschfristen verantwortlich und nennt sie Ihnen auf Anfrage.",
+    "rightsTitle": "Ihre Rechte",
+    "rightsBody": "Ihre Einwilligung ist freiwillig. Sie können sie jederzeit und ohne Angabe von Gründen widerrufen; daraus entsteht Ihnen kein Nachteil. Der Widerruf wirkt ab sofort für die Zukunft, bereits erfasste Positionen bleiben davon unberührt. Sie haben zudem das Recht auf Auskunft, Berichtigung und Löschung Ihrer Daten.",
+    "grant": "Ich willige ein",
+    "revoke": "Einwilligung widerrufen",
+    "version": "Textfassung {{version}}"
   }
 }
