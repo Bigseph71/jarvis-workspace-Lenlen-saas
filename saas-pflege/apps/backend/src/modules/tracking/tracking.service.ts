@@ -5,6 +5,7 @@ import type { TenantContext } from "../../lib/context.js";
 import { evaluateGeofence, type LatLng } from "../../lib/tracking/geofence.js";
 import { latestPerCaregiver } from "../../lib/tracking/scope.js";
 import { publishPosition, type TrackingEvent } from "../../lib/realtime.js";
+import { GPS_CONSENT_MISSING, hasActiveGpsConsent } from "../consent/consent.service.js";
 import type { PostPositionInput } from "./tracking.schemas.js";
 
 /** Zeitfenster, in dem eine Position als "live" gilt (Minuten). */
@@ -41,6 +42,19 @@ export async function recordPosition(
       select: { id: true },
     });
     if (!caregiver) throw new ForbiddenError("Kein Fachkraft-Profil mit deinem Konto verknüpft");
+
+    // Rechtsgrund VOR der Erhebung prüfen (DSGVO Art. 6/7, § 26 BDSG). Ohne
+    // wirksame Einwilligung wird nichts gespeichert – die Prüfung steht
+    // deshalb vor jeder Auswertung und vor dem Insert, nicht danach.
+    // Eigener Fehlercode: die App öffnet daran den Einwilligungs-Dialog,
+    // statt den Fehler wie eine Netzstörung zu verschlucken.
+    if (!(await hasActiveGpsConsent(tx, ctx.organizationId, caregiver.id))) {
+      throw new AppError(
+        403,
+        "Keine wirksame Einwilligung in die Standorterfassung",
+        GPS_CONSENT_MISSING,
+      );
+    }
 
     // Patienten-Referenz für die Geofence: nur der eigene, valide geokodierte
     // Besuch zählt. Fremder Besuch -> Ablehnung (keine Fremd-Verknüpfung).

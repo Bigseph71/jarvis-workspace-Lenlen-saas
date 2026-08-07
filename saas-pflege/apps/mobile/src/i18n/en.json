@@ -62,5 +62,24 @@
   "tracking": {
     "active": "Live location active",
     "permissionDenied": "Location permission denied – no live tracking."
+  },
+  "consentGps": {
+    "title": "Location tracking",
+    "stateGranted": "You have given your consent. Location tracking is active during your visits.",
+    "stateOutdated": "The consent text has changed. Please confirm again so tracking can continue.",
+    "stateMissing": "You have not given consent. No location is recorded without it.",
+    "whatTitle": "What is recorded",
+    "whatBody": "Your location (latitude and longitude), the measurement accuracy and the time of the measurement. Not recorded: your movements outside visits, your contacts, your messages or any other content on your device.",
+    "whenTitle": "When it is recorded",
+    "whenBody": "Only during an ongoing visit, roughly every 30 seconds. Nothing is recorded before arrival or after departure. Closing the app also ends recording.",
+    "whyTitle": "Why",
+    "whyBody": "Coordination can see where assignments currently are, in order to replan for emergencies and delays. No performance or behaviour monitoring takes place, and no assessment of your work is derived from this data.",
+    "retentionTitle": "Retention",
+    "retentionBody": "Positions are stored for the duration of the assignment documentation and deleted afterwards. Your employer is responsible for the retention periods and will tell you them on request.",
+    "rightsTitle": "Your rights",
+    "rightsBody": "Your consent is voluntary. You may withdraw it at any time without giving reasons, and you will suffer no disadvantage from doing so. Withdrawal takes effect immediately for the future; positions already recorded are unaffected. You also have the right to access, rectification and erasure of your data.",
+    "grant": "I consent",
+    "revoke": "Withdraw consent",
+    "version": "Text version {{version}}"
   }
 }

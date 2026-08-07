@@ -10,12 +10,12 @@ import {
   Text,
   View,
 } from "react-native";
-import { Link, Redirect } from "expo-router";
+import { Link, Redirect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { chatUnreadCount, myVisits, type MyDayPatient, type MyVisit } from "@len-len/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { flushPointageQueue, pendingPointageCount, performPointage } from "@/lib/pointage";
-import { startTracking, stopTracking } from "@/lib/tracking";
+import { setOnConsentLost, startTracking, stopTracking } from "@/lib/tracking";
 
 type Day = "today" | "tomorrow";
 
@@ -43,6 +43,7 @@ function openNavigation(patient: MyDayPatient): void {
 export default function TodayScreen() {
   const { t, i18n } = useTranslation();
   const { status, user, logout } = useAuth();
+  const router = useRouter();
 
   const [day, setDay] = useState<Day>("today");
   const [visits, setVisits] = useState<MyVisit[] | null>(null);
@@ -75,11 +76,27 @@ export default function TodayScreen() {
   // Echtzeit-GPS-Tracking an den aktiven Besuch koppeln: läuft genau eine
   // Visite (IN_PROGRESS), wird getrackt; sonst gestoppt. Beim Verlassen des
   // Screens ebenfalls stoppen (kein Tracking außerhalb eines Besuchs).
+  //
+  // Fehlt die Einwilligung, wird NICHT still auf das Tracking verzichtet: die
+  // Fachkraft bekommt den Einwilligungs-Bildschirm zu sehen und entscheidet.
+  // Ein stiller Verzicht wäre für sie nicht unterscheidbar von einem Defekt.
   useEffect(() => {
     const active = visits?.find((v) => v.status === "IN_PROGRESS");
-    if (active) void startTracking(active.id);
-    else stopTracking();
-  }, [visits]);
+    if (!active) {
+      stopTracking();
+      return;
+    }
+    void startTracking(active.id).then((res) => {
+      if (!res.ok && res.reason === "consent") router.push("/consent-gps");
+    });
+  }, [visits, router]);
+
+  // Widerruf auf einem anderen Gerät: das Backend lehnt den nächsten Punkt ab,
+  // der Tracker hält an und meldet es hierher.
+  useEffect(() => {
+    setOnConsentLost(() => router.push("/consent-gps"));
+    return () => setOnConsentLost(null);
+  }, [router]);
 
   useEffect(() => () => stopTracking(), []);
 

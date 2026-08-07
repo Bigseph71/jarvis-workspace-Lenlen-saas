@@ -62,5 +62,24 @@
   "tracking": {
     "active": "Localisation en direct active",
     "permissionDenied": "Autorisation de localisation refusée – pas de suivi."
+  },
+  "consentGps": {
+    "title": "Suivi de localisation",
+    "stateGranted": "Vous avez donné votre consentement. Le suivi est actif pendant vos visites.",
+    "stateOutdated": "Le texte du consentement a changé. Merci de le confirmer à nouveau pour que le suivi continue.",
+    "stateMissing": "Vous n'avez pas donné votre consentement. Aucune position n'est enregistrée sans lui.",
+    "whatTitle": "Ce qui est enregistré",
+    "whatBody": "Votre position (latitude et longitude), la précision de la mesure et son horodatage. Ne sont pas enregistrés : vos déplacements en dehors des visites, vos contacts, vos messages ni aucun autre contenu de votre téléphone.",
+    "whenTitle": "Quand c'est enregistré",
+    "whenBody": "Uniquement pendant une visite en cours, environ toutes les 30 secondes. Rien n'est enregistré avant l'arrivée ni après le départ. Fermer l'application met également fin à l'enregistrement.",
+    "whyTitle": "Pourquoi",
+    "whyBody": "La coordination voit où se trouvent les interventions afin de replanifier en cas d'urgence ou de retard. Aucun contrôle de performance ou de comportement n'est effectué, et aucune évaluation de votre travail n'est tirée de ces données.",
+    "retentionTitle": "Durée de conservation",
+    "retentionBody": "Les positions sont conservées le temps de la documentation des interventions puis supprimées. Votre employeur est responsable des durées de conservation et vous les communique sur demande.",
+    "rightsTitle": "Vos droits",
+    "rightsBody": "Votre consentement est volontaire. Vous pouvez le retirer à tout moment et sans motif, sans que cela vous porte préjudice. Le retrait prend effet immédiatement pour l'avenir ; les positions déjà enregistrées ne sont pas concernées. Vous disposez également d'un droit d'accès, de rectification et d'effacement de vos données.",
+    "grant": "Je consens",
+    "revoke": "Retirer mon consentement",
+    "version": "Version du texte {{version}}"
   }
 }

@@ -40,7 +40,9 @@ DECLARE
   tenant_tables text[] := ARRAY[
     'users', 'caregivers', 'patients', 'visits',
     'vehicles', 'routes', 'audit_logs', 'messages',
-    'gps_positions', 'invoices',
+    -- gps_consents gehört zwingend dazu: die Einwilligung ist der Rechtsgrund
+    -- für gps_positions, beide müssen unter derselben Isolation stehen.
+    'gps_positions', 'gps_consents', 'invoices',
     -- HR-Modul. Auch die Integrationspfade (CSV-Import, Personio) laufen
     -- über withTenant() und unterliegen diesen Policies.
     'contracts', 'work_schedules', 'absences'

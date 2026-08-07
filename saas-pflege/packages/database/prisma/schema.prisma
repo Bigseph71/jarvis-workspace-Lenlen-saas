@@ -141,6 +141,7 @@ model Organization {
   auditLogs     AuditLog[]
   messages      Message[]
   gpsPositions  GpsPosition[]
+  gpsConsents   GpsConsent[]
   invoices      Invoice[]
   contracts     Contract[]
   workSchedules WorkSchedule[]
@@ -232,6 +233,7 @@ model Caregiver {
   routes           Route[]
   messages         Message[]
   gpsPositions     GpsPosition[]
+  gpsConsents      GpsConsent[]
   contracts        Contract[]
   workSchedules    WorkSchedule[]
   absences         Absence[]
@@ -518,6 +520,41 @@ model GpsPosition {
   @@index([organizationId, caregiverId, recordedAt(sort: Desc)])
   @@index([visitId])
   @@map("gps_positions")
+}
+
+// Einwilligung der Fachkraft in die Standorterfassung (DSGVO Art. 6/7, und da
+// es sich um Beschäftigtendaten handelt, § 26 BDSG).
+//
+// Die Tabelle ist BEWUSST append-only: Art. 7 Abs. 1 verlangt, dass der
+// Verantwortliche die Einwilligung NACHWEISEN kann. Ein Widerruf überschreibt
+// deshalb nichts, er setzt `revokedAt`; eine erneute Einwilligung legt eine
+// neue Zeile an. So bleibt für jeden Zeitpunkt belegbar, ob erfasst werden
+// durfte – ein UPDATE auf einem einzigen Datensatz könnte das nie.
+//
+// `policyVersion` ist Teil des Nachweises: eine Einwilligung gilt immer nur
+// für den Text, der ihr vorlag. Ändert sich der Text, verliert die alte
+// Einwilligung ihre Deckung und muss neu eingeholt werden.
+model GpsConsent {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  caregiverId    String    @map("caregiver_id") @db.Uuid
+  // Version des Einwilligungstextes, dem zugestimmt wurde (z.B. "2026-08-01").
+  policyVersion  String    @map("policy_version")
+  // Sprache, in der der Text vorlag – Teil des Nachweises: die Fachkraft muss
+  // verstanden haben, worin sie einwilligt.
+  locale         Locale    @default(DE)
+  grantedAt      DateTime  @default(now()) @map("granted_at")
+  // null = noch wirksam. Gesetzt = widerrufen (Art. 7 Abs. 3, wirkt nur für
+  // die Zukunft; bereits erfasste Punkte bleiben rechtmäßig erhoben).
+  revokedAt      DateTime? @map("revoked_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  caregiver    Caregiver    @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Trägt die Prüfung bei JEDEM Positions-Ingest: jüngste Zeile je Fachkraft.
+  @@index([organizationId, caregiverId, grantedAt(sort: Desc)])
+  @@map("gps_consents")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
