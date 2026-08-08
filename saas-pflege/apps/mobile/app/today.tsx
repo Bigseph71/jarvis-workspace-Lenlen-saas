@@ -55,6 +55,10 @@ export default function TodayScreen() {
   const [visits, setVisits] = useState<MyVisit[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Eigener Zustand statt `error`: ein Tracking-Hinweis und ein Ladefehler sind
+  // verschiedene Dinge und können gleichzeitig gelten. Über `error` gemeldet,
+  // würde ihn der nächste erfolgreiche Ladevorgang stillschweigend löschen.
+  const [trackingNotice, setTrackingNotice] = useState<string | null>(null);
   const [busyVisitId, setBusyVisitId] = useState<string | null>(null);
   const [pendingSync, setPendingSync] = useState(0);
   const [unread, setUnread] = useState(0);
@@ -102,12 +106,30 @@ export default function TodayScreen() {
     const active = visits?.find((v) => v.status === "IN_PROGRESS");
     if (!active) {
       stopTracking();
+      setTrackingNotice(null);
       return;
     }
     void startTracking(active.id).then((res) => {
-      if (!res.ok && res.reason === "consent") router.push("/consent-gps");
+      if (res.ok) {
+        setTrackingNotice(null);
+        return;
+      }
+      // JEDER Grund wird sichtbar. Zuvor führte nur "consent" irgendwohin; bei
+      // verweigerter Ortungsfreigabe oder nicht erreichbarem Server startete
+      // das Tracking stillschweigend nicht – für die Fachkraft ununterscheidbar
+      // von einem laufenden Tracking, und im Nachhinein nur an fehlenden
+      // Punkten in der Datenbank zu erkennen.
+      if (res.reason === "consent") {
+        router.push("/consent-gps");
+        return;
+      }
+      setTrackingNotice(
+        res.reason === "permission"
+          ? t("today.trackingNoPermission")
+          : t("today.trackingUnavailable"),
+      );
     });
-  }, [visits, router]);
+  }, [visits, router, t]);
 
   // An den FOKUS gebunden, nicht nur an `visits`.
   //
@@ -241,6 +263,7 @@ export default function TodayScreen() {
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {trackingNotice ? <Text style={styles.trackingNotice}>{trackingNotice}</Text> : null}
       {pendingSync > 0 ? (
         <Text style={styles.pendingSync}>{t("today.pendingSync", { count: pendingSync })}</Text>
       ) : null}
@@ -327,6 +350,8 @@ const styles = StyleSheet.create({
   count: { fontSize: 13, color: "#666", marginBottom: 4 },
   empty: { textAlign: "center", color: "#666", marginTop: 32 },
   error: { color: "#b91c1c", paddingHorizontal: 16, marginBottom: 8 },
+  // Ambre und nicht rot: das Tracking fehlt, der Besuch selbst läuft weiter.
+  trackingNotice: { color: "#92400e", paddingHorizontal: 16, marginBottom: 8, fontSize: 13 },
   pendingSync: { color: "#d97706", paddingHorizontal: 16, marginBottom: 8, fontWeight: "600" },
   card: {
     backgroundColor: "#fff",

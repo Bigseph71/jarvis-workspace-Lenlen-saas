@@ -52,7 +52,9 @@
       "MISSED": "Verpasst",
       "CANCELED": "Storniert"
     },
-    "noCaregiverProfile": "Ihrem Konto ist keine Fachkraft zugeordnet. Bitte wenden Sie sich an Ihre Koordination."
+    "noCaregiverProfile": "Ihrem Konto ist keine Fachkraft zugeordnet. Bitte wenden Sie sich an Ihre Koordination.",
+    "trackingNoPermission": "Standortfreigabe fehlt – die Tour wird nicht aufgezeichnet. Bitte in den Systemeinstellungen erlauben.",
+    "trackingUnavailable": "Standorterfassung derzeit nicht möglich (keine Verbindung). Der Besuch läuft normal weiter."
   },
   "chat": {
     "title": "Chat",
