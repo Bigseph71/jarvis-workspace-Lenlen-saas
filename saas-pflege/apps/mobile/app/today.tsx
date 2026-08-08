@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { Link, Redirect, useRouter } from "expo-router";
+import { Link, Redirect, useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   ApiError,
@@ -98,7 +98,7 @@ export default function TodayScreen() {
   // Fehlt die Einwilligung, wird NICHT still auf das Tracking verzichtet: die
   // Fachkraft bekommt den Einwilligungs-Bildschirm zu sehen und entscheidet.
   // Ein stiller Verzicht wäre für sie nicht unterscheidbar von einem Defekt.
-  useEffect(() => {
+  const syncTracking = useCallback(() => {
     const active = visits?.find((v) => v.status === "IN_PROGRESS");
     if (!active) {
       stopTracking();
@@ -108,6 +108,15 @@ export default function TodayScreen() {
       if (!res.ok && res.reason === "consent") router.push("/consent-gps");
     });
   }, [visits, router]);
+
+  // An den FOKUS gebunden, nicht nur an `visits`.
+  //
+  // Der Weg zurück vom Einwilligungs-Bildschirm ändert `visits` nicht: ein
+  // reiner useEffect auf [visits] liefe dort nie erneut, die Einwilligung wäre
+  // erteilt und das Tracking bliebe trotzdem aus – genau der Fall, der beim
+  // Test auftrat. Über den Fokus wird der Versuch bei jeder Rückkehr auf den
+  // Screen wiederholt; startTracking ist für dieselbe Visite idempotent.
+  useFocusEffect(syncTracking);
 
   // Widerruf auf einem anderen Gerät: das Backend lehnt den nächsten Punkt ab,
   // der Tracker hält an und meldet es hierher.
