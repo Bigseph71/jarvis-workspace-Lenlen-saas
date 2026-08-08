@@ -12,7 +12,13 @@ import {
 } from "react-native";
 import { Link, Redirect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { chatUnreadCount, myVisits, type MyDayPatient, type MyVisit } from "@len-len/api-client";
+import {
+  ApiError,
+  chatUnreadCount,
+  myVisits,
+  type MyDayPatient,
+  type MyVisit,
+} from "@len-len/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { flushPointageQueue, pendingPointageCount, performPointage } from "@/lib/pointage";
 import { setOnConsentLost, startTracking, stopTracking } from "@/lib/tracking";
@@ -61,12 +67,24 @@ export default function TodayScreen() {
       const result = await myVisits(dateForDay(day));
       setVisits(result.visits);
       setUnread(await chatUnreadCount().catch(() => 0));
-    } catch {
-      setError(t("common.errorGeneric"));
+    } catch (err) {
+      // Nach Status unterscheiden. Zuvor lief JEDER Fehler in dieselbe
+      // Sammelmeldung – ein fehlendes Fachkraft-Profil (403) war dadurch von
+      // einer Netzstörung nicht zu unterscheiden, und die Ursache blieb im
+      // Verborgenen, obwohl der Server sie klar benannt hatte.
+      const status = err instanceof ApiError ? err.status : null;
+      if (status === 401) {
+        // Sitzung endgültig abgelaufen: der Client hat den Refresh bereits
+        // erfolglos versucht (siehe apiFetch). Hier hilft nur neu anmelden.
+        await logout();
+        router.replace("/login");
+        return;
+      }
+      setError(status === 403 ? t("today.noCaregiverProfile") : t("common.errorGeneric"));
     } finally {
       setPendingSync(await pendingPointageCount());
     }
-  }, [day, t]);
+  }, [day, t, logout, router]);
 
   useEffect(() => {
     setVisits(null);

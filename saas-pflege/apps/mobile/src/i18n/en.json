@@ -51,7 +51,8 @@
       "COMPLETED": "Done",
       "MISSED": "Missed",
       "CANCELED": "Canceled"
-    }
+    },
+    "noCaregiverProfile": "No caregiver profile is linked to your account. Please contact your coordination."
   },
   "chat": {
     "title": "Chat",

@@ -51,7 +51,8 @@
       "COMPLETED": "Erledigt",
       "MISSED": "Verpasst",
       "CANCELED": "Storniert"
-    }
+    },
+    "noCaregiverProfile": "Ihrem Konto ist keine Fachkraft zugeordnet. Bitte wenden Sie sich an Ihre Koordination."
   },
   "chat": {
     "title": "Chat",

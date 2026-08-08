@@ -51,7 +51,8 @@
       "COMPLETED": "Terminée",
       "MISSED": "Manquée",
       "CANCELED": "Annulée"
-    }
+    },
+    "noCaregiverProfile": "Aucun profil de soignant n'est rattaché à votre compte. Contactez votre coordination."
   },
   "chat": {
     "title": "Chat",
