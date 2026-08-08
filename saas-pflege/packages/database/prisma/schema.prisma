@@ -222,6 +222,12 @@ model Caregiver {
   // verschiebt und daher kein verlässliches Austrittsdatum ist. Der geltende
   // Vertrag wird auf diesen Tag beendet (siehe deactivateCaregiver).
   deactivatedAt  DateTime?     @map("deactivated_at")
+  // Zeitpunkt der Anonymisierung (DSGVO Art. 17). Gesetzt = Name und Konto
+  // sind unwiderruflich entfernt, der Datensatz selbst bleibt als Anker für
+  // Besuche, Touren und Audit-Einträge bestehen. Macht den Vorgang zugleich
+  // idempotent: ein zweiter Aufruf findet die Spalte gesetzt und bricht ab,
+  // statt einen bereits anonymisierten Satz erneut zu überschreiben.
+  anonymizedAt   DateTime?     @map("anonymized_at")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 

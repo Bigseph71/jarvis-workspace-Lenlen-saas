@@ -5,6 +5,7 @@ import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
 import type { TenantContext } from "../../lib/context.js";
 import { exportCaregiver, exportPatient, exportSelf } from "./export.service.js";
+import { anonymizeCaregiver } from "./erasure.service.js";
 
 const idParamSchema = z.object({ id: z.string().uuid() });
 
@@ -52,4 +53,16 @@ export async function exportRoutes(app: FastifyInstance): Promise<void> {
     const data = await exportCaregiver(ctxFrom(request), id);
     return asDownload(reply, `fachkraft-${id}`).send(data);
   });
+
+  // Loeschung (Art. 17). Enger gefasst als der Export: HR darf Auskunft geben,
+  // aber nicht unwiderruflich anonymisieren – der Vorgang ist nicht umkehrbar
+  // und beruehrt die Pflegedokumentation.
+  app.delete(
+    "/erasure/caregivers/:id",
+    { preHandler: [requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN)] },
+    async (request) => {
+      const { id } = idParamSchema.parse(request.params);
+      return anonymizeCaregiver(ctxFrom(request), id);
+    },
+  );
 }
