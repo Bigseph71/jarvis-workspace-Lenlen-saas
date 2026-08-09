@@ -47,7 +47,10 @@ const PRIMARY_ITEMS: NavItem[] = [
  * jedem neuen Modul weiter (die Dienstpläne kommen noch).
  */
 const SECONDARY_ITEMS: NavItem[] = [
-  { href: "/planung", key: "tracking", roles: PLANNING },
+  // Chemin, libellé et titre de page disent enfin la même chose. L'ancien
+  // /planung désignait le tracking et se confondait avec « Planung », le
+  // libellé de /visits.
+  { href: "/tracking", key: "tracking", roles: PLANNING },
   { href: "/chat", key: "chat", roles: PLANNING },
   { href: "/leasing", key: "leasing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
   { href: "/billing", key: "billing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
