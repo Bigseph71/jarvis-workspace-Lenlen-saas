@@ -124,7 +124,9 @@
         "restrictedBody": "An erasure request was received on {date}. The retention period for care documentation is still running (§ 630f BGB): nothing has been deleted, the record is restricted and removed from planning, alerts and route optimisation.",
         "anonymizedTitle": "Anonymised",
         "anonymizedBody": "This record was anonymised on {date}. Name and address have been removed; the visits remain as anonymous records of care provided."
-      }
+      },
+      "mapError": "The map could not be loaded. Check the referrer restriction of the Maps key.",
+      "mapNoKey": "Map unavailable – no Maps key configured."
     }
   },
   "caregivers": {
