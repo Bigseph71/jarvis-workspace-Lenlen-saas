@@ -94,6 +94,37 @@
         "lastName": "Last name: 1–80 characters.",
         "rawAddress": "Address: 3–300 characters."
       }
+    },
+    "detail": {
+      "loading": "Loading record …",
+      "error": "The patient record could not be loaded.",
+      "back": "← Back to list",
+      "edit": "Edit",
+      "none": "—",
+      "inactive": "This patient is deactivated. No new visits can be scheduled.",
+      "addressTitle": "Address and geocoding",
+      "rawAddress": "Address as entered",
+      "normalizedAddress": "Normalised address",
+      "geocoding": "Geocoding",
+      "score": "score",
+      "noCoordinates": "no coordinates",
+      "careTitle": "Care",
+      "assignedCaregiver": "Assigned caregiver",
+      "noCaregiver": "none assigned",
+      "createdAt": "Created on",
+      "visitsTitle": "Visits ({count})",
+      "visitDate": "Scheduled",
+      "visitCaregiver": "Performed by",
+      "visitStatus": "Status",
+      "visitsEmpty": "No visits recorded yet.",
+      "visitsError": "The visits could not be loaded.",
+      "emergency": "Emergency",
+      "dsgvo": {
+        "restrictedTitle": "Erasure request – record restricted",
+        "restrictedBody": "An erasure request was received on {date}. The retention period for care documentation is still running (§ 630f BGB): nothing has been deleted, the record is restricted and removed from planning, alerts and route optimisation.",
+        "anonymizedTitle": "Anonymised",
+        "anonymizedBody": "This record was anonymised on {date}. Name and address have been removed; the visits remain as anonymous records of care provided."
+      }
     }
   },
   "caregivers": {
@@ -212,6 +243,34 @@
         "type": "Contract type",
         "hours": "Weekly hours",
         "days": "Working days"
+      }
+    },
+    "detail": {
+      "loading": "Loading record …",
+      "error": "The caregiver record could not be loaded.",
+      "back": "← Back to list",
+      "edit": "Edit",
+      "contract": "Contract",
+      "none": "—",
+      "inactive": "This caregiver is deactivated.",
+      "inactiveSince": "Left on {date}.",
+      "contractTitle": "Contract (currently valid)",
+      "accessTitle": "Access and assignment",
+      "account": "App account",
+      "accountInactive": "locked",
+      "noAccount": "no account – without one there is no mobile app",
+      "assignedPatients": "Assigned patients",
+      "createdAt": "Created on",
+      "visitsTitle": "Visits performed ({count})",
+      "visitDate": "Scheduled",
+      "visitPatient": "Patient",
+      "visitStatus": "Status",
+      "visitsEmpty": "No visits performed yet.",
+      "visitsError": "The visits could not be loaded.",
+      "emergency": "Emergency",
+      "dsgvo": {
+        "anonymizedTitle": "Anonymised",
+        "anonymizedBody": "This record was anonymised on {date}. Name and account have been removed; visits, contracts and working hours remain."
       }
     }
   },
