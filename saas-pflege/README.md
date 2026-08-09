@@ -100,7 +100,10 @@ porte déjà la configuration de build.
 1. Nouveau service dans le même projet, pointant sur ce dépôt.
 2. *Settings → Config-as-code* : `saas-pflege/apps/web/railway.json`.
 3. Variables :
-   - `NEXT_PUBLIC_API_URL` → URL publique du service backend
+   - `NEXT_PUBLIC_API_URL` → URL publique du service backend. **Obligatoire** :
+     sans elle, le build échoue volontairement (`apps/web/next.config.mjs`).
+     Next fige cette valeur dans le bundle ; à défaut, l'application livrée
+     appellerait `localhost:4000`, c'est-à-dire la machine du visiteur.
    - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` → le schlüssel **web** (voir ci-dessus)
    - `NODE_ENV=production`
 4. *Networking → Generate Domain*.

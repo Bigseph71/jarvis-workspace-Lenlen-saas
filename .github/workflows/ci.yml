@@ -90,4 +90,11 @@ jobs:
         run: pnpm test
 
       - name: Build
+        env:
+          # Pflicht im Produktions-Build (siehe apps/web/next.config.mjs): ohne
+          # sie bräche der Build ab. Hier ein Platzhalter – die CI prüft, dass
+          # kompiliert werden KANN, sie erzeugt kein Deployment-Artefakt. Der
+          # echte Wert wird beim Deployen gesetzt und ist dort unverzichtbar,
+          # weil Next ihn fest ins Bundle schreibt.
+          NEXT_PUBLIC_API_URL: https://ci.invalid
         run: pnpm build
