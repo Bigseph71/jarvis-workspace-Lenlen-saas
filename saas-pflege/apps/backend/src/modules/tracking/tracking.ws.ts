@@ -14,7 +14,7 @@ function send(socket: WebSocket, payload: unknown): void {
 }
 
 /**
- * WebSocket-Stream der Live-Positionen für die Koordination (Karte /planung).
+ * WebSocket-Stream der Live-Positionen für die Koordination (Karte /tracking).
  *
  * Verbindung: GET /tracking/live/ws?token=<access-jwt>
  * (Browser können bei WS keinen Authorization-Header setzen -> Token als Query.)

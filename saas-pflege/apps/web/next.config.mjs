@@ -48,6 +48,27 @@ const nextConfig = {
   reactStrictMode: true,
   // Workspace-Pakete werden als TypeScript-Quellcode konsumiert.
   transpilePackages: ["@len-len/api-client"],
+
+  async redirects() {
+    return [
+      {
+        // /planung hiess die Karte des Echtzeit-Trackings – und kollidierte
+        // damit mit "Planung", dem Menütitel von /visits. Die Route heisst
+        // jetzt /tracking; gesetzte Lesezeichen und geteilte Links sollen
+        // trotzdem weiter funktionieren.
+        //
+        // In der Konfiguration und nicht als Seite: Weiterleitungen laufen VOR
+        // der Middleware, also ohne dass eine React-Seite ausgeliefert werden
+        // muss. Das Locale-Segment wird durchgereicht.
+        source: "/:locale/planung",
+        destination: "/:locale/tracking",
+        // Bewusst kein permanent: ein 308 wird vom Browser dauerhaft
+        // zwischengespeichert und liesse sich nach einer Fehlentscheidung nur
+        // schwer zurücknehmen.
+        permanent: false,
+      },
+    ];
+  },
 };
 
 // `next build` -> ["…/next", "build"] ; `next lint` -> ["…/next", "lint"].
