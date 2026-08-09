@@ -124,7 +124,9 @@
         "restrictedBody": "Am {date} ging ein Löschverlangen ein. Die Aufbewahrungsfrist der Pflegedokumentation läuft noch (§ 630f BGB): es wurde nichts gelöscht, der Datensatz ist gesperrt und aus Planung, Alarmen und Tourenoptimierung genommen.",
         "anonymizedTitle": "Anonymisiert",
         "anonymizedBody": "Dieser Datensatz wurde am {date} anonymisiert. Name und Anschrift sind entfernt; die Besuche bleiben als anonyme Leistungsnachweise bestehen."
-      }
+      },
+      "mapError": "Die Karte konnte nicht geladen werden. Prüfen Sie die Referrer-Beschränkung des Maps-Schlüssels.",
+      "mapNoKey": "Karte nicht verfügbar – kein Maps-Schlüssel konfiguriert."
     }
   },
   "caregivers": {

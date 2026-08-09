@@ -124,7 +124,9 @@
         "restrictedBody": "Une demande d'effacement a été reçue le {date}. Le délai de conservation de la documentation des soins court encore (§ 630f BGB) : rien n'a été supprimé, le dossier est restreint et retiré de la planification, des alertes et de l'optimisation des tournées.",
         "anonymizedTitle": "Anonymisé",
         "anonymizedBody": "Ce dossier a été anonymisé le {date}. Le nom et l'adresse ont été retirés ; les visites subsistent comme justificatifs anonymes."
-      }
+      },
+      "mapError": "La carte n'a pas pu être chargée. Vérifiez la restriction par référent de la clé Maps.",
+      "mapNoKey": "Carte indisponible : aucune clé Maps configurée."
     }
   },
   "caregivers": {

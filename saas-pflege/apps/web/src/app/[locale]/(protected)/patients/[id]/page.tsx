@@ -10,6 +10,7 @@ import {
   type Visit,
 } from "@len-len/api-client";
 import { Link } from "@/i18n/navigation";
+import { PatientMap } from "@/components/patient-map";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -173,6 +174,18 @@ export default function PatientDetailPage() {
               )}
             </Field>
           </dl>
+
+          {/* Nur bei VALID: bei PENDING gibt es noch keine Koordinaten, bei
+              INVALID sind die vorhandenen nicht vertrauenswürdig – eine Karte
+              würde dort einen Ort behaupten, den niemand geprüft hat. */}
+          {patient.geocodingStatus === "VALID" && patient.latitude && patient.longitude ? (
+            <PatientMap
+              latitude={Number(patient.latitude)}
+              longitude={Number(patient.longitude)}
+              title={`${patient.lastName}, ${patient.firstName}`}
+              labels={{ error: t("mapError"), noKey: t("mapNoKey") }}
+            />
+          ) : null}
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
