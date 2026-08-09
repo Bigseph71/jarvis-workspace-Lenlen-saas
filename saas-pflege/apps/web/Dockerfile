@@ -3,11 +3,26 @@ FROM node:22-slim AS builder
 WORKDIR /app
 RUN npm install -g pnpm@9.12.0
 
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
+# Manifeste ZUERST, Quellen später: so bleibt die Installationsschicht im
+# Cache, solange sich keine Abhängigkeit ändert.
+#
+# packages/api-client MUSS dabei sein: apps/web hängt als workspace:* davon ab
+# und konsumiert es als TypeScript-Quelle (transpilePackages in
+# next.config.mjs). Fehlt es, scheitert bereits pnpm install an einer nicht
+# auflösbaren Workspace-Referenz.
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY tsconfig.base.json ./
 COPY apps/web/package.json apps/web/
-RUN pnpm install --frozen-lockfile || pnpm install
+COPY packages/api-client/package.json packages/api-client/
 
+# --frozen-lockfile ohne Rückfallebene: ein "|| pnpm install" verdeckte einen
+# nicht mehr passenden Lockfile und baute ein Image mit anderen Versionen als
+# in CI geprüft.
+RUN pnpm install --frozen-lockfile --filter @len-len/web...
+
+COPY packages/api-client packages/api-client
 COPY apps/web apps/web
+
 RUN pnpm --filter @len-len/web build
 
 # ── Runtime-Stage (Next.js standalone) ───────────────────────────────────
@@ -15,9 +30,21 @@ FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=builder /app/apps/web/.next/standalone ./
-COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=builder /app/apps/web/public ./apps/web/public
+# Ohne eigenen Benutzer liefe der Prozess als root.
+RUN groupadd --system --gid 1001 nodejs \
+  && useradd --system --uid 1001 --gid nodejs nextjs
 
+# standalone enthält den Server samt der tatsächlich benötigten node_modules;
+# static und public liegen außerhalb und werden getrennt kopiert.
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+
+USER nextjs
+
+# Railway gibt den Port über die Umgebung vor; 3000 ist nur der Rückfall.
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 EXPOSE 3000
+
 CMD ["node", "apps/web/server.js"]
