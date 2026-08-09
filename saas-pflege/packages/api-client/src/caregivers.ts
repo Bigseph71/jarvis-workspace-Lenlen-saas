@@ -30,6 +30,11 @@ export interface CaregiverDetail extends Caregiver {
   /** Verknüpftes Login-Konto, null solange kein App-Zugang besteht. */
   userId: string | null;
   user: { id: string; email: string; isActive: boolean } | null;
+  /** Austrittsdatum; getrennt von updatedAt, das sich bei jeder Änderung ändert. */
+  deactivatedAt: string | null;
+  /** Gesetzt, sobald der Datensatz nach DSGVO Art. 17 anonymisiert wurde. */
+  anonymizedAt: string | null;
+  updatedAt: string;
 }
 
 /** Vertrags-Block (Regel métier 5: bei jeder Fachkraft Pflicht). */

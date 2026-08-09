@@ -142,8 +142,13 @@ export default function CaregiversPage() {
             ) : (
               caregivers.map((c) => (
                 <tr key={c.id} className={c.isActive ? "hover:bg-gray-50" : "bg-gray-50 text-gray-400"}>
+                  {/* Wie bei den Patienten: der Name führt in die Akte, statt
+                      die ganze Zeile klickbar zu machen – sie trägt bereits
+                      eigene Aktionen. */}
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    {c.lastName}, {c.firstName}
+                    <Link href={`/caregivers/${c.id}`} className="underline-offset-2 hover:underline">
+                      {c.lastName}, {c.firstName}
+                    </Link>
                     {!c.isActive ? (
                       <span className="ml-2 rounded bg-gray-200 px-1.5 py-0.5 text-xs font-medium text-gray-600">
                         {t("inactiveBadge")}

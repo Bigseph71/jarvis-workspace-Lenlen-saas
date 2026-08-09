@@ -149,8 +149,17 @@ export default function PatientsPage() {
             ) : (
               patients.map((patient) => (
                 <tr key={patient.id} className={patient.isActive ? "hover:bg-gray-50" : "bg-gray-50 text-gray-400"}>
+                  {/* Der Name ist der Einstieg in die Akte. Ein Link statt
+                      einer klickbaren Zeile: die Zeile enthält bereits eigene
+                      Aktionen, und ein verschachtelter Klickbereich wäre weder
+                      per Tastatur erreichbar noch im neuen Tab zu öffnen. */}
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    {patient.lastName}, {patient.firstName}
+                    <Link
+                      href={`/patients/${patient.id}`}
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {patient.lastName}, {patient.firstName}
+                    </Link>
                     {!patient.isActive ? (
                       <span className="ml-2 rounded bg-gray-200 px-1.5 py-0.5 text-xs font-medium text-gray-600">
                         {t("inactiveBadge")}

@@ -15,9 +15,26 @@ export interface Patient {
   createdAt: string;
 }
 
-/** Detailansicht inkl. zugewiesener Fachkraft (GET /patients/:id). */
+/**
+ * Detailansicht (GET /patients/:id). Der Endpunkt liefert den vollständigen
+ * Datensatz, nicht nur die Listenfelder – daher hier die Ergänzungen zu
+ * Geokodierung und DSGVO-Status.
+ */
 export interface PatientDetail extends Patient {
   assignedCaregiver: { id: string; firstName: string; lastName: string } | null;
+  // Decimal wird vom Backend als String serialisiert.
+  latitude: string | null;
+  longitude: string | null;
+  geocodingScore: string | null;
+  /**
+   * Gesetzt, wenn ein Löschverlangen vorliegt, die Aufbewahrungsfrist der
+   * Pflegedokumentation aber noch läuft (§ 630f BGB). Der Datensatz ist dann
+   * gesperrt, es wurde nichts gelöscht.
+   */
+  erasureRequestedAt: string | null;
+  /** Gesetzt, sobald nach Fristablauf tatsächlich anonymisiert wurde. */
+  anonymizedAt: string | null;
+  updatedAt: string;
 }
 
 export interface ListPatientsParams {

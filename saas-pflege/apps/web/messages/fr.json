@@ -94,6 +94,37 @@
         "lastName": "Nom : 1 à 80 caractères.",
         "rawAddress": "Adresse : 3 à 300 caractères."
       }
+    },
+    "detail": {
+      "loading": "Chargement du dossier …",
+      "error": "Le dossier patient n'a pas pu être chargé.",
+      "back": "← Retour à la liste",
+      "edit": "Modifier",
+      "none": "—",
+      "inactive": "Ce patient est désactivé. Aucune nouvelle visite ne peut être planifiée.",
+      "addressTitle": "Adresse et geocodage",
+      "rawAddress": "Adresse saisie",
+      "normalizedAddress": "Adresse normalisée",
+      "geocoding": "Geocodage",
+      "score": "précision",
+      "noCoordinates": "aucune coordonnée",
+      "careTitle": "Prise en charge",
+      "assignedCaregiver": "Soignant attitré",
+      "noCaregiver": "aucun assigné",
+      "createdAt": "Créé le",
+      "visitsTitle": "Visites ({count})",
+      "visitDate": "Prévue le",
+      "visitCaregiver": "Effectuée par",
+      "visitStatus": "Statut",
+      "visitsEmpty": "Aucune visite enregistrée.",
+      "visitsError": "Les visites n'ont pas pu être chargées.",
+      "emergency": "Urgence",
+      "dsgvo": {
+        "restrictedTitle": "Demande d'effacement – dossier restreint",
+        "restrictedBody": "Une demande d'effacement a été reçue le {date}. Le délai de conservation de la documentation des soins court encore (§ 630f BGB) : rien n'a été supprimé, le dossier est restreint et retiré de la planification, des alertes et de l'optimisation des tournées.",
+        "anonymizedTitle": "Anonymisé",
+        "anonymizedBody": "Ce dossier a été anonymisé le {date}. Le nom et l'adresse ont été retirés ; les visites subsistent comme justificatifs anonymes."
+      }
     }
   },
   "caregivers": {
@@ -212,6 +243,34 @@
         "type": "Type de contrat",
         "hours": "Heures hebdo",
         "days": "Jours travaillés"
+      }
+    },
+    "detail": {
+      "loading": "Chargement du dossier …",
+      "error": "Le dossier du soignant n'a pas pu être chargé.",
+      "back": "← Retour à la liste",
+      "edit": "Modifier",
+      "contract": "Contrat",
+      "none": "—",
+      "inactive": "Ce soignant est désactivé.",
+      "inactiveSince": "Sorti le {date}.",
+      "contractTitle": "Contrat (en vigueur)",
+      "accessTitle": "Accès et affectation",
+      "account": "Compte applicatif",
+      "accountInactive": "bloqué",
+      "noAccount": "aucun compte – sans compte, pas d'application mobile",
+      "assignedPatients": "Patients assignés",
+      "createdAt": "Créé le",
+      "visitsTitle": "Visites effectuées ({count})",
+      "visitDate": "Prévue le",
+      "visitPatient": "Patient",
+      "visitStatus": "Statut",
+      "visitsEmpty": "Aucune visite effectuée.",
+      "visitsError": "Les visites n'ont pas pu être chargées.",
+      "emergency": "Urgence",
+      "dsgvo": {
+        "anonymizedTitle": "Anonymisé",
+        "anonymizedBody": "Ce dossier a été anonymisé le {date}. Le nom et le compte ont été retirés ; visites, contrats et horaires subsistent."
       }
     }
   },

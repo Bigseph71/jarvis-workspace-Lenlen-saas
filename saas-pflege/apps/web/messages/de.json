@@ -94,6 +94,37 @@
         "lastName": "Nachname: 1–80 Zeichen.",
         "rawAddress": "Adresse: 3–300 Zeichen."
       }
+    },
+    "detail": {
+      "loading": "Akte wird geladen …",
+      "error": "Die Patientenakte konnte nicht geladen werden.",
+      "back": "← Zurück zur Übersicht",
+      "edit": "Bearbeiten",
+      "none": "—",
+      "inactive": "Dieser Patient ist deaktiviert. Es können keine neuen Besuche geplant werden.",
+      "addressTitle": "Anschrift und Geokodierung",
+      "rawAddress": "Erfasste Anschrift",
+      "normalizedAddress": "Normalisierte Anschrift",
+      "geocoding": "Geokodierung",
+      "score": "Güte",
+      "noCoordinates": "keine Koordinaten",
+      "careTitle": "Betreuung",
+      "assignedCaregiver": "Stamm-Fachkraft",
+      "noCaregiver": "keine zugewiesen",
+      "createdAt": "Angelegt am",
+      "visitsTitle": "Besuche ({count})",
+      "visitDate": "Termin",
+      "visitCaregiver": "Geleistet von",
+      "visitStatus": "Status",
+      "visitsEmpty": "Noch keine Besuche erfasst.",
+      "visitsError": "Die Besuche konnten nicht geladen werden.",
+      "emergency": "Notfall",
+      "dsgvo": {
+        "restrictedTitle": "Löschverlangen – Datensatz gesperrt",
+        "restrictedBody": "Am {date} ging ein Löschverlangen ein. Die Aufbewahrungsfrist der Pflegedokumentation läuft noch (§ 630f BGB): es wurde nichts gelöscht, der Datensatz ist gesperrt und aus Planung, Alarmen und Tourenoptimierung genommen.",
+        "anonymizedTitle": "Anonymisiert",
+        "anonymizedBody": "Dieser Datensatz wurde am {date} anonymisiert. Name und Anschrift sind entfernt; die Besuche bleiben als anonyme Leistungsnachweise bestehen."
+      }
     }
   },
   "caregivers": {
@@ -212,6 +243,34 @@
         "type": "Vertragsart",
         "hours": "Wochenstunden",
         "days": "Arbeitstage"
+      }
+    },
+    "detail": {
+      "loading": "Akte wird geladen …",
+      "error": "Die Fachkraft-Akte konnte nicht geladen werden.",
+      "back": "← Zurück zur Übersicht",
+      "edit": "Bearbeiten",
+      "contract": "Vertrag",
+      "none": "—",
+      "inactive": "Diese Fachkraft ist deaktiviert.",
+      "inactiveSince": "Ausgetreten am {date}.",
+      "contractTitle": "Vertrag (aktuell gültig)",
+      "accessTitle": "Zugang und Zuordnung",
+      "account": "App-Konto",
+      "accountInactive": "gesperrt",
+      "noAccount": "kein Konto – ohne Konto keine mobile App",
+      "assignedPatients": "Zugewiesene Patienten",
+      "createdAt": "Angelegt am",
+      "visitsTitle": "Geleistete Besuche ({count})",
+      "visitDate": "Termin",
+      "visitPatient": "Patient",
+      "visitStatus": "Status",
+      "visitsEmpty": "Noch keine Besuche geleistet.",
+      "visitsError": "Die Besuche konnten nicht geladen werden.",
+      "emergency": "Notfall",
+      "dsgvo": {
+        "anonymizedTitle": "Anonymisiert",
+        "anonymizedBody": "Dieser Datensatz wurde am {date} anonymisiert. Name und Konto sind entfernt; Besuche, Verträge und Arbeitszeiten bleiben bestehen."
       }
     }
   },
