@@ -1,3 +1,4 @@
+import { PHASE_PRODUCTION_BUILD } from "next/constants.js";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
@@ -17,8 +18,13 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
  *
  * In der Entwicklung (`next dev`) bleibt der Rückfall erlaubt: dort IST das
  * Backend auf localhost:4000.
+ *
+ * Geprüft wird die BAUPHASE, nicht NODE_ENV. `next lint` setzt NODE_ENV
+ * ebenfalls auf "production" und lädt diese Datei – eine Prüfung auf NODE_ENV
+ * ließe damit auch das Linten scheitern, obwohl dabei kein Bundle entsteht.
  */
-if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_API_URL) {
+function assertApiUrl() {
+  if (process.env.NEXT_PUBLIC_API_URL) return;
   throw new Error(
     [
       "NEXT_PUBLIC_API_URL fehlt im Produktions-Build.",
@@ -43,4 +49,7 @@ const nextConfig = {
   transpilePackages: ["@len-len/api-client"],
 };
 
-export default withNextIntl(nextConfig);
+export default function config(phase) {
+  if (phase === PHASE_PRODUCTION_BUILD) assertApiUrl();
+  return withNextIntl(nextConfig);
+}
