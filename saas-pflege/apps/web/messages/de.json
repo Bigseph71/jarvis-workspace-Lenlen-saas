@@ -41,7 +41,10 @@
     "chat": "Chat",
     "billing": "Abrechnung",
     "absences": "Abwesenheiten",
-    "more": "Mehr"
+    "more": "Mehr",
+    "dsgvo": "Datenschutz",
+    "dsgvoExport": "Auskunft",
+    "dsgvoErasure": "Löschung"
   },
   "patients": {
     "title": "Patienten",
@@ -499,6 +502,69 @@
       "saving": "Wird gespeichert …",
       "cancel": "Abbrechen",
       "close": "Schließen"
+    }
+  },
+  "dsgvo": {
+    "picker": {
+      "label": "Betroffene Person",
+      "placeholderPatient": "Name oder Anschrift suchen …",
+      "placeholderCaregiver": "Name suchen …",
+      "loading": "Wird gesucht …",
+      "empty": "Keine Treffer.",
+      "error": "Suche fehlgeschlagen.",
+      "inactive": "inaktiv"
+    },
+    "export": {
+      "title": "Datenauskunft",
+      "subtitle": "Auskunft nach Art. 15 und 20 DSGVO als JSON-Datei. Verantwortlich bleibt Ihre Organisation; dieses Werkzeug erstellt die Datei dafür.",
+      "kind": {
+        "label": "Art der betroffenen Person",
+        "patient": "Patient",
+        "caregiver": "Fachkraft"
+      },
+      "contents": {
+        "title": "Inhalt der Datei",
+        "patient": "Stammdaten, alle Besuche mit der jeweils leistenden Fachkraft, sowie die Zugriffshistorie auf die Daten dieses Patienten.",
+        "caregiver": "Stammdaten und Konto, Verträge, Arbeitszeiten, Abwesenheiten, GPS-Einwilligungen und -Positionen, Besuche, Nachrichten, Touren und Zugriffshistorie.",
+        "excluded": "Nicht enthalten: Passwort-Hash, MFA-Secret und Sitzungen – Zugangsdaten ohne Erkenntniswert. Bei einer Fachkraft zusätzlich die Identität der besuchten Patienten: das ist deren Datum, nicht ihres. Die Datei benennt ihre Auslassungen selbst."
+      },
+      "action": "Auskunft herunterladen",
+      "busy": "Wird erstellt …",
+      "done": "Datei erstellt. Der Download wurde gestartet.",
+      "error": "Die Auskunft konnte nicht erstellt werden."
+    },
+    "erasure": {
+      "title": "Löschverlangen",
+      "subtitle": "Löschung nach Art. 17 DSGVO. Jeder Vorgang wird protokolliert.",
+      "warning": {
+        "title": "Nicht umkehrbar",
+        "body": "Eine Anonymisierung lässt sich nicht rückgängig machen. Name und Anschrift sind danach endgültig fort. Erstellen Sie zuvor die Datenauskunft, falls die betroffene Person sie verlangt hat."
+      },
+      "kind": {
+        "label": "Art der betroffenen Person",
+        "patient": "Patient",
+        "caregiver": "Fachkraft"
+      },
+      "effect": {
+        "title": "Was geschieht",
+        "patient": "Solange die Aufbewahrungsfrist der Pflegedokumentation läuft (§ 630f BGB), wird der Datensatz nur GESPERRT: es wird nichts gelöscht, und er verschwindet aus Planung, Alarmen und Tourenoptimierung. Erst nach Ablauf der Frist wird anonymisiert. Der Bericht nennt das Datum.",
+        "caregiver": "Name und Konto werden anonymisiert, GPS-Positionen, Einwilligungen und Sitzungen gelöscht. Besuche, Verträge und Arbeitszeiten bleiben bestehen – sie unterliegen eigenen Aufbewahrungspflichten."
+      },
+      "confirm": {
+        "label": "Zur Bestätigung „{name}“ eintippen",
+        "hint": "Der Nachname der gewählten Person, genau so geschrieben."
+      },
+      "action": "Endgültig löschen",
+      "busy": "Wird ausgeführt …",
+      "error": "Der Vorgang ist fehlgeschlagen.",
+      "report": {
+        "restrictedTitle": "Datensatz gesperrt",
+        "restrictedBody": "Die Aufbewahrungsfrist von {years} Jahren läuft noch. Es wurde nichts gelöscht; der Datensatz ist gesperrt und aus dem Betrieb genommen. Ab dem {date} kann er anonymisiert werden.",
+        "anonymizedTitle": "Anonymisierung abgeschlossen",
+        "anonymizedBody": "Name und Anschrift wurden entfernt. Die Besuche bleiben als anonyme Leistungsnachweise bestehen.",
+        "caregiverBody": "Anonymisiert. Gelöscht: {positions} GPS-Position(en), {consents} Einwilligung(en), {sessions} Sitzung(en).",
+        "retained": "Erhalten geblieben"
+      }
     }
   }
 }

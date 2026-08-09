@@ -51,6 +51,11 @@ const SECONDARY_ITEMS: NavItem[] = [
   { href: "/chat", key: "chat", roles: PLANNING },
   { href: "/leasing", key: "leasing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
   { href: "/billing", key: "billing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
+  // Betroffenenrechte. Die Auskunft steht laut export.routes.ts auch HR offen,
+  // die Löschung NICHT: sie ist nicht umkehrbar und berührt die
+  // Pflegedokumentation, deshalb nur die Admin-Ebene.
+  { href: "/dsgvo/export", key: "dsgvoExport", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "HR"] },
+  { href: "/dsgvo/erasure", key: "dsgvoErasure", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
 ];
 
 function visibleFor(items: NavItem[], role: UserRole | undefined): NavItem[] {

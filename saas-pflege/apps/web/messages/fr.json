@@ -41,7 +41,10 @@
     "chat": "Messagerie",
     "billing": "Facturation",
     "absences": "Absences",
-    "more": "Plus"
+    "more": "Plus",
+    "dsgvo": "Protection des données",
+    "dsgvoExport": "Droit d'accès",
+    "dsgvoErasure": "Effacement"
   },
   "patients": {
     "title": "Patients",
@@ -499,6 +502,69 @@
       "saving": "Enregistrement …",
       "cancel": "Annuler",
       "close": "Fermer"
+    }
+  },
+  "dsgvo": {
+    "picker": {
+      "label": "Personne concernée",
+      "placeholderPatient": "Rechercher un nom ou une adresse …",
+      "placeholderCaregiver": "Rechercher un nom …",
+      "loading": "Recherche …",
+      "empty": "Aucun résultat.",
+      "error": "La recherche a échoué.",
+      "inactive": "inactif"
+    },
+    "export": {
+      "title": "Droit d'accès",
+      "subtitle": "Accès au titre des articles 15 et 20 du RGPD, en fichier JSON. Votre organisation reste responsable de traitement ; cet outil produit le fichier pour elle.",
+      "kind": {
+        "label": "Type de personne concernée",
+        "patient": "Patient",
+        "caregiver": "Soignant"
+      },
+      "contents": {
+        "title": "Contenu du fichier",
+        "patient": "Données d'identité, toutes les visites avec le soignant qui les a effectuées, et l'historique des accès aux données de ce patient.",
+        "caregiver": "Données d'identité et compte, contrats, horaires, absences, consentements et positions GPS, visites, messages, tournées et historique des accès.",
+        "excluded": "Non inclus : empreinte du mot de passe, secret MFA et sessions, des identifiants sans valeur informative. Pour un soignant, également l'identité des patients visités : c'est leur donnée, pas la sienne. Le fichier déclare lui-même ses omissions."
+      },
+      "action": "Télécharger le fichier",
+      "busy": "Génération …",
+      "done": "Fichier créé. Le téléchargement a démarré.",
+      "error": "Le fichier n'a pas pu être généré."
+    },
+    "erasure": {
+      "title": "Demande d'effacement",
+      "subtitle": "Effacement au titre de l'article 17 du RGPD. Chaque opération est journalisée.",
+      "warning": {
+        "title": "Irréversible",
+        "body": "Une anonymisation ne peut pas être annulée. Le nom et l'adresse disparaissent définitivement. Générez d'abord le fichier d'accès si la personne concernée l'a demandé."
+      },
+      "kind": {
+        "label": "Type de personne concernée",
+        "patient": "Patient",
+        "caregiver": "Soignant"
+      },
+      "effect": {
+        "title": "Ce qui se passe",
+        "patient": "Tant que court le délai de conservation de la documentation des soins (§ 630f BGB), le dossier est seulement RESTREINT : rien n'est supprimé, et il disparaît de la planification, des alertes et de l'optimisation des tournées. L'anonymisation n'intervient qu'après expiration du délai. Le rapport indique la date.",
+        "caregiver": "Le nom et le compte sont anonymisés ; positions GPS, consentements et sessions sont supprimés. Visites, contrats et horaires subsistent : ils relèvent de leurs propres obligations de conservation."
+      },
+      "confirm": {
+        "label": "Saisissez « {name} » pour confirmer",
+        "hint": "Le nom de famille de la personne choisie, orthographié à l'identique."
+      },
+      "action": "Effacer définitivement",
+      "busy": "Traitement …",
+      "error": "L'opération a échoué.",
+      "report": {
+        "restrictedTitle": "Dossier restreint",
+        "restrictedBody": "Le délai de conservation de {years} ans court encore. Rien n'a été supprimé ; le dossier est restreint et retiré de l'exploitation. Il pourra être anonymisé à partir du {date}.",
+        "anonymizedTitle": "Anonymisation effectuée",
+        "anonymizedBody": "Le nom et l'adresse ont été retirés. Les visites subsistent comme justificatifs anonymes.",
+        "caregiverBody": "Anonymisé. Supprimés : {positions} position(s) GPS, {consents} consentement(s), {sessions} session(s).",
+        "retained": "Conservé"
+      }
     }
   }
 }
