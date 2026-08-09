@@ -70,7 +70,53 @@ travers le pooler Supabase, et le CI ne joue aucune migration.
   protection contre les accès inter-tenants repose sur la RLS, pas sur du
   chiffrement.
 
+## Déploiement
+
+### Clés Google : deux, jamais une
+
+Le schlüssel du web est embarqué dans le bundle par Next à la compilation : il
+est **public**, lisible depuis n'importe quelle page servie. Le schlüssel du
+backend ne doit donc jamais être le même, sinon un visiteur peut geocoder sur
+votre compte.
+
+| | Backend | Web |
+|---|---|---|
+| Variable | `GOOGLE_MAPS_API_KEY` | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` |
+| API à autoriser | Geocoding API **seule** | Maps JavaScript API **seule** |
+| Restriction | **aucune** par référent (un serveur n'en envoie pas) | référent HTTP limité à votre domaine |
+| Exposition | secret | public par construction |
+
+Une restriction par IP sur le schlüssel backend n'est pas praticable ici :
+Railway ne garantit pas d'adresse de sortie stable. La protection repose donc
+sur la limitation à la seule Geocoding API et sur le fait de ne jamais copier
+cette valeur dans une variable `NEXT_PUBLIC_*`.
+
+### Frontend sur Railway
+
+Le frontend est un **service distinct** du backend, construit depuis
+`apps/web/Dockerfile` (Next.js en mode `standalone`). `apps/web/railway.json`
+porte déjà la configuration de build.
+
+1. Nouveau service dans le même projet, pointant sur ce dépôt.
+2. *Settings → Config-as-code* : `saas-pflege/apps/web/railway.json`.
+3. Variables :
+   - `NEXT_PUBLIC_API_URL` → URL publique du service backend
+   - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` → le schlüssel **web** (voir ci-dessus)
+   - `NODE_ENV=production`
+4. *Networking → Generate Domain*.
+5. **Puis, sur le service backend** : `WEB_ORIGIN` = l'URL obtenue, et
+   redéployer.
+
+L'étape 5 n'est pas facultative. `WEB_ORIGIN` détermine l'origine autorisée par
+CORS ; tant qu'elle pointe ailleurs, le navigateur bloque chaque requête du
+frontend vers l'API et l'application paraît vide sans message d'erreur clair.
+
+Les variables `NEXT_PUBLIC_*` sont lues à la **compilation**, pas au démarrage :
+les modifier impose un redéploiement, un simple redémarrage ne suffit pas.
+
 ## État
 
-Scaffolding initial (Phase 1 – MVP en cours). Les entrypoints exposent un `/health`
-fonctionnel ; la logique métier reste à implémenter (voir plan de dev dans `CLAUDE.md`).
+Phase 1 (MVP) et l'essentiel de la Phase 2 livrés : auth multi-tenant, patients,
+fachkräfte, contrats, visites, geocodage, VRPTW, tracking temps réel avec
+consentement DSGVO, leasing, HR, chat, facturation Stripe, droits des personnes
+concernées (auskunft et löschung). Voir le plan dans `CLAUDE.md`.
