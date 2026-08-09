@@ -15,5 +15,6 @@ export * from "./chat";
 export * from "./vehicles";
 export * from "./tracking";
 export * from "./consent";
+export * from "./dsgvo";
 export * from "./billing";
 export * from "./hr";

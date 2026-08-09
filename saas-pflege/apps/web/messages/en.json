@@ -41,7 +41,10 @@
     "chat": "Chat",
     "billing": "Billing",
     "absences": "Absences",
-    "more": "More"
+    "more": "More",
+    "dsgvo": "Data protection",
+    "dsgvoExport": "Data access",
+    "dsgvoErasure": "Erasure"
   },
   "patients": {
     "title": "Patients",
@@ -499,6 +502,69 @@
       "saving": "Saving …",
       "cancel": "Cancel",
       "close": "Close"
+    }
+  },
+  "dsgvo": {
+    "picker": {
+      "label": "Data subject",
+      "placeholderPatient": "Search name or address …",
+      "placeholderCaregiver": "Search name …",
+      "loading": "Searching …",
+      "empty": "No matches.",
+      "error": "Search failed.",
+      "inactive": "inactive"
+    },
+    "export": {
+      "title": "Data access request",
+      "subtitle": "Access under Art. 15 and 20 GDPR as a JSON file. Your organisation remains the controller; this tool produces the file for it.",
+      "kind": {
+        "label": "Type of data subject",
+        "patient": "Patient",
+        "caregiver": "Caregiver"
+      },
+      "contents": {
+        "title": "File contents",
+        "patient": "Master data, all visits with the caregiver who performed them, and the access history for this patient.",
+        "caregiver": "Master data and account, contracts, working hours, absences, GPS consents and positions, visits, messages, routes and access history.",
+        "excluded": "Not included: password hash, MFA secret and sessions – credentials with no informational value. For a caregiver, also the identity of the patients visited: that is their data, not the caregiver's. The file states its own omissions."
+      },
+      "action": "Download access file",
+      "busy": "Generating …",
+      "done": "File created. The download has started.",
+      "error": "The access file could not be generated."
+    },
+    "erasure": {
+      "title": "Erasure request",
+      "subtitle": "Erasure under Art. 17 GDPR. Every operation is logged.",
+      "warning": {
+        "title": "Irreversible",
+        "body": "Anonymisation cannot be undone. Name and address are gone for good afterwards. Generate the access file first if the data subject has requested it."
+      },
+      "kind": {
+        "label": "Type of data subject",
+        "patient": "Patient",
+        "caregiver": "Caregiver"
+      },
+      "effect": {
+        "title": "What happens",
+        "patient": "While the retention period for care documentation runs (§ 630f BGB), the record is only RESTRICTED: nothing is deleted, and it disappears from planning, alerts and route optimisation. Anonymisation follows only once the period has expired. The report states the date.",
+        "caregiver": "Name and account are anonymised; GPS positions, consents and sessions are deleted. Visits, contracts and working hours remain – they carry their own retention obligations."
+      },
+      "confirm": {
+        "label": "Type “{name}” to confirm",
+        "hint": "The last name of the selected person, spelled exactly."
+      },
+      "action": "Erase permanently",
+      "busy": "Working …",
+      "error": "The operation failed.",
+      "report": {
+        "restrictedTitle": "Record restricted",
+        "restrictedBody": "The retention period of {years} years is still running. Nothing was deleted; the record is restricted and taken out of service. It can be anonymised from {date}.",
+        "anonymizedTitle": "Anonymisation complete",
+        "anonymizedBody": "Name and address have been removed. The visits remain as anonymous records of care provided.",
+        "caregiverBody": "Anonymised. Deleted: {positions} GPS position(s), {consents} consent(s), {sessions} session(s).",
+        "retained": "Retained"
+      }
     }
   }
 }
