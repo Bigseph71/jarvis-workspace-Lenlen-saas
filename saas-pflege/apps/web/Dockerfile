@@ -23,6 +23,19 @@ RUN pnpm install --frozen-lockfile --filter @len-len/web...
 COPY packages/api-client packages/api-client
 COPY apps/web apps/web
 
+# NEXT_PUBLIC_* muss zur BAUZEIT im Image stehen: Next schreibt diese Werte
+# fest ins Bundle, zur Laufzeit werden sie nie gelesen.
+#
+# ARG ist dabei zwingend. Docker verwirft jedes --build-arg, das die Datei
+# nicht deklariert – die in Railway gesetzten Variablen erreichen den
+# Build-Schritt sonst NICHT, obwohl sie dort sauber hinterlegt sind. Genau
+# daran scheiterte das erste Deployment: das Bundle zeigte auf localhost:4000,
+# und die Suche lief über CORS und WEB_ORIGIN am Problem vorbei.
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
 RUN pnpm --filter @len-len/web build
 
 # ── Runtime-Stage (Next.js standalone) ───────────────────────────────────

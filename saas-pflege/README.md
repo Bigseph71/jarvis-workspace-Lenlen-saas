@@ -105,6 +105,12 @@ porte déjà la configuration de build.
      Next fige cette valeur dans le bundle ; à défaut, l'application livrée
      appellerait `localhost:4000`, c'est-à-dire la machine du visiteur.
    - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` → le schlüssel **web** (voir ci-dessus)
+
+   Ces deux variables sont consommées **pendant le build Docker**, via les
+   `ARG` déclarés dans `apps/web/Dockerfile`. Docker ignore tout `--build-arg`
+   non déclaré : sans ces `ARG`, une variable pourtant correctement définie
+   dans Railway n'atteint jamais l'étape de compilation, et le bundle sort
+   avec `localhost:4000`. C'est la panne du premier déploiement.
    - `NODE_ENV=production`
 4. *Networking → Generate Domain*.
 5. **Puis, sur le service backend** : `WEB_ORIGIN` = l'URL obtenue, et
