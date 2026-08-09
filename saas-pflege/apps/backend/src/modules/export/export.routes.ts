@@ -5,7 +5,7 @@ import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
 import type { TenantContext } from "../../lib/context.js";
 import { exportCaregiver, exportPatient, exportSelf } from "./export.service.js";
-import { anonymizeCaregiver } from "./erasure.service.js";
+import { anonymizeCaregiver, erasePatient } from "./erasure.service.js";
 
 const idParamSchema = z.object({ id: z.string().uuid() });
 
@@ -63,6 +63,18 @@ export async function exportRoutes(app: FastifyInstance): Promise<void> {
     async (request) => {
       const { id } = idParamSchema.parse(request.params);
       return anonymizeCaregiver(ctxFrom(request), id);
+    },
+  );
+
+  // Loeschverlangen eines Patienten. Derselbe Aufruf sperrt (Frist laeuft) oder
+  // anonymisiert (Frist abgelaufen); der Bericht sagt, was geschah und ab wann
+  // Stufe 2 moeglich ist. Der Aufrufer muss die Fristen nicht kennen.
+  app.delete(
+    "/erasure/patients/:id",
+    { preHandler: [requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN)] },
+    async (request) => {
+      const { id } = idParamSchema.parse(request.params);
+      return erasePatient(ctxFrom(request), id);
     },
   );
 }

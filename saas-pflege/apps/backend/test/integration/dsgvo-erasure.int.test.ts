@@ -225,3 +225,153 @@ describe.skipIf(!runDbTests)("DSGVO-Löschung einer Fachkraft (DB)", () => {
     }
   });
 });
+
+/**
+ * Löschverlangen eines PATIENTEN.
+ *
+ * Der Fall unterscheidet sich grundlegend von dem einer Fachkraft: die
+ * Pflegedokumentation muss zehn Jahre aufbewahrt werden (§ 630f Abs. 3 BGB).
+ * Solange die Frist läuft, ist die richtige Antwort nicht die Löschung,
+ * sondern die Einschränkung der Verarbeitung (Art. 18). Beide Richtungen
+ * werden hier geprüft: dass NICHTS gelöscht wird, solange die Frist läuft,
+ * und dass anonymisiert wird, sobald sie abgelaufen ist.
+ */
+describe.skipIf(!runDbTests)("DSGVO-Löschverlangen eines Patienten (DB)", () => {
+  let prisma: typeof import("@len-len/database").prisma;
+  let erasure: typeof import("../../src/modules/export/erasure.service.js");
+
+  let organizationId: string;
+  let ctx: { organizationId: string; userId: string | null };
+  let recentId: string; // Behandlung gerade beendet -> Frist läuft
+  let oldId: string; // letzter Besuch vor über zehn Jahren -> Frist abgelaufen
+  const email = `patient-erasure+${Date.now()}@demo.de`;
+
+  beforeAll(async () => {
+    assertLocalTestDatabase(process.env.DATABASE_URL);
+    ({ prisma } = await import("@len-len/database"));
+    const auth = await import("../../src/modules/auth/auth.service.js");
+    const patients = await import("../../src/modules/patients/patient.service.js");
+    erasure = await import("../../src/modules/export/erasure.service.js");
+
+    const registered = await auth.registerOrganization({
+      organizationName: "PatientLoeschung GmbH",
+      country: "DE",
+      adminEmail: email,
+      adminPassword: "Sehr-Sicher-123",
+    });
+    organizationId = registered.user.organizationId;
+    ctx = { organizationId, userId: registered.user.id };
+
+    const mk = async (first: string): Promise<string> => {
+      const p = (await patients.createPatient(ctx, {
+        firstName: first,
+        lastName: "Loeschung",
+        rawAddress: "Hauptstraße 1, 69117 Heidelberg",
+      })) as { id: string };
+      return p.id;
+    };
+    recentId = await mk("Recent");
+    oldId = await mk("Alt");
+
+    // Koordinaten von Hand setzen: das Geocoding läuft asynchron über einen
+    // Worker, der im Test nicht mitläuft. Ohne sie prüfte der Test unten nur,
+    // dass ein leeres Feld leer geblieben ist.
+    await prisma.patient.updateMany({
+      where: { id: { in: [recentId, oldId] } },
+      data: { latitude: 49.4097, longitude: 8.6937, geocodingScore: 1, geocodingStatus: "VALID" },
+    });
+
+    await prisma.visit.create({
+      data: { organizationId, patientId: recentId, scheduledAt: new Date(), status: "COMPLETED" },
+    });
+    // Behandlung vor elf Jahren beendet: die Frist von zehn Jahren ist um.
+    await prisma.visit.create({
+      data: {
+        organizationId,
+        patientId: oldId,
+        scheduledAt: new Date("2015-06-01T09:00:00.000Z"),
+        status: "COMPLETED",
+      },
+    });
+  });
+
+  afterAll(async () => {
+    if (!prisma) return;
+    if (organizationId) await prisma.organization.delete({ where: { id: organizationId } });
+    await prisma.$disconnect();
+  });
+
+  it("sperrt statt zu löschen, solange die Frist läuft", async () => {
+    const report = await erasure.erasePatient(ctx, recentId);
+    expect(report.outcome).toBe("restricted");
+    expect(report.retentionYears).toBe(10);
+    // Der Bericht nennt das Datum, ab dem Stufe 2 zulässig wird.
+    expect(new Date(report.anonymizableFrom).getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("die gesperrten Daten sind UNVERÄNDERT vorhanden", async () => {
+    // Art. 18 heißt einschränken, nicht entfernen. Ein teilweises Löschen wäre
+    // weder das eine noch das andere – und zerstörte die Dokumentation.
+    const p = await prisma.patient.findUniqueOrThrow({ where: { id: recentId } });
+    expect(p.firstName).toBe("Recent");
+    expect(p.rawAddress).toContain("Hauptstraße");
+    expect(p.latitude).not.toBeNull();
+    expect(p.anonymizedAt).toBeNull();
+  });
+
+  it("die Sperrung stellt den Datensatz operativ still", async () => {
+    // isActive=false schließt bereits neue Besuche, die Wochen-Alarme und das
+    // VRPTW aus; erasureRequestedAt hält fest, dass es ein Löschverlangen war
+    // und keine gewöhnliche Deaktivierung.
+    const p = await prisma.patient.findUniqueOrThrow({ where: { id: recentId } });
+    expect(p.isActive).toBe(false);
+    expect(p.erasureRequestedAt).not.toBeNull();
+  });
+
+  it("anonymisiert, sobald die Frist abgelaufen ist", async () => {
+    const report = await erasure.erasePatient(ctx, oldId);
+    expect(report.outcome).toBe("anonymized");
+
+    const p = await prisma.patient.findUniqueOrThrow({ where: { id: oldId } });
+    expect(p.firstName).toBe("Anonymisiert");
+    expect(p.lastName).not.toContain("Loeschung");
+    expect(p.rawAddress).toBe("(anonymisiert)");
+    expect(p.normalizedAddress).toBeNull();
+    expect(p.latitude).toBeNull();
+    expect(p.anonymizedAt).not.toBeNull();
+  });
+
+  it("die Besuche des anonymisierten Patienten bleiben erhalten", async () => {
+    // Sie SIND die Dokumentation, die die Frist überhaupt begründet.
+    expect(await prisma.visit.count({ where: { patientId: oldId } })).toBe(1);
+  });
+
+  it("ein zweiter Aufruf auf einen anonymisierten Patienten wird abgewiesen", async () => {
+    await expect(erasure.erasePatient(ctx, oldId)).rejects.toMatchObject({
+      code: "AlreadyAnonymized",
+    });
+  });
+
+  it("beide Vorgänge stehen im Audit-Log", async () => {
+    const entries = await prisma.auditLog.findMany({
+      where: { organizationId, entityType: "patient" },
+    });
+    const events = entries.map((e) => (e.metadata as { event?: string }).event);
+    expect(events).toContain("dsgvo_erasure_restricted");
+    expect(events).toContain("dsgvo_anonymized");
+  });
+
+  it("ein fremder Patient ist nicht erreichbar", async () => {
+    const other = await prisma.organization.create({
+      data: { name: "Fremde Loeschung 2 GmbH", country: "DE" },
+      select: { id: true },
+    });
+    try {
+      await expect(
+        erasure.erasePatient({ organizationId: other.id, userId: null }, recentId),
+      ).rejects.toMatchObject({ code: "NotFound" });
+    } finally {
+      await prisma.organization.delete({ where: { id: other.id } });
+    }
+  });
+});

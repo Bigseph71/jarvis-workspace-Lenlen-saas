@@ -392,6 +392,14 @@ model Patient {
   geocodingScore      Decimal?        @map("geocoding_score") @db.Decimal(5, 4)
   geocodingStatus     GeocodingStatus @default(PENDING) @map("geocoding_status")
   isActive            Boolean         @default(true) @map("is_active")
+  // Löschverlangen eingegangen (DSGVO Art. 17), die Aufbewahrungsfrist läuft
+  // aber noch. Bis dahin greift Art. 18: die Daten bleiben bestehen, dürfen
+  // aber nicht mehr verarbeitet werden – operativ über isActive=false
+  // durchgesetzt. Dieses Feld hält fest, dass die Sperrung auf einem
+  // Löschverlangen beruht und nicht auf einem gewöhnlichen Austritt.
+  erasureRequestedAt  DateTime?       @map("erasure_requested_at")
+  // Gesetzt, sobald nach Ablauf der Frist tatsächlich anonymisiert wurde.
+  anonymizedAt        DateTime?       @map("anonymized_at")
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
 

@@ -38,6 +38,13 @@ const schema = z.object({
   // stündlich prüfen reicht daher völlig.
   BILLING_GRACE_CHECK_INTERVAL_MS: z.coerce.number().int().positive().default(3_600_000),
 
+  // Aufbewahrungsfrist der Pflegedokumentation in Jahren, gerechnet ab dem
+  // letzten Besuch. § 630f Abs. 3 BGB nennt zehn Jahre nach Abschluss der
+  // Behandlung; Landesrecht oder Vertrag können mehr verlangen, deshalb
+  // konfigurierbar. Bestimmt, ab wann ein Patientendatensatz auf ein
+  // Löschverlangen hin anonymisiert werden darf.
+  PATIENT_RETENTION_YEARS: z.coerce.number().int().min(0).max(50).default(10),
+
   // Zeitzone, in der Tages- und Wochengrenzen berechnet werden (IANA-Name).
   //
   // Nicht kosmetisch: davon hängen ab, welche Besuche zu "heute" gehören, in
