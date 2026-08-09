@@ -52,7 +52,9 @@
       "MISSED": "Manquée",
       "CANCELED": "Annulée"
     },
-    "noCaregiverProfile": "Aucun profil de soignant n'est rattaché à votre compte. Contactez votre coordination."
+    "noCaregiverProfile": "Aucun profil de soignant n'est rattaché à votre compte. Contactez votre coordination.",
+    "trackingNoPermission": "Autorisation de localisation manquante : la tournée n'est pas enregistrée. Autorisez-la dans les réglages du système.",
+    "trackingUnavailable": "Suivi de localisation indisponible (pas de connexion). La visite se poursuit normalement."
   },
   "chat": {
     "title": "Chat",

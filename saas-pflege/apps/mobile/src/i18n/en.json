@@ -52,7 +52,9 @@
       "MISSED": "Missed",
       "CANCELED": "Canceled"
     },
-    "noCaregiverProfile": "No caregiver profile is linked to your account. Please contact your coordination."
+    "noCaregiverProfile": "No caregiver profile is linked to your account. Please contact your coordination.",
+    "trackingNoPermission": "Location permission missing – the route is not being recorded. Please allow it in your system settings.",
+    "trackingUnavailable": "Location tracking currently unavailable (no connection). The visit continues normally."
   },
   "chat": {
     "title": "Chat",
