@@ -1,7 +1,10 @@
 {
   "home": {
     "title": "Len Len – Care Platform",
-    "subtitle": "Multi-tenant SaaS for outpatient care services"
+    "subtitle": "Multi-tenant SaaS for outpatient care services",
+    "login": "Sign in",
+    "register": "Create organisation",
+    "trialHint": "14-day trial. Payment method required, cancel any time."
   },
   "common": {
     "appName": "Len Len",

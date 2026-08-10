@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { ROLE_NOT_ALLOWED, useAuth } from "@/lib/auth/auth-context";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ApiError } from "@len-len/api-client";
 
 export default function LoginPage() {
@@ -45,6 +46,9 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+        <div className="mb-4 flex justify-end">
+          <LocaleSwitcher />
+        </div>
         <h1 className="text-2xl font-bold text-gray-900">{t("title")}</h1>
         <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
 
