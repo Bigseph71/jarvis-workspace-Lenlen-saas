@@ -46,6 +46,14 @@ describe.skipIf(!runDbTests)("DSGVO-Löschung einer Fachkraft (DB)", () => {
       adminPassword: "Sehr-Sicher-123",
     });
     organizationId = registered.user.organizationId;
+    // Die Registrierung legt den Tenant GESPERRT an (Zahlungsmittel
+    // erforderlich). Diese Tests prüfen die Fachlichkeit, nicht die
+    // Abrechnung – deshalb hier freischalten, sonst weist assertWithinPlan
+    // jedes Anlegen mit 402 ab.
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { subscriptionStatus: "ACTIVE" },
+    });
     adminCtx = { organizationId, userId: registered.user.id };
 
     const cg = (await caregivers.createCaregiver(adminCtx, {
@@ -261,6 +269,13 @@ describe.skipIf(!runDbTests)("DSGVO-Löschverlangen eines Patienten (DB)", () =>
     });
     organizationId = registered.user.organizationId;
     ctx = { organizationId, userId: registered.user.id };
+
+    // Wie in der ersten Suite: die Registrierung legt gesperrt an, hier wird
+    // aber die Fachlichkeit geprüft und nicht die Abrechnung.
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { subscriptionStatus: "ACTIVE" },
+    });
 
     const mk = async (first: string): Promise<string> => {
       const p = (await patients.createPatient(ctx, {

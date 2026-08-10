@@ -41,6 +41,8 @@ export interface Subscription {
   grace: GraceWindow | null;
   /** Nur während der Testphase gesetzt (Status TRIAL). */
   trial: { endsAt: string; daysRemaining: number } | null;
+  /** Länge der Testphase, die ein ERSTES Abo erhält (für die Ansprache davor). */
+  trialDays: number;
   portalAvailable: boolean;
 }
 

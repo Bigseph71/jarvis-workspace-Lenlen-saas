@@ -525,9 +525,13 @@
     },
     "trial": {
       "title": "Trial period running",
-      "message": "Your trial ends on {deadline}. Choose a plan before then, otherwise access will be locked.",
+      "message": "Your trial ends on {deadline}. Your plan is charged automatically after that. You can cancel any time in the customer portal.",
       "daysRemaining": "{days} days left",
       "lastDay": "Last day"
+    },
+    "onboarding": {
+      "title": "Choose a plan to get started",
+      "message": "Pick a plan below. You will enter a payment method and try it free for {days} days – you are only charged afterwards. Until then access is locked."
     }
   },
   "absences": {

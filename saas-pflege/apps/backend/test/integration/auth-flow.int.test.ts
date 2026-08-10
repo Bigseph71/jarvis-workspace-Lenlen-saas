@@ -43,6 +43,14 @@ describe.skipIf(!runDbTests)("Auth-Flow (DB)", () => {
       adminPassword: password,
     });
     organizationId = result.user.organizationId;
+    // Die Registrierung legt den Tenant GESPERRT an (Zahlungsmittel
+    // erforderlich). Diese Tests prüfen die Fachlichkeit, nicht die
+    // Abrechnung – deshalb hier freischalten, sonst weist assertWithinPlan
+    // jedes Anlegen mit 402 ab.
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { subscriptionStatus: "ACTIVE" },
+    });
   });
 
   afterAll(async () => {

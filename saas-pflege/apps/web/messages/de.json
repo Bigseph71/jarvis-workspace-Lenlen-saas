@@ -525,9 +525,13 @@
     },
     "trial": {
       "title": "Testphase läuft",
-      "message": "Ihre Testphase endet am {deadline}. Wählen Sie vorher einen Plan, sonst wird der Zugang gesperrt.",
+      "message": "Ihre Testphase endet am {deadline}. Danach wird Ihr Plan automatisch berechnet. Sie können jederzeit im Kundenportal kündigen.",
       "daysRemaining": "Noch {days} Tage",
       "lastDay": "Letzter Tag"
+    },
+    "onboarding": {
+      "title": "Plan wählen, um zu starten",
+      "message": "Wählen Sie unten einen Plan. Sie hinterlegen dabei ein Zahlungsmittel und testen {days} Tage kostenlos – belastet wird erst danach. Bis dahin ist der Zugang gesperrt."
     }
   },
   "absences": {

@@ -81,7 +81,20 @@ export class StripeBillingProvider implements BillingProvider {
       // Umständen ein, bevor checkout.session.completed die Customer-ID beim
       // Tenant gespeichert hat. Ohne diese Metadaten wäre das Event dann keinem
       // Tenant zuzuordnen und würde stillschweigend verworfen.
-      subscription_data: { metadata },
+      subscription_data: {
+        metadata,
+        // Testphase AM ABO, nicht als lokaler Sonderzustand: Stripe zieht die
+        // Zahlungsdaten sofort ein, belastet aber erst nach Ablauf und
+        // wechselt selbsttätig von "trialing" auf "active". Ohne Kündigung
+        // wird der Interessent damit zum zahlenden Kunden – genau das war
+        // gefordert.
+        //
+        // Nur beim ERSTEN Abo: `params.trialDays` bleibt beim Planwechsel
+        // ungesetzt, sonst schenkte jeder Upgrade eine neue Testphase.
+        ...(params.trialDays && params.trialDays > 0
+          ? { trial_period_days: params.trialDays }
+          : {}),
+      },
     });
 
     if (!session.url) throw new Error("Stripe lieferte keine Checkout-URL");

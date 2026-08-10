@@ -66,8 +66,12 @@ export function mapInvoiceStatus(eventType: string, stripeStatus?: string): Invo
  */
 export function mapSubscriptionStatus(stripeStatus: string): SubscriptionStatus | null {
   switch (stripeStatus) {
-    case "active":
+    // Getrennt von "active": während der Testphase liegt bereits ein
+    // Zahlungsmittel vor und das Abo läuft, es wird nur noch nichts belastet.
+    // Der Unterschied ist rein anzeigerelevant – der Zugang ist derselbe.
     case "trialing":
+      return SubscriptionStatus.TRIAL;
+    case "active":
       return SubscriptionStatus.ACTIVE;
     case "past_due":
       return SubscriptionStatus.PAST_DUE;

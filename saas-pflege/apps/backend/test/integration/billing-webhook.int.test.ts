@@ -50,6 +50,14 @@ describe.skipIf(!runDbTests)("Abo-Lebenszyklus über Webhooks (DB)", () => {
       adminPassword: "Sehr-Sicher-123",
     });
     organizationId = result.user.organizationId;
+    // Die Registrierung legt den Tenant GESPERRT an (Zahlungsmittel
+    // erforderlich). Diese Tests prüfen die Fachlichkeit, nicht die
+    // Abrechnung – deshalb hier freischalten, sonst weist assertWithinPlan
+    // jedes Anlegen mit 402 ab.
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { subscriptionStatus: "ACTIVE" },
+    });
   });
 
   afterAll(async () => {

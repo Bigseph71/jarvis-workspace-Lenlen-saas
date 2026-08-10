@@ -525,9 +525,13 @@
     },
     "trial": {
       "title": "Période d'essai en cours",
-      "message": "Votre essai se termine le {deadline}. Choisissez un plan avant cette date, sinon l'accès sera bloqué.",
+      "message": "Votre essai se termine le {deadline}. Votre plan sera ensuite facturé automatiquement. Vous pouvez résilier à tout moment depuis le portail client.",
       "daysRemaining": "Encore {days} jours",
       "lastDay": "Dernier jour"
+    },
+    "onboarding": {
+      "title": "Choisissez un plan pour démarrer",
+      "message": "Sélectionnez un plan ci-dessous. Vous enregistrez un moyen de paiement et testez {days} jours gratuitement : le débit n'intervient qu'ensuite. D'ici là, l'accès est bloqué."
     }
   },
   "absences": {

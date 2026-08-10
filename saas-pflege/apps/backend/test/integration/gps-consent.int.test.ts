@@ -53,6 +53,14 @@ describe.skipIf(!runDbTests)("GPS-Einwilligung (DB)", () => {
       adminPassword: "Sehr-Sicher-123",
     });
     organizationId = registered.user.organizationId;
+    // Die Registrierung legt den Tenant GESPERRT an (Zahlungsmittel
+    // erforderlich). Diese Tests prüfen die Fachlichkeit, nicht die
+    // Abrechnung – deshalb hier freischalten, sonst weist assertWithinPlan
+    // jedes Anlegen mit 402 ab.
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { subscriptionStatus: "ACTIVE" },
+    });
     const adminCtx = { organizationId, userId: registered.user.id };
 
     // Erst die Fachkraft, dann ihr Konto: createFachkraftUser hängt das Konto

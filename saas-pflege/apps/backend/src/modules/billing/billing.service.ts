@@ -175,6 +175,10 @@ export async function createCheckout(
     cancelUrl: billingUrl(input.locale, "?checkout=cancel"),
     customerId: org.stripeCustomerId ?? undefined,
     customerEmail: email,
+    // Testphase nur beim ERSTEN Abschluss. Ein Tenant, der schon einmal einen
+    // Stripe-Customer hatte, hat sie bereits gehabt – sonst liesse sich durch
+    // Kündigen und Neuabschliessen beliebig oft kostenlos verlängern.
+    trialDays: org.stripeCustomerId === null ? env.TRIAL_PERIOD_DAYS : undefined,
   });
   return { kind: "checkout", url: session.url };
 }
@@ -194,6 +198,12 @@ export interface SubscriptionView {
   grace: { since: string; deadline: string; daysRemaining: number } | null;
   /** Nur während der Testphase gesetzt (Status TRIAL). */
   trial: { endsAt: string; daysRemaining: number } | null;
+  /**
+   * Länge der Testphase, die ein ERSTES Abo erhält. Für die Ansprache vor dem
+   * Abschluss – damit die Oberfläche keine Tageszahl fest verdrahten muss, die
+   * bei geänderter Konfiguration unwahr würde.
+   */
+  trialDays: number;
   /** true, sobald ein Stripe-Customer existiert -> Self-Service-Portal nutzbar. */
   portalAvailable: boolean;
 }
@@ -245,6 +255,7 @@ export async function getSubscription(ctx: TenantContext): Promise<SubscriptionV
               daysRemaining: trialDaysRemaining(org.trialEndsAt),
             }
           : null,
+      trialDays: env.TRIAL_PERIOD_DAYS,
       portalAvailable: org.stripeCustomerId !== null,
     };
   });
@@ -407,10 +418,11 @@ async function applyStatusByCustomer(
 
   await prisma.organization.updateMany({
     where: { stripeCustomerId: customerId },
-    // trialEndsAt ebenfalls leeren: sobald Stripe einen Abo-Status meldet, ist
-    // die Testphase beendet – auch bei CANCELED, wo der Tenant sonst zweimal
-    // suspendiert würde, einmal durch Stripe und einmal durch den Trial-Sweep.
-    data: { subscriptionStatus: status, pastDueSince: null, trialEndsAt: null },
+    // trialEndsAt wird hier NICHT angefasst: es folgt `trial_end` aus dem
+    // Abo-Objekt und wird an der Stelle gesetzt, die dieses Feld kennt. Es
+    // hier zu leeren, hiesse den Wert je nach Eintreffreihenfolge der Events
+    // wieder zu verlieren.
+    data: { subscriptionStatus: status, pastDueSince: null },
   });
 }
 
@@ -487,9 +499,6 @@ async function processEvent(event: BillingEvent): Promise<void> {
         subscriptionStatus: SubscriptionStatus.ACTIVE,
         // Frischer Checkout -> eine etwaige alte Karenzzeit ist gegenstandslos.
         pastDueSince: null,
-        // Ebenso die Testphase: bliebe trialEndsAt stehen, würde der Sweep
-        // einen zahlenden Tenant am Stichtag suspendieren.
-        trialEndsAt: null,
         ...(plan
           ? {
               subscriptionPlan: plan,
@@ -550,6 +559,16 @@ async function processEvent(event: BillingEvent): Promise<void> {
         },
       });
     }
+
+    // Ende der Testphase spiegeln. Die Frist führt Stripe; hier wird sie nur
+    // abgelegt, damit die Abrechnungsseite ein Datum zeigen kann, ohne Stripe
+    // zu befragen. `trial_end` kommt in Unix-Sekunden und fehlt, sobald die
+    // Testphase vorbei ist – dann wird das Feld geleert.
+    const trialEnd = int(object.trial_end);
+    await prisma.organization.updateMany({
+      where: { stripeCustomerId: customerId },
+      data: { trialEndsAt: trialEnd !== null ? new Date(trialEnd * 1000) : null },
+    });
 
     const subscriptionId = str(object.id);
     if (subscriptionId) {

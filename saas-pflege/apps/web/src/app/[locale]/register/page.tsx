@@ -53,7 +53,9 @@ export default function RegisterPage() {
         adminEmail: adminEmail.trim(),
         adminPassword: password,
       });
-      router.replace("/dashboard");
+      // Zur Planwahl, nicht ins Dashboard: ohne hinterlegtes Zahlungsmittel
+      // ist der Tenant gesperrt und könnte dort nichts anlegen.
+      router.replace("/billing");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError(t("emailTaken"));

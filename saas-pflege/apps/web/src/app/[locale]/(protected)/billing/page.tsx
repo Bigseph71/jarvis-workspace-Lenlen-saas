@@ -261,7 +261,8 @@ export default function BillingPage() {
     );
   }
 
-  const { plan, status, limits, catalog, usage, grace, trial, portalAvailable } = subscription;
+  const { plan, status, limits, catalog, usage, grace, trial, trialDays, portalAvailable } =
+    subscription;
 
   return (
     <section>
@@ -340,7 +341,18 @@ export default function BillingPage() {
         </div>
       ) : null}
 
-      {status === "SUSPENDED" ? (
+      {/* Zwei sehr verschiedene Lagen tragen denselben Status SUSPENDED. Ohne
+          Stripe-Customer war noch nie ein Abo da: das ist eine frische
+          Registrierung, kein Zahlungsausfall. Sie rot als "Zugang gesperrt"
+          zu melden, würde einen Interessenten im ersten Moment verschrecken. */}
+      {status === "SUSPENDED" && !portalAvailable ? (
+        <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+          <h2 className="font-medium text-blue-900">{t("onboarding.title")}</h2>
+          <p className="mt-1 text-sm text-blue-800">
+            {t("onboarding.message", { days: trialDays })}
+          </p>
+        </div>
+      ) : status === "SUSPENDED" ? (
         <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3">
           <h2 className="font-medium text-red-900">{t("suspended.title")}</h2>
           <p className="mt-1 text-sm text-red-800">{t("suspended.message")}</p>

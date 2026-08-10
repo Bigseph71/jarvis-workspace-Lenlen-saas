@@ -7,7 +7,6 @@ import {
   type User,
 } from "@len-len/database";
 import { hashPassword, verifyPassword } from "../../lib/password.js";
-import { trialEnd } from "../billing/trial.js";
 import { writeAudit } from "../../lib/audit.js";
 import { revokeAccessTokensBefore } from "../../lib/token-revocation.js";
 import {
@@ -82,11 +81,16 @@ export async function registerOrganization(input: RegisterOrganizationInput): Pr
       data: {
         name: input.organizationName,
         country: input.country,
-        // Testphase statt der Vorgabe ACTIVE: eine Selbstregistrierung darf
-        // keinen unbefristeten Gratis-Zugang schaffen. Nach Ablauf suspendiert
-        // der Billing-Worker, sofern kein Abo abgeschlossen wurde.
-        subscriptionStatus: SubscriptionStatus.TRIAL,
-        trialEndsAt: trialEnd(),
+        // Gesperrt bis zum Abo-Abschluss. Die Testphase hängt am STRIPE-Abo,
+        // nicht an der Registrierung: sie beginnt erst, wenn ein
+        // Zahlungsmittel hinterlegt ist, und läuft danach ohne Kündigung
+        // selbsttätig in ein zahlendes Abo über.
+        //
+        // limits.ts weist SUSPENDED mit 402 ab – ohne Karte lässt sich also
+        // nichts anlegen. Die Abrechnungsseite erkennt am fehlenden
+        // stripeCustomerId, dass es sich um eine frische Registrierung
+        // handelt und nicht um einen Zahlungsausfall.
+        subscriptionStatus: SubscriptionStatus.SUSPENDED,
       },
     });
 
