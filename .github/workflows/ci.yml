@@ -60,7 +60,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22 wie apps/web/Dockerfile. Unter Node 20 scheiterten die
+          # Web-Tests: über next-intl wird der Next-Runtime geladen, der
+          # undici mitbringt, und undici 8 ruft webidl.util.markAsUncloneable –
+          # dort noch nicht vorhanden.
+          #
+          # Der Fehler blieb lokal unsichtbar (Node 24). Genau diese Differenz
+          # zwischen Entwicklungsrechner und CI hatte den Test grün erscheinen
+          # lassen, bevor er in der CI aufschlug.
+          node-version: 22
           cache: pnpm
           cache-dependency-path: saas-pflege/pnpm-lock.yaml
 
