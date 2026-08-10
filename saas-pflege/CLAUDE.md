@@ -114,15 +114,36 @@ reviendrait à produire une tournée unique de quarante patients.
 - **Règle 7** : bloqué (409) si un patient du jour n'est pas `geocoding_status =
   VALID`. Un secteur calculé sur une coordonnée absente deviendrait une tournée
   fausse, sans que rien ne le signale.
-- **Plan** : refusé (403 `PlanFeatureUnavailable`) si la capacité `ki` des
+- **Plan** : refusé (**402** `PlanFeatureUnavailable`) si la capacité `ki` des
   plan-limits est fausse, c'est-à-dire en Basic. Une capacité négociée par tenant
-  rouvre l'accès sans toucher au code.
+  rouvre l'accès sans toucher au code. Le statut 402 est celui de **tous** les
+  blocages de plan du produit, et le frontend s'y accroche pour proposer la
+  montée en gamme : un 403 serait lu comme une erreur de droits et passerait
+  sous silence.
 - **Sans effet de bord** : rien n'est persisté. La validation appartient à la
   coordination (accepter / ajuster / rejeter), et un découpage écrit avant
   validation serait un découpage imposé. Conséquence assumée : le lien
   secteur → tournée n'existe pas encore en base. La réponse expose donc, par
   cluster, la `routeId` **déjà existante** de la fachkraft suggérée, seule cible
   possible du VRPTW à ce stade.
+
+### Dette technique assumée : `clustering_sessions` (Phase 2)
+
+Ne rien persister est le bon choix pour la mise en place, pas une position
+tenable à terme. Une table `clustering_sessions` sera nécessaire en **Phase 2**
+pour deux besoins que l'état client ne peut pas couvrir :
+
+- **Historique** : savoir quel découpage a été validé un jour donné, par qui, et
+  le comparer au réalisé. Aujourd'hui la décision du coordinateur disparaît au
+  rafraîchissement de la page.
+- **Ré-optimisation intra-journalière** : quand un arrêt maladie tombe à 10 h, il
+  faut repartir du découpage validé le matin, pas en recalculer un nouveau qui
+  redistribuerait des tournées déjà commencées.
+
+Elle portera au minimum `organization_id`, la date, l'algorithme et ses
+paramètres, la composition validée de chaque secteur, la fachkraft retenue et
+l'auteur de la validation. C'est elle qui donnera au VRPTW une cible propre, à la
+place du contournement actuel par la `routeId` préexistante.
 
 ---
 

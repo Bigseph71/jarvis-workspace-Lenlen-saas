@@ -184,7 +184,7 @@ describe("Gebietsaufteilung", () => {
 
   it("erklärt dem Basic-Tenant, warum nichts berechnet wird", async () => {
     computeDailyClustering.mockRejectedValue(
-      new MockApiError(403, "PlanFeatureUnavailable", "nicht enthalten"),
+      new MockApiError(402, "PlanFeatureUnavailable", "nicht enthalten"),
     );
     const user = userEvent.setup();
     render(<ClusteringPage />);
@@ -197,6 +197,38 @@ describe("Gebietsaufteilung", () => {
     expect(screen.getByText(t("clustering.errors.planBody"))).toBeInTheDocument();
     // Kein halbes Ergebnis daneben.
     expect(screen.queryByTestId("cluster-0")).not.toBeInTheDocument();
+  });
+
+  it("erkennt die Plansperre am Status 402, nicht am Fehlercode", async () => {
+    // Der Punkt der Korrektur. 402 ist im ganzen Produkt das Signal „der Plan
+    // reicht nicht“; hinge diese Seite am Fehlercode, liefe sie als einzige
+    // nach eigenen Regeln und ein 402 aus einer anderen Quelle bliebe stumm.
+    computeDailyClustering.mockRejectedValue(
+      new MockApiError(402, "PaymentRequired", "Abonnement nicht aktiv"),
+    );
+    const user = userEvent.setup();
+    render(<ClusteringPage />);
+
+    await user.click(screen.getByRole("button", { name: t("clustering.actions.run") }));
+
+    await waitFor(() =>
+      expect(screen.getByText(t("clustering.errors.planTitle"))).toBeInTheDocument(),
+    );
+  });
+
+  it("hält einen 403 nicht für eine Plansperre", async () => {
+    // Ein 403 ist eine Rechte-, keine Planfrage. Würde er hier als Plansperre
+    // gelesen, bekäme ein Koordinator ohne Berechtigung ein Upgrade-Angebot.
+    computeDailyClustering.mockRejectedValue(
+      new MockApiError(403, "Forbidden", "keine Berechtigung"),
+    );
+    const user = userEvent.setup();
+    render(<ClusteringPage />);
+
+    await user.click(screen.getByRole("button", { name: t("clustering.actions.run") }));
+
+    await waitFor(() => expect(screen.getByText("keine Berechtigung")).toBeInTheDocument());
+    expect(screen.queryByText(t("clustering.errors.planTitle"))).not.toBeInTheDocument();
   });
 
   it("benennt eine blockierende Geokodierung statt sie zu verschlucken", async () => {

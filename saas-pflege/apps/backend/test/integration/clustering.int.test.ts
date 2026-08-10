@@ -263,7 +263,9 @@ describe.skipIf(!runDbTests)("Gebietsaufteilung (DB)", () => {
 
     await expect(
       clustering.computeDailyClustering(ctxA, { date: TEST_DATE, algorithm: "dbscan" }),
-    ).rejects.toMatchObject({ code: "PlanFeatureUnavailable", statusCode: 403 });
+    // 402 und nicht 403: dasselbe Signal wie bei jeder anderen Plansperre im
+    // Produkt. Vier Seiten des Frontends hängen an genau diesem Status.
+    ).rejects.toMatchObject({ code: "PlanFeatureUnavailable", statusCode: 402 });
 
     // Une capacité négociée sur un tenant Basic doit rouvrir l'accès sans
     // toucher au code : le test porte sur la capacité, pas sur le nom du plan.

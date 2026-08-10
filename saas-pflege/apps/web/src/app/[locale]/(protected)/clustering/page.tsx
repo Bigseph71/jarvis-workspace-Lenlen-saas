@@ -42,6 +42,7 @@ export default function ClusteringPage() {
   const [result, setResult] = useState<DailyClusteringResult | null>(null);
   const [state, setState] = useState<LoadState>("idle");
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<ClusteringJobStatus | null>(null);
 
@@ -111,6 +112,7 @@ export default function ClusteringPage() {
   const run = useCallback(async () => {
     setState("loading");
     setErrorCode(null);
+    setErrorStatus(null);
     setErrorMessage(null);
     setJobStatus(null);
     try {
@@ -129,6 +131,7 @@ export default function ClusteringPage() {
     } catch (err) {
       setState("error");
       setErrorCode(err instanceof ApiError ? (err.code ?? null) : null);
+      setErrorStatus(err instanceof ApiError ? err.status : null);
       setErrorMessage(err instanceof Error ? err.message : null);
     }
   }, [algorithm, applyResult, date, k, listen]);
@@ -226,7 +229,12 @@ export default function ClusteringPage() {
 
   // ── Darstellung ─────────────────────────────────────────────────────────
 
-  const planBlocked = errorCode === "PlanFeatureUnavailable";
+  // Auf den STATUS geprüft, nicht auf den Fehlercode: 402 ist im ganzen
+  // Produkt das Signal „der Plan reicht nicht“, und vier weitere Seiten
+  // (Patient anlegen, Fachkraft anlegen, Fahrzeug anlegen/ändern) hängen genau
+  // daran. Der Code bleibt als Feinheit erhalten, trägt aber nicht die
+  // Entscheidung – sonst liefe diese Seite als einzige nach eigenen Regeln.
+  const planBlocked = errorStatus === 402;
   const geocodingBlocked = errorCode === "GeocodingIncomplete";
 
   return (

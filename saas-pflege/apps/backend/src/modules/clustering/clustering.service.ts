@@ -12,6 +12,13 @@
  * proposition. Rien n'est écrit, aucune tournée n'est créée. C'est délibéré à
  * ce stade : la validation appartient à la coordination (accepter, ajuster,
  * rejeter), et un découpage écrit avant validation serait un découpage imposé.
+ *
+ * DETTE ASSUMÉE (Phase 2) : une table `clustering_sessions` devra porter le
+ * découpage validé. Deux besoins que l'état client ne couvre pas — l'historique
+ * (quel découpage a été retenu, par qui, comparé au réalisé) et la
+ * ré-optimisation en cours de journée, qui doit repartir du découpage validé le
+ * matin plutôt que d'en recalculer un qui redistribuerait des tournées déjà
+ * commencées. Voir CLAUDE.md, section Clustering géographique quotidien.
  */
 
 import {
@@ -118,9 +125,16 @@ export interface DailyClusteringResult {
  * Une structure Basic à qui l'on a ouvert la capacité y aura donc droit, sans
  * qu'il faille toucher au code.
  *
- * Le code HTTP renvoyé est 403, conformément à la demande. Note pour la suite :
- * tout le reste du produit répond 402 PaymentRequired sur un blocage lié au
- * plan, et le frontend s'appuie sur ce code pour proposer la montée en gamme.
+ * Le code HTTP est 402, comme partout ailleurs dans le produit sur un blocage
+ * lié au plan. Ce n'est pas cosmétique : quatre pages du frontend testent
+ * `err.status === 402` pour proposer la montée en gamme. Un 403 aurait été
+ * traité comme une erreur d'autorisation quelconque et serait passé sous
+ * silence, sans jamais offrir la sortie au client.
+ *
+ * Le code d'erreur reste distinct de `PaymentRequired` : atteindre une limite
+ * (« trop de patients ») et ne pas disposer d'une fonction sont deux
+ * situations différentes, qui appellent deux messages différents. Le statut
+ * porte la mécanique commune, le code porte la nuance.
  */
 export async function assertPlanAllowsClustering(organizationId: string): Promise<SubscriptionPlan> {
   const org = await withTenant(organizationId, async (tx) =>
@@ -134,7 +148,7 @@ export async function assertPlanAllowsClustering(organizationId: string): Promis
   const limits = resolvePlanLimits(org.subscriptionPlan, org.planLimits);
   if (!limits.ki) {
     throw new AppError(
-      403,
+      402,
       "Automatische Gebietsaufteilung ist im Basic-Plan nicht enthalten.",
       "PlanFeatureUnavailable",
     );
