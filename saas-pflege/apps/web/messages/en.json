@@ -22,7 +22,27 @@
       "submit": "Sign in",
       "submitting": "Signing in …",
       "invalidCredentials": "Invalid credentials.",
-      "mobileOnly": "Caregivers sign in via the mobile app, not here."
+      "mobileOnly": "Caregivers sign in via the mobile app, not here.",
+      "noAccount": "No account yet?",
+      "toRegister": "Create organisation"
+    },
+    "register": {
+      "title": "Create organisation",
+      "subtitle": "Set up your care service. You become its structure administrator.",
+      "organizationName": "Name of the care service",
+      "adminEmail": "Email",
+      "adminEmailHint": "You will sign in with this address.",
+      "password": "Password",
+      "passwordRules": "At least {min} characters, including a lower-case letter, an upper-case letter and a digit.",
+      "confirmation": "Repeat password",
+      "passwordMismatch": "The two passwords do not match.",
+      "submit": "Create organisation",
+      "submitting": "Creating …",
+      "emailTaken": "This email address is already taken.",
+      "invalidInput": "Please check your entries.",
+      "tooManyAttempts": "Too many attempts. Please try again in a minute.",
+      "haveAccount": "Already have an account?",
+      "toLogin": "Sign in"
     }
   },
   "dashboard": {
@@ -427,7 +447,8 @@
       "ACTIVE": "Active",
       "PAST_DUE": "Payment overdue",
       "SUSPENDED": "Suspended",
-      "CANCELED": "Canceled"
+      "CANCELED": "Canceled",
+      "TRIAL": "Trial"
     },
     "plans": {
       "BASIC": "Basic",
@@ -501,6 +522,12 @@
       },
       "view": "View",
       "pdf": "PDF"
+    },
+    "trial": {
+      "title": "Trial period running",
+      "message": "Your trial ends on {deadline}. Choose a plan before then, otherwise access will be locked.",
+      "daysRemaining": "{days} days left",
+      "lastDay": "Last day"
     }
   },
   "absences": {

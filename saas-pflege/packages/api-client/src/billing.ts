@@ -1,7 +1,7 @@
 import { apiFetch } from "./client";
 
 export type SubscriptionPlan = "BASIC" | "PRO" | "ENTERPRISE";
-export type SubscriptionStatus = "ACTIVE" | "PAST_DUE" | "SUSPENDED" | "CANCELED";
+export type SubscriptionStatus = "TRIAL" | "ACTIVE" | "PAST_DUE" | "SUSPENDED" | "CANCELED";
 export type InvoiceStatus = "PAID" | "OPEN" | "FAILED" | "VOID";
 
 /** Locale der Rückkehr-URL nach Checkout/Portal (muss zu /de /en /fr passen). */
@@ -39,6 +39,8 @@ export interface Subscription {
   usage: PlanUsage;
   /** null, solange die Zahlungen in Ordnung sind. */
   grace: GraceWindow | null;
+  /** Nur während der Testphase gesetzt (Status TRIAL). */
+  trial: { endsAt: string; daysRemaining: number } | null;
   portalAvailable: boolean;
 }
 

@@ -23,6 +23,7 @@ type LoadState = "loading" | "ready" | "error";
 const PLAN_ORDER: readonly SubscriptionPlan[] = ["BASIC", "PRO", "ENTERPRISE"];
 
 const STATUS_STYLES: Record<SubscriptionStatus, string> = {
+  TRIAL: "bg-blue-100 text-blue-800",
   ACTIVE: "bg-green-100 text-green-800",
   PAST_DUE: "bg-amber-100 text-amber-800",
   SUSPENDED: "bg-red-100 text-red-800",
@@ -260,7 +261,7 @@ export default function BillingPage() {
     );
   }
 
-  const { plan, status, limits, catalog, usage, grace, portalAvailable } = subscription;
+  const { plan, status, limits, catalog, usage, grace, trial, portalAvailable } = subscription;
 
   return (
     <section>
@@ -302,6 +303,24 @@ export default function BillingPage() {
         <p className="mt-4 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
           {t("checkout.canceled")}
         </p>
+      ) : null}
+
+      {/* Testphase: voller Funktionsumfang, aber befristet. Blau und nicht
+          ambre – noch ist nichts schiefgelaufen, es läuft nur eine Frist. */}
+      {status === "TRIAL" && trial ? (
+        <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-medium text-blue-900">{t("trial.title")}</h2>
+            <span className="rounded-full bg-blue-200 px-2 py-0.5 text-xs font-medium text-blue-900">
+              {trial.daysRemaining <= 1
+                ? t("trial.lastDay")
+                : t("trial.daysRemaining", { days: trial.daysRemaining })}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-blue-800">
+            {t("trial.message", { deadline: formatDate(trial.endsAt) })}
+          </p>
+        </div>
       ) : null}
 
       {/* Karenzzeit läuft: der Zugang besteht noch, endet aber zum Stichtag. */}

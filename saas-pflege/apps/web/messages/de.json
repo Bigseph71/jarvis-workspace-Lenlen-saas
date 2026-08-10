@@ -22,7 +22,27 @@
       "submit": "Anmelden",
       "submitting": "Wird angemeldet …",
       "invalidCredentials": "Ungültige Anmeldedaten.",
-      "mobileOnly": "Fachkräfte melden sich in der mobilen App an, nicht hier."
+      "mobileOnly": "Fachkräfte melden sich in der mobilen App an, nicht hier.",
+      "noAccount": "Noch kein Konto?",
+      "toRegister": "Organisation anlegen"
+    },
+    "register": {
+      "title": "Organisation anlegen",
+      "subtitle": "Richten Sie Ihren Pflegedienst ein. Sie werden dabei zum Struktur-Admin.",
+      "organizationName": "Name des Pflegedienstes",
+      "adminEmail": "E-Mail",
+      "adminEmailHint": "Damit melden Sie sich künftig an.",
+      "password": "Passwort",
+      "passwordRules": "Mindestens {min} Zeichen, davon ein Klein-, ein Großbuchstabe und eine Ziffer.",
+      "confirmation": "Passwort wiederholen",
+      "passwordMismatch": "Die beiden Passwörter stimmen nicht überein.",
+      "submit": "Organisation anlegen",
+      "submitting": "Wird angelegt …",
+      "emailTaken": "Diese E-Mail ist bereits vergeben.",
+      "invalidInput": "Bitte prüfen Sie Ihre Eingaben.",
+      "tooManyAttempts": "Zu viele Versuche. Bitte in einer Minute erneut versuchen.",
+      "haveAccount": "Sie haben bereits ein Konto?",
+      "toLogin": "Anmelden"
     }
   },
   "dashboard": {
@@ -427,7 +447,8 @@
       "ACTIVE": "Aktiv",
       "PAST_DUE": "Zahlung überfällig",
       "SUSPENDED": "Gesperrt",
-      "CANCELED": "Gekündigt"
+      "CANCELED": "Gekündigt",
+      "TRIAL": "Testphase"
     },
     "plans": {
       "BASIC": "Basic",
@@ -501,6 +522,12 @@
       },
       "view": "Ansehen",
       "pdf": "PDF"
+    },
+    "trial": {
+      "title": "Testphase läuft",
+      "message": "Ihre Testphase endet am {deadline}. Wählen Sie vorher einen Plan, sonst wird der Zugang gesperrt.",
+      "daysRemaining": "Noch {days} Tage",
+      "lastDay": "Letzter Tag"
     }
   },
   "absences": {

@@ -22,7 +22,27 @@
       "submit": "Se connecter",
       "submitting": "Connexion …",
       "invalidCredentials": "Identifiants invalides.",
-      "mobileOnly": "Les soignants se connectent via l'app mobile, pas ici."
+      "mobileOnly": "Les soignants se connectent via l'app mobile, pas ici.",
+      "noAccount": "Pas encore de compte ?",
+      "toRegister": "Créer une organisation"
+    },
+    "register": {
+      "title": "Créer une organisation",
+      "subtitle": "Configurez votre service de soins. Vous en devenez l'administrateur.",
+      "organizationName": "Nom du service de soins",
+      "adminEmail": "Adresse e-mail",
+      "adminEmailHint": "Elle vous servira à vous connecter.",
+      "password": "Mot de passe",
+      "passwordRules": "Au moins {min} caractères, dont une minuscule, une majuscule et un chiffre.",
+      "confirmation": "Confirmer le mot de passe",
+      "passwordMismatch": "Les deux mots de passe ne correspondent pas.",
+      "submit": "Créer l'organisation",
+      "submitting": "Création …",
+      "emailTaken": "Cette adresse e-mail est déjà utilisée.",
+      "invalidInput": "Veuillez vérifier vos saisies.",
+      "tooManyAttempts": "Trop de tentatives. Réessayez dans une minute.",
+      "haveAccount": "Vous avez déjà un compte ?",
+      "toLogin": "Se connecter"
     }
   },
   "dashboard": {
@@ -427,7 +447,8 @@
       "ACTIVE": "Actif",
       "PAST_DUE": "Paiement en retard",
       "SUSPENDED": "Suspendu",
-      "CANCELED": "Résilié"
+      "CANCELED": "Résilié",
+      "TRIAL": "Période d'essai"
     },
     "plans": {
       "BASIC": "Basic",
@@ -501,6 +522,12 @@
       },
       "view": "Voir",
       "pdf": "PDF"
+    },
+    "trial": {
+      "title": "Période d'essai en cours",
+      "message": "Votre essai se termine le {deadline}. Choisissez un plan avant cette date, sinon l'accès sera bloqué.",
+      "daysRemaining": "Encore {days} jours",
+      "lastDay": "Dernier jour"
     }
   },
   "absences": {
