@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "backfill:contracts": "tsx src/scripts/backfill-contracts.ts",
-    "check:gps-consent": "tsx src/scripts/check-gps-consent.ts"
+    "check:gps-consent": "tsx src/scripts/check-gps-consent.ts",
+    "check:trial": "tsx src/scripts/check-trial.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
