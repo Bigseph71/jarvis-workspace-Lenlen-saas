@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import {
   ApiError,
   clusteringSocketUrl,
@@ -30,6 +30,10 @@ function today(): string {
 
 export default function ClusteringPage() {
   const t = useTranslations("clustering");
+  // Über next-intl und nicht über toLocaleString(): letzteres richtet sich nach
+  // der Umgebung des Prozesses, nicht nach der angezeigten Sprache. Eine
+  // deutsche Oberfläche zeigte damit je nach Rechner "1,42" oder "1.42".
+  const format = useFormatter();
 
   const [date, setDate] = useState(today);
   const [algorithm, setAlgorithm] = useState<"dbscan" | "kmeans">("dbscan");
@@ -362,7 +366,7 @@ export default function ClusteringPage() {
                       </div>
                       <div className="flex justify-between">
                         <dt>{t("cluster.maxDistance")}</dt>
-                        <dd>{cluster.maxDistanceKm.toLocaleString()} km</dd>
+                        <dd>{format.number(cluster.maxDistanceKm, { maximumFractionDigits: 2 })} km</dd>
                       </div>
                       <div className="flex justify-between gap-2">
                         <dt>{t("cluster.suggested")}</dt>
