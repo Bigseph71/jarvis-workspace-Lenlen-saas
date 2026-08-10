@@ -14,6 +14,8 @@ export * from "./visits";
 export * from "./chat";
 export * from "./vehicles";
 export * from "./tracking";
+export * from "./routes";
+export * from "./clustering";
 export * from "./consent";
 export * from "./dsgvo";
 export * from "./billing";

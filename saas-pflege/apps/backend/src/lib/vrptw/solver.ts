@@ -35,22 +35,12 @@ export interface SolveOptions {
   now?: () => number;
 }
 
-const EARTH_RADIUS_KM = 6371;
+// Die Distanzrechnung liegt in lib/geo.ts: sie war hier auf `Stop` typisiert
+// und damit nur für Besuche brauchbar. Das Clustering rechnet auf Patienten.
+// Der Re-Export hält bestehende Importe aus diesem Modul gültig.
+import { haversineKm } from "../geo.js";
 
-function toRad(deg: number): number {
-  return (deg * Math.PI) / 180;
-}
-
-/** Großkreis-Distanz zweier Punkte in km (Haversine). */
-export function haversineKm(a: Stop, b: Stop): number {
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const h =
-    Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
-}
+export { haversineKm };
 
 /** Summe der aufeinanderfolgenden Distanzen einer geordneten Stopp-Liste (km). */
 export function routeDistanceKm(stops: Stop[]): number {
