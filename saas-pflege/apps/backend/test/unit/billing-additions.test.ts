@@ -33,9 +33,12 @@ describe("resolvePlanLimits (override planLimits)", () => {
 });
 
 describe("mapSubscriptionStatus (Suspendierung, Regel 8)", () => {
-  it("aktiviert bei active/trialing", () => {
+  it("trennt die Testphase vom laufenden Abo", () => {
     expect(mapSubscriptionStatus("active")).toBe("ACTIVE");
-    expect(mapSubscriptionStatus("trialing")).toBe("ACTIVE");
+    // Seit der Testphase am Stripe-Abo eigener Status: der Zugang ist
+    // derselbe, aber die Oberfläche darf keine laufende Zahlung behaupten,
+    // solange nur eine Frist läuft.
+    expect(mapSubscriptionStatus("trialing")).toBe("TRIAL");
   });
 
   it("PAST_DUE in der Karenzzeit, SUSPENDED bei unpaid", () => {

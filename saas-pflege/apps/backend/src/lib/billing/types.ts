@@ -7,6 +7,12 @@ export interface CheckoutParams {
   customerEmail?: string;
   /** Bestehender Stripe-Customer des Tenants, falls schon einer angelegt wurde. */
   customerId?: string;
+  /**
+   * Länge der Testphase in Tagen, die Stripe dem Abo voranstellt. Nur beim
+   * ERSTEN Abschluss gesetzt – ein Planwechsel darf keine neue Testphase
+   * schenken.
+   */
+  trialDays?: number;
 }
 
 export interface CheckoutSession {
