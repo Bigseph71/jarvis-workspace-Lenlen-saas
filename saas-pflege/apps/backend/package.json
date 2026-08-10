@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "backfill:contracts": "tsx src/scripts/backfill-contracts.ts",
+    "seed:demo": "tsx src/scripts/seed-demo.ts",
     "check:gps-consent": "tsx src/scripts/check-gps-consent.ts",
     "check:trial": "tsx src/scripts/check-trial.ts"
   },
