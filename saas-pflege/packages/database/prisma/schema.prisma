@@ -24,6 +24,10 @@ enum SubscriptionPlan {
 }
 
 enum SubscriptionStatus {
+  // Testphase nach der Selbstregistrierung. Voller Funktionsumfang des
+  // gebuchten Plans, aber befristet: läuft trial_ends_at ab, ohne dass ein
+  // Abo abgeschlossen wurde, suspendiert der Billing-Worker den Tenant.
+  TRIAL
   ACTIVE
   PAST_DUE
   SUSPENDED
@@ -129,6 +133,10 @@ model Organization {
   // Zahlungsversuch, geleert sobald wieder bezahlt wurde. Nach Ablauf von
   // BILLING_GRACE_PERIOD_DAYS suspendiert der Billing-Worker den Tenant.
   pastDueSince         DateTime?          @map("past_due_since")
+  // Ende der Testphase. Nur bei subscriptionStatus = TRIAL gesetzt; wird beim
+  // Abschluss eines Abos geleert, damit der Sweep einen zahlenden Tenant nicht
+  // nachträglich suspendiert.
+  trialEndsAt          DateTime?          @map("trial_ends_at")
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 

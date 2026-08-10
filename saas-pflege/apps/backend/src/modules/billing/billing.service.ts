@@ -14,6 +14,7 @@ import { planForPrice } from "../../lib/billing/prices.js";
 import { PLAN_LIMITS, parsePlan, resolvePlanLimits, type PlanLimits } from "./plan.js";
 import { mapEventToStatus, mapInvoiceStatus, mapSubscriptionStatus } from "./events.js";
 import { graceDaysRemaining, graceDeadline } from "./grace.js";
+import { trialDaysRemaining } from "./trial.js";
 import type { CheckoutInput, ListInvoicesInput, PortalInput } from "./billing.schemas.js";
 
 /**
@@ -191,6 +192,8 @@ export interface SubscriptionView {
   usage: { patients: number; caregivers: number; vehicles: number };
   /** Nur gesetzt, solange der Tenant zahlungssäumig ist (Regel 8). */
   grace: { since: string; deadline: string; daysRemaining: number } | null;
+  /** Nur während der Testphase gesetzt (Status TRIAL). */
+  trial: { endsAt: string; daysRemaining: number } | null;
   /** true, sobald ein Stripe-Customer existiert -> Self-Service-Portal nutzbar. */
   portalAvailable: boolean;
 }
@@ -205,6 +208,7 @@ export async function getSubscription(ctx: TenantContext): Promise<SubscriptionV
         subscriptionStatus: true,
         planLimits: true,
         pastDueSince: true,
+        trialEndsAt: true,
         stripeCustomerId: true,
       },
     });
@@ -231,6 +235,16 @@ export async function getSubscription(ctx: TenantContext): Promise<SubscriptionV
             daysRemaining: graceDaysRemaining(org.pastDueSince),
           }
         : null,
+      // An den Status gebunden, nicht allein an das Datum: ein bereits
+      // abgelaufenes trialEndsAt bei einem inzwischen zahlenden Tenant darf
+      // keinen Testphasen-Hinweis mehr erzeugen.
+      trial:
+        org.subscriptionStatus === SubscriptionStatus.TRIAL && org.trialEndsAt
+          ? {
+              endsAt: org.trialEndsAt.toISOString(),
+              daysRemaining: trialDaysRemaining(org.trialEndsAt),
+            }
+          : null,
       portalAvailable: org.stripeCustomerId !== null,
     };
   });
@@ -393,7 +407,10 @@ async function applyStatusByCustomer(
 
   await prisma.organization.updateMany({
     where: { stripeCustomerId: customerId },
-    data: { subscriptionStatus: status, pastDueSince: null },
+    // trialEndsAt ebenfalls leeren: sobald Stripe einen Abo-Status meldet, ist
+    // die Testphase beendet – auch bei CANCELED, wo der Tenant sonst zweimal
+    // suspendiert würde, einmal durch Stripe und einmal durch den Trial-Sweep.
+    data: { subscriptionStatus: status, pastDueSince: null, trialEndsAt: null },
   });
 }
 
@@ -470,6 +487,9 @@ async function processEvent(event: BillingEvent): Promise<void> {
         subscriptionStatus: SubscriptionStatus.ACTIVE,
         // Frischer Checkout -> eine etwaige alte Karenzzeit ist gegenstandslos.
         pastDueSince: null,
+        // Ebenso die Testphase: bliebe trialEndsAt stehen, würde der Sweep
+        // einen zahlenden Tenant am Stichtag suspendieren.
+        trialEndsAt: null,
         ...(plan
           ? {
               subscriptionPlan: plan,

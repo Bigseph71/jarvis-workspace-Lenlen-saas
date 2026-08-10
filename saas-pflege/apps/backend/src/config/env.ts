@@ -31,6 +31,11 @@ const schema = z.object({
   STRIPE_PRICE_PRO: z.string().optional(),
   STRIPE_PRICE_ENTERPRISE: z.string().optional(),
 
+  // Länge der Testphase nach der Selbstregistrierung, in Tagen. Danach
+  // suspendiert der Billing-Worker den Tenant, sofern kein Abo abgeschlossen
+  // wurde. 0 = keine Testphase (Registrierung sofort suspendiert).
+  TRIAL_PERIOD_DAYS: z.coerce.number().int().min(0).max(365).default(14),
+
   // Karenzzeit (Regel 8): Tage zwischen erstem fehlgeschlagenem Zahlungsversuch
   // und automatischer Suspendierung des Tenants. 0 = sofort suspendieren.
   BILLING_GRACE_PERIOD_DAYS: z.coerce.number().int().min(0).default(7),

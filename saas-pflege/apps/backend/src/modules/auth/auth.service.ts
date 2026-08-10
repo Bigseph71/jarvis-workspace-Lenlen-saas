@@ -1,5 +1,13 @@
-import { prisma, withTenant, AuditAction, UserRole, type User } from "@len-len/database";
+import {
+  prisma,
+  withTenant,
+  AuditAction,
+  SubscriptionStatus,
+  UserRole,
+  type User,
+} from "@len-len/database";
 import { hashPassword, verifyPassword } from "../../lib/password.js";
+import { trialEnd } from "../billing/trial.js";
 import { writeAudit } from "../../lib/audit.js";
 import { revokeAccessTokensBefore } from "../../lib/token-revocation.js";
 import {
@@ -71,7 +79,15 @@ export async function registerOrganization(input: RegisterOrganizationInput): Pr
 
   const user = await prisma.$transaction(async (tx) => {
     const org = await tx.organization.create({
-      data: { name: input.organizationName, country: input.country },
+      data: {
+        name: input.organizationName,
+        country: input.country,
+        // Testphase statt der Vorgabe ACTIVE: eine Selbstregistrierung darf
+        // keinen unbefristeten Gratis-Zugang schaffen. Nach Ablauf suspendiert
+        // der Billing-Worker, sofern kein Abo abgeschlossen wurde.
+        subscriptionStatus: SubscriptionStatus.TRIAL,
+        trialEndsAt: trialEnd(),
+      },
     });
 
     return tx.user.create({

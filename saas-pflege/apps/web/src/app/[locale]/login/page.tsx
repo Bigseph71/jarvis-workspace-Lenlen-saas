@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { ROLE_NOT_ALLOWED, useAuth } from "@/lib/auth/auth-context";
 import { ApiError } from "@len-len/api-client";
 
@@ -108,6 +108,13 @@ export default function LoginPage() {
             {submitting ? t("submitting") : t("submit")}
           </button>
         </form>
+
+        <p className="mt-6 text-center text-sm text-gray-500">
+          {t("noAccount")}{" "}
+          <Link href="/register" className="font-medium text-gray-900 underline-offset-2 hover:underline">
+            {t("toRegister")}
+          </Link>
+        </p>
       </div>
     </main>
   );

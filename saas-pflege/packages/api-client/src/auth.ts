@@ -44,6 +44,36 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
   return result.user;
 }
 
+export interface RegisterOrganizationInput {
+  organizationName: string;
+  /** ISO-3166-1 alpha-2, Vorgabe DE. */
+  country?: string;
+  adminEmail: string;
+  adminPassword: string;
+}
+
+/**
+ * Selbstregistrierung: legt Organisation und ersten Struktur-Admin an.
+ *
+ * Das Backend liefert bereits ein Token-Paar zurück – die neue Anmeldung wird
+ * hier direkt persistiert, ein zweiter Login-Schritt entfällt. Ein Nutzer, der
+ * sich gerade registriert hat, soll nicht sein eben gewähltes Passwort erneut
+ * eintippen müssen.
+ */
+export async function registerOrganization(
+  input: RegisterOrganizationInput,
+): Promise<AuthUser> {
+  const result = await apiFetch<AuthResult>("/auth/register-organization", {
+    method: "POST",
+    body: input,
+    auth: false,
+  });
+  const { storage } = getApiConfig();
+  await storage.setAccessToken(result.accessToken);
+  await storage.setRefreshToken(result.refreshToken);
+  return result.user;
+}
+
 export interface ChangePasswordInput {
   currentPassword: string;
   newPassword: string;

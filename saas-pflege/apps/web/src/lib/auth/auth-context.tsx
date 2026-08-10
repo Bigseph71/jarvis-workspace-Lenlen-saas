@@ -5,9 +5,11 @@ import "@/lib/api-setup";
 import {
   login as apiLogin,
   logout as apiLogout,
+  registerOrganization as apiRegister,
   restoreSession,
   type AuthUser,
   type LoginCredentials,
+  type RegisterOrganizationInput,
 } from "@len-len/api-client";
 
 /**
@@ -23,6 +25,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   status: AuthStatus;
   login: (credentials: LoginCredentials) => Promise<void>;
+  /** Selbstregistrierung: legt Organisation + ersten Admin an und meldet an. */
+  register: (input: RegisterOrganizationInput) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -66,6 +70,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("authenticated");
   }, []);
 
+  // Der Registrierung folgt KEIN zweiter Login: das Backend gibt bereits ein
+  // Token-Paar zurück, der api-client hat es persistiert. Die Rollenprüfung
+  // aus login() entfällt hier – wer sich registriert, wird per Definition
+  // Struktur-Admin.
+  const register = useCallback(async (input: RegisterOrganizationInput) => {
+    const created = await apiRegister(input);
+    setUser(created);
+    setStatus("authenticated");
+  }, []);
+
   const logout = useCallback(async () => {
     await apiLogout();
     setUser(null);
@@ -73,7 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, status, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, status, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 
