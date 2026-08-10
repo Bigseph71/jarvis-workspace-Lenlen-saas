@@ -87,12 +87,18 @@ function UsageRow({
 function PlanCard({
   plan,
   current,
+  subscribed,
   limits,
   busy,
   onSelect,
 }: {
   plan: SubscriptionPlan;
   current: SubscriptionPlan;
+  /**
+   * false = noch kein Abo. `current` ist dann bedeutungslos: der Wert kommt
+   * aus dem Spaltenvorgabewert BASIC, nicht aus einer Wahl des Kunden.
+   */
+  subscribed: boolean;
   limits: PlanLimits;
   busy: boolean;
   onSelect: (plan: SubscriptionPlan) => void;
@@ -101,7 +107,10 @@ function PlanCard({
   const locale = useLocale();
   const numberFmt = new Intl.NumberFormat(locale);
 
-  const isCurrent = plan === current;
+  // Ohne Abo ist KEIN Plan der aktuelle. Andernfalls gälte BASIC als bereits
+  // gebucht und sein Knopf wäre gesperrt – ausgerechnet der Einstiegsplan
+  // liesse sich dann nicht abschliessen.
+  const isCurrent = subscribed && plan === current;
   const isUpgrade = PLAN_ORDER.indexOf(plan) > PLAN_ORDER.indexOf(current);
 
   return (
@@ -133,7 +142,14 @@ function PlanCard({
             : "bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-40"
         }`}
       >
-        {isCurrent ? t("actions.current") : isUpgrade ? t("actions.upgrade") : t("actions.downgrade")}
+        {isCurrent
+          ? t("actions.current")
+          : !subscribed
+            ? // Erstabschluss: weder Auf- noch Abstieg, es wird schlicht gewählt.
+              t("actions.choose")
+            : isUpgrade
+              ? t("actions.upgrade")
+              : t("actions.downgrade")}
       </button>
     </div>
   );
@@ -264,6 +280,16 @@ export default function BillingPage() {
   const { plan, status, limits, catalog, usage, grace, trial, trialDays, portalAvailable } =
     subscription;
 
+  /**
+   * Läuft überhaupt ein Abo? Nur dann ist `plan` eine Wahl des Kunden.
+   *
+   * Bei SUSPENDED und CANCELED steht dort weiterhin BASIC – der Vorgabewert
+   * der Spalte. Ohne diese Unterscheidung erschiene BASIC als "bereits
+   * gebucht" und sein Knopf wäre gesperrt: weder eine frische Registrierung
+   * noch ein gekündigter Kunde könnte den Einstiegsplan abschliessen.
+   */
+  const subscribed = status === "TRIAL" || status === "ACTIVE" || status === "PAST_DUE";
+
   return (
     <section>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -391,6 +417,7 @@ export default function BillingPage() {
         {PLAN_ORDER.map((p) => (
           <PlanCard
             key={p}
+            subscribed={subscribed}
             plan={p}
             current={plan}
             // Der aktuelle Plan zeigt die tatsächlich geltenden (ggf.
