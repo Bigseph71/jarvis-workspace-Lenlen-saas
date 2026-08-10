@@ -31,6 +31,9 @@ import { vehicleRoutes } from "./modules/vehicles/vehicle.routes.js";
 import { vrptwRoutes } from "./modules/vrptw/vrptw.routes.js";
 import { vrptwWsRoutes } from "./modules/vrptw/vrptw.ws.js";
 import { startVrptwWorker } from "./modules/vrptw/vrptw.worker.js";
+import { clusteringRoutes } from "./modules/clustering/clustering.routes.js";
+import { clusteringWsRoutes } from "./modules/clustering/clustering.ws.js";
+import { startClusteringWorker } from "./modules/clustering/clustering.worker.js";
 import { trackingRoutes } from "./modules/tracking/tracking.routes.js";
 import { trackingWsRoutes } from "./modules/tracking/tracking.ws.js";
 import { consentRoutes } from "./modules/consent/consent.routes.js";
@@ -118,6 +121,8 @@ await app.register(chatRoutes);
 await app.register(vehicleRoutes);
 await app.register(vrptwRoutes);
 await app.register(vrptwWsRoutes);
+await app.register(clusteringRoutes);
+await app.register(clusteringWsRoutes);
 await app.register(trackingRoutes);
 await app.register(trackingWsRoutes);
 await app.register(consentRoutes);
@@ -137,6 +142,12 @@ if (env.NODE_ENV !== "test") {
     app.log.info("VRPTW-Worker gestartet");
   } catch (err) {
     app.log.warn({ err }, "VRPTW-Worker konnte nicht gestartet werden");
+  }
+  try {
+    startClusteringWorker();
+    app.log.info("Clustering-Worker gestartet");
+  } catch (err) {
+    app.log.warn({ err }, "Clustering-Worker konnte nicht gestartet werden");
   }
   try {
     startBillingWorker();

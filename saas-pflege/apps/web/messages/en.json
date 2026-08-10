@@ -67,7 +67,8 @@
     "more": "More",
     "dsgvo": "Data protection",
     "dsgvoExport": "Data access",
-    "dsgvoErasure": "Erasure"
+    "dsgvoErasure": "Erasure",
+    "clustering": "Sectors"
   },
   "patients": {
     "title": "Patients",
@@ -660,6 +661,69 @@
         "caregiverBody": "Anonymised. Deleted: {positions} GPS position(s), {consents} consent(s), {sessions} session(s).",
         "retained": "Retained"
       }
+    }
+  },
+  "clustering": {
+    "title": "Daily geographic clustering",
+    "intro": "Groups a day's patients into coherent sectors. The VRPTW then orders the visits within each sector.",
+    "fields": {
+      "date": "Day",
+      "algorithm": "Algorithm",
+      "k": "Number of sectors"
+    },
+    "algorithms": {
+      "dbscan": "DBSCAN (density, recommended)",
+      "kmeans": "k-means (fixed count)"
+    },
+    "actions": {
+      "run": "Compute clustering",
+      "running": "Computing …",
+      "accept": "Accept",
+      "adjust": "Adjust",
+      "reject": "Reject",
+      "launchVrptw": "Start VRPTW"
+    },
+    "jobStatus": {
+      "pending": "Queued …",
+      "processing": "Computing …",
+      "done": "Done",
+      "failed": "Failed",
+      "unknown": "Status unknown"
+    },
+    "errors": {
+      "planTitle": "Not included in the Basic plan",
+      "planBody": "Automatic clustering is part of Pro and Enterprise. Upgrading unlocks it immediately.",
+      "geocodingTitle": "Clustering blocked",
+      "geocodingBody": "At least one address of the day is not validly geocoded. Without coordinates the sector would be wrong.",
+      "generic": "The clustering could not be computed."
+    },
+    "map": {
+      "error": "The map could not be loaded.",
+      "noKey": "No map key configured — the sectors are listed alongside."
+    },
+    "summary": "{patients} patients, {clusters} sectors",
+    "empty": "There are no visits on this day.",
+    "cluster": {
+      "heading": "Sector {number}",
+      "patients": "Patients",
+      "maxDistance": "Largest distance",
+      "suggested": "Suggested caregiver",
+      "noSuggestion": "none available",
+      "accepted": "accepted",
+      "rejected": "rejected",
+      "moveLabel": "Move {name} to another sector",
+      "removeFromClusters": "No sector"
+    },
+    "unassigned": {
+      "heading": "Not assigned to any sector",
+      "hint": "Too far from every sector. These visits need their own decision."
+    },
+    "vrptw": {
+      "needsAcceptance": "Accept at least one sector to start the optimisation.",
+      "ready": "{count} route(s) will be optimised.",
+      "missingRoutes": "{count} accepted sector(s) without an existing route — there is nothing to optimise for them.",
+      "queued": "Optimisation queued.",
+      "error": "The optimisation could not be started."
     }
   }
 }

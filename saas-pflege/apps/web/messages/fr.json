@@ -67,7 +67,8 @@
     "more": "Plus",
     "dsgvo": "Protection des données",
     "dsgvoExport": "Droit d'accès",
-    "dsgvoErasure": "Effacement"
+    "dsgvoErasure": "Effacement",
+    "clustering": "Secteurs"
   },
   "patients": {
     "title": "Patients",
@@ -660,6 +661,69 @@
         "caregiverBody": "Anonymisé. Supprimés : {positions} position(s) GPS, {consents} consentement(s), {sessions} session(s).",
         "retained": "Conservé"
       }
+    }
+  },
+  "clustering": {
+    "title": "Découpage géographique quotidien",
+    "intro": "Regroupe les patients d'une journée en secteurs cohérents. Le VRPTW ordonne ensuite les visites à l'intérieur de chaque secteur.",
+    "fields": {
+      "date": "Jour",
+      "algorithm": "Algorithme",
+      "k": "Nombre de secteurs"
+    },
+    "algorithms": {
+      "dbscan": "DBSCAN (densité, recommandé)",
+      "kmeans": "k-moyennes (nombre fixe)"
+    },
+    "actions": {
+      "run": "Calculer le découpage",
+      "running": "Calcul en cours …",
+      "accept": "Accepter",
+      "adjust": "Ajuster",
+      "reject": "Rejeter",
+      "launchVrptw": "Lancer le VRPTW"
+    },
+    "jobStatus": {
+      "pending": "En file d'attente …",
+      "processing": "Calcul en cours …",
+      "done": "Terminé",
+      "failed": "Échec",
+      "unknown": "Statut inconnu"
+    },
+    "errors": {
+      "planTitle": "Non inclus dans le plan Basic",
+      "planBody": "Le découpage automatique fait partie des plans Pro et Enterprise. Un changement de plan l'ouvre immédiatement.",
+      "geocodingTitle": "Découpage bloqué",
+      "geocodingBody": "Au moins une adresse de la journée n'est pas géocodée valablement. Sans coordonnées, le secteur serait faux.",
+      "generic": "Le découpage n'a pas pu être calculé."
+    },
+    "map": {
+      "error": "La carte n'a pas pu être chargée.",
+      "noKey": "Aucune clé cartographique configurée — les secteurs figurent dans la liste à côté."
+    },
+    "summary": "{patients} patients, {clusters} secteurs",
+    "empty": "Aucune visite ce jour-là.",
+    "cluster": {
+      "heading": "Secteur {number}",
+      "patients": "Patients",
+      "maxDistance": "Distance maximale",
+      "suggested": "Fachkraft suggérée",
+      "noSuggestion": "aucune disponible",
+      "accepted": "accepté",
+      "rejected": "rejeté",
+      "moveLabel": "Déplacer {name} vers un autre secteur",
+      "removeFromClusters": "Aucun secteur"
+    },
+    "unassigned": {
+      "heading": "Rattaché à aucun secteur",
+      "hint": "Trop éloigné de tous les secteurs. Ces visites demandent une décision propre."
+    },
+    "vrptw": {
+      "needsAcceptance": "Accepter au moins un secteur pour lancer l'optimisation.",
+      "ready": "{count} tournée(s) seront optimisées.",
+      "missingRoutes": "{count} secteur(s) accepté(s) sans tournée existante — rien à optimiser pour eux.",
+      "queued": "Optimisation mise en file.",
+      "error": "L'optimisation n'a pas pu être lancée."
     }
   }
 }

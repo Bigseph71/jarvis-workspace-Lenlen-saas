@@ -5,6 +5,7 @@ import { env } from "../config/env.js";
 export const GEOCODING_QUEUE = "geocoding";
 export const VRPTW_QUEUE = "vrptw-optimization";
 export const BILLING_QUEUE = "billing";
+export const CLUSTERING_QUEUE = "clustering-daily";
 
 export interface GeocodeJob {
   organizationId: string;
@@ -23,6 +24,32 @@ export interface VrptwJob {
   routeId: string;
   caregiverId: string;
   date: string;
+}
+
+/**
+ * Nutzlast einer täglichen Gebietsaufteilung (Clustering).
+ *
+ * Trägt die Parameter mit, statt sie im Worker erneut zu ermitteln: der Job
+ * muss dasselbe rechnen wie der synchrone Pfad, auch wenn zwischen Einreihen
+ * und Ausführung jemand die Voreinstellungen ändert.
+ */
+export interface ClusteringJob {
+  organizationId: string;
+  userId: string | null;
+  date: string;
+  algorithm: "dbscan" | "kmeans";
+  k?: number;
+  epsilonKm?: number;
+  minPoints?: number;
+}
+
+/**
+ * Job-ID einer Gebietsaufteilung: ein Tenant und ein Tag ergeben genau einen
+ * Job. Verhindert, dass sich bei mehrfachem Klicken Jobs stapeln, und macht die
+ * ID für den WebSocket-Stream vorhersagbar (kein Umweg über eine Antwort).
+ */
+export function clusteringJobId(organizationId: string, date: string): string {
+  return `${organizationId}:${date}`;
 }
 
 /**
@@ -51,6 +78,7 @@ function createQueueConnection(): ConnectionOptions {
 let queueConnection: ConnectionOptions | undefined;
 let geocodingQueue: Queue<GeocodeJob> | undefined;
 let vrptwQueue: Queue<VrptwJob> | undefined;
+let clusteringQueue: Queue<ClusteringJob> | undefined;
 
 /** Gemeinsame Producer-Verbindung (lazy, einmalig für alle Enqueue-Queues). */
 function getQueueConnection(): ConnectionOptions {
@@ -72,7 +100,15 @@ function getVrptwQueue(): Queue<VrptwJob> {
   return vrptwQueue;
 }
 
+function getClusteringQueue(): Queue<ClusteringJob> {
+  if (!clusteringQueue) {
+    clusteringQueue = new Queue<ClusteringJob>(CLUSTERING_QUEUE, { connection: getQueueConnection() });
+  }
+  return clusteringQueue;
+}
+
 let vrptwQueueEvents: QueueEvents | undefined;
+let clusteringQueueEvents: QueueEvents | undefined;
 
 /**
  * Gemeinsamer QueueEvents-Stream der VRPTW-Queue (Redis-basiert, daher auch
@@ -85,6 +121,14 @@ export function getVrptwQueueEvents(): QueueEvents {
     vrptwQueueEvents = new QueueEvents(VRPTW_QUEUE, { connection: createRedisConnection() });
   }
   return vrptwQueueEvents;
+}
+
+/** Ereignisstrom der Clustering-Queue (siehe getVrptwQueueEvents). */
+export function getClusteringQueueEvents(): QueueEvents {
+  if (!clusteringQueueEvents) {
+    clusteringQueueEvents = new QueueEvents(CLUSTERING_QUEUE, { connection: createRedisConnection() });
+  }
+  return clusteringQueueEvents;
 }
 
 /** Auf unser Status-Vokabular gemappter Job-Zustand einer Tour. */
@@ -175,4 +219,43 @@ export async function enqueueVrptw(job: VrptwJob): Promise<string> {
     2000,
   );
   return added.id ?? job.routeId;
+}
+
+/**
+ * Reiht eine tägliche Gebietsaufteilung ein. Wie beim VRPTW wird ein Fehler
+ * NICHT verschluckt: die Koordination hat den Lauf bewusst angestoßen.
+ *
+ * `removeOnComplete: 3600` statt `true` – das Ergebnis muss den Job überleben,
+ * damit ein Client, der sich erst nach Abschluss verbindet, es noch abholen
+ * kann. Bei der Optimierung liegt das Ergebnis in der Route, hier gibt es
+ * keine Tabelle: verschwindet der Job, ist die Berechnung verloren.
+ */
+export async function enqueueClustering(job: ClusteringJob): Promise<string> {
+  const id = clusteringJobId(job.organizationId, job.date);
+  const added = await withTimeout(
+    getClusteringQueue().add("cluster", job, {
+      jobId: id,
+      attempts: 2,
+      backoff: { type: "exponential", delay: 3000 },
+      removeOnComplete: { age: 3600, count: 100 },
+      removeOnFail: 100,
+    }),
+    2000,
+  );
+  return added.id ?? id;
+}
+
+/** Queue-Zustand einer Gebietsaufteilung (jobId = organizationId:date). */
+export async function getClusteringJobStatus(
+  organizationId: string,
+  date: string,
+): Promise<{ status: VrptwJobStatus; result?: unknown; error?: string }> {
+  const job = await getClusteringQueue().getJob(clusteringJobId(organizationId, date));
+  if (!job) return { status: "unknown" };
+  const status = mapJobState(await job.getState());
+  return {
+    status,
+    ...(status === "done" ? { result: job.returnvalue } : {}),
+    ...(status === "failed" ? { error: job.failedReason } : {}),
+  };
 }

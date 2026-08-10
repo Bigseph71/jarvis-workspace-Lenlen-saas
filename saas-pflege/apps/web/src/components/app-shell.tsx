@@ -51,6 +51,10 @@ const SECONDARY_ITEMS: NavItem[] = [
   // Chemin, libellé et titre de page disent enfin la même chose. L'ancien
   // /planung désignait le tracking et se confondait avec « Planung », le
   // libellé de /visits.
+  // Gebietsaufteilung: geht der Optimierung voraus, gehört also zur Planung
+  // (clustering.routes.ts: canPlan). Kein Untermenüpunkt von /tracking – das
+  // ist Echtzeit-Überwachung, etwas ganz anderes.
+  { href: "/clustering", key: "clustering", roles: PLANNING },
   { href: "/tracking", key: "tracking", roles: PLANNING },
   { href: "/chat", key: "chat", roles: PLANNING },
   { href: "/leasing", key: "leasing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },

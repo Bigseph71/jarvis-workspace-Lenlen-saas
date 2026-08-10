@@ -67,7 +67,8 @@
     "more": "Mehr",
     "dsgvo": "Datenschutz",
     "dsgvoExport": "Auskunft",
-    "dsgvoErasure": "Löschung"
+    "dsgvoErasure": "Löschung",
+    "clustering": "Gebiete"
   },
   "patients": {
     "title": "Patienten",
@@ -660,6 +661,69 @@
         "caregiverBody": "Anonymisiert. Gelöscht: {positions} GPS-Position(en), {consents} Einwilligung(en), {sessions} Sitzung(en).",
         "retained": "Erhalten geblieben"
       }
+    }
+  },
+  "clustering": {
+    "title": "Tägliche Gebietsaufteilung",
+    "intro": "Fasst die Patienten eines Tages zu zusammenhängenden Gebieten zusammen. Erst danach ordnet der VRPTW die Besuche innerhalb eines Gebiets.",
+    "fields": {
+      "date": "Tag",
+      "algorithm": "Verfahren",
+      "k": "Anzahl Gebiete"
+    },
+    "algorithms": {
+      "dbscan": "DBSCAN (Dichte, empfohlen)",
+      "kmeans": "k-Means (feste Anzahl)"
+    },
+    "actions": {
+      "run": "Aufteilung berechnen",
+      "running": "Berechnung läuft …",
+      "accept": "Annehmen",
+      "adjust": "Anpassen",
+      "reject": "Ablehnen",
+      "launchVrptw": "VRPTW starten"
+    },
+    "jobStatus": {
+      "pending": "In der Warteschlange …",
+      "processing": "Wird berechnet …",
+      "done": "Fertig",
+      "failed": "Fehlgeschlagen",
+      "unknown": "Status unbekannt"
+    },
+    "errors": {
+      "planTitle": "Im Basic-Plan nicht enthalten",
+      "planBody": "Die automatische Gebietsaufteilung gehört zu Pro und Enterprise. Ein Wechsel schaltet sie sofort frei.",
+      "geocodingTitle": "Aufteilung blockiert",
+      "geocodingBody": "Mindestens eine Anschrift des Tages ist nicht gültig geokodiert. Ohne Koordinaten entstünde ein falsches Gebiet.",
+      "generic": "Die Aufteilung konnte nicht berechnet werden."
+    },
+    "map": {
+      "error": "Die Karte konnte nicht geladen werden.",
+      "noKey": "Kein Karten-Schlüssel konfiguriert – die Gebiete stehen in der Liste daneben."
+    },
+    "summary": "{patients} Patienten, {clusters} Gebiete",
+    "empty": "Für diesen Tag gibt es keine Besuche.",
+    "cluster": {
+      "heading": "Gebiet {number}",
+      "patients": "Patienten",
+      "maxDistance": "Größter Abstand",
+      "suggested": "Vorgeschlagene Fachkraft",
+      "noSuggestion": "keine verfügbar",
+      "accepted": "angenommen",
+      "rejected": "abgelehnt",
+      "moveLabel": "{name} in ein anderes Gebiet verschieben",
+      "removeFromClusters": "Keinem Gebiet"
+    },
+    "unassigned": {
+      "heading": "Keinem Gebiet zugeordnet",
+      "hint": "Zu weit von jedem Gebiet entfernt. Diese Besuche brauchen eine eigene Entscheidung."
+    },
+    "vrptw": {
+      "needsAcceptance": "Mindestens ein Gebiet annehmen, um die Optimierung zu starten.",
+      "ready": "{count} Tour(en) werden optimiert.",
+      "missingRoutes": "{count} angenommene(s) Gebiet(e) ohne bestehende Tour – dafür ist nichts zu optimieren.",
+      "queued": "Optimierung eingereiht.",
+      "error": "Die Optimierung konnte nicht gestartet werden."
     }
   }
 }
