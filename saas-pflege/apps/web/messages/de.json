@@ -1,7 +1,10 @@
 {
   "home": {
     "title": "Len Len – Pflege-Plattform",
-    "subtitle": "Multi-Tenant SaaS für ambulante Pflegedienste"
+    "subtitle": "Multi-Tenant SaaS für ambulante Pflegedienste",
+    "login": "Anmelden",
+    "register": "Organisation anlegen",
+    "trialHint": "14 Tage testen. Zahlungsmittel erforderlich, Kündigung jederzeit möglich."
   },
   "common": {
     "appName": "Len Len",

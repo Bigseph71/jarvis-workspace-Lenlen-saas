@@ -1,7 +1,10 @@
 {
   "home": {
     "title": "Len Len – Plateforme de soins",
-    "subtitle": "SaaS multi-tenant pour services de soins à domicile"
+    "subtitle": "SaaS multi-tenant pour services de soins à domicile",
+    "login": "Se connecter",
+    "register": "Créer une organisation",
+    "trialHint": "14 jours d'essai. Moyen de paiement requis, résiliation à tout moment."
   },
   "common": {
     "appName": "Len Len",

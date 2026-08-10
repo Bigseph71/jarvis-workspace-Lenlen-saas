@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { UserRole } from "@len-len/api-client";
 import { Link, usePathname } from "@/i18n/navigation";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { useAuth } from "@/lib/auth/auth-context";
 
 // Navigationspunkte des angemeldeten Bereichs. `roles` beschränkt die Sichtbarkeit.
@@ -186,13 +187,18 @@ export function AppShell({ children }: { children: ReactNode }) {
               <MoreMenu items={secondary} pathname={pathname} />
             </nav>
           </div>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className="shrink-0 whitespace-nowrap rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-100"
-          >
-            {tc("logout")}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Auch im angemeldeten Bereich erreichbar: die Sprache war bisher
+                nur über das URL-Segment zu wechseln. */}
+            <LocaleSwitcher />
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="whitespace-nowrap rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-100"
+            >
+              {tc("logout")}
+            </button>
+          </div>
         </div>
       </header>
 
