@@ -345,12 +345,33 @@ confiance devant l'application.
 | Valeur | Effet | Où |
 |---|---|---|
 | `0` (défaut) | `X-Forwarded-For` ignoré, on compte l'IP de la connexion TCP | local, `docker-compose` |
-| `1` | on prend l'IP ajoutée par le proxy, une seule | **Railway** |
+| `1` | on remonte d'un saut | un seul proxy devant l'application |
+| `2` | on remonte de deux sauts | **Railway** (mesuré en production) |
 | `true` | jamais | voir ci-dessous |
 
-Derrière Railway avec `0`, l'IP vue est celle de l'edge : tous les visiteurs
-partagent un compteur et se bloquent mutuellement. D'où l'avertissement au
-démarrage si la production tourne encore avec `0`.
+**Railway ajoute deux sauts, pas un.** Avec `1`, l'adresse comptée restait une
+adresse interne de l'edge, différente à chaque connexion TCP : chaque requête
+ouvrait un compteur neuf et la limite ne tombait jamais — 45 requêtes en
+9 secondes sans un seul 429.
+
+Le symptôme ressemble à s'y méprendre à un store non partagé. Ce qui l'a
+tranché : rejouer les mêmes requêtes sur **une seule connexion TCP**
+(`curl --next`). Le compteur y descendait proprement de 9 à 0 puis bloquait,
+donc le comptage était juste depuis le début et seule la clé changeait. Avec un
+seul réplica, un compteur qui remonte ne vient jamais de plusieurs stores,
+uniquement de plusieurs clés. À tester en premier la prochaine fois, avant de
+soupçonner Redis.
+
+Vérifié en production avec `2` : décroissance de 9 à 0 sur des connexions
+distinctes, `429` au 11e appel, `X-Forwarded-For` forgé sans effet (y compris
+en chaîne), déblocage après la fenêtre, `/health` intact — chaque route a son
+compteur.
+
+Le démarrage journalise systématiquement la valeur retenue. Cette ligne était
+d'abord conditionnée à `NODE_ENV === "production"`, ce qui la rendait inutile :
+sans `NODE_ENV`, elle se taisait quelle que soit la configuration, et n'a pas pu
+servir au diagnostic. Un avertissement de configuration ne doit pas dépendre
+d'une autre configuration.
 
 Et `trustProxy: true` fait confiance à l'en-tête entier. L'attaquant le pose
 lui-même, obtient un compteur neuf à chaque tentative, et la limite ne

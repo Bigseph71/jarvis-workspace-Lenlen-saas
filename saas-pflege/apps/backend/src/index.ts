@@ -82,12 +82,18 @@ await app.register(rateLimit, {
   redis: createRateLimitRedis(),
 });
 
-if (isProduction && env.TRUST_PROXY_HOPS === 0) {
-  // Hinter einem Proxy zählt sonst jede Anfrage auf die IP des Proxys: ein
-  // einziger Zähler für alle Besucher, die sich gegenseitig aussperren.
+// Beim Start immer festhalten, worauf das Rate-Limit zählt. Diese Zeile hing
+// zuvor an isProduction – und wurde damit selbst unbrauchbar: ist NODE_ENV
+// nicht gesetzt, schweigt sie, egal wie TRUST_PROXY_HOPS steht. Eine Warnung
+// über Konfiguration, die von Konfiguration abhängt, beantwortet die Frage
+// nicht, für die man sie liest.
+app.log.info(`Rate-Limit zählt auf TRUST_PROXY_HOPS=${env.TRUST_PROXY_HOPS} (NODE_ENV=${env.NODE_ENV})`);
+if (env.TRUST_PROXY_HOPS === 0) {
+  // Hinter einem Proxy zählt sonst jede Anfrage auf dessen Adresse – bei
+  // Railway auf eine, die je Verbindung wechselt: das Limit greift nie.
   app.log.warn(
-    "TRUST_PROXY_HOPS=0 in Produktion: läuft die Anwendung hinter einem Proxy, " +
-      "teilen sich alle Clients einen Rate-Limit-Zähler. Hinter Railway gehört 1 gesetzt.",
+    "TRUST_PROXY_HOPS=0: läuft die Anwendung hinter einem Proxy, zählt das " +
+      "Rate-Limit auf dessen Adresse und wirkt nicht. Auf Railway gehört 2 gesetzt.",
   );
 }
 // WebSocket-Unterstützung (Echtzeit-Status VRPTW). Muss vor den WS-Routen stehen.

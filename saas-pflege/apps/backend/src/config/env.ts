@@ -90,12 +90,17 @@ const schema = z.object({
   // steht; hinter Railway wäre es die IP des Edge-Proxys, alle Besucher teilten
   // sich damit EINEN Zähler und blockierten sich gegenseitig.
   //
-  // Hinter genau einem Proxy (Railway) gehört hier 1 hin. Die Zahl ist die
-  // Anzahl der Sprünge von rechts: nur was der eigene Proxy angehängt hat,
-  // zählt. Deshalb keine Einstellung "true" – die glaubte dem ganzen Header
-  // und liesse jeden Angreifer seine Absender-IP frei erfinden, also das Limit
-  // mit einer erfundenen IP je Versuch umgehen. Ein falsch gesetztes Limit ist
-  // schlimmer als ein fehlendes: es sieht nach Schutz aus.
+  // Auf Railway gehört hier 2 hin, in Produktion gemessen. Mit 1 wechselte die
+  // gezählte Adresse bei JEDER neuen TCP-Verbindung: Railway hängt zwei Sprünge
+  // an, und der letzte ist eine interne Adresse des Edge. Sichtbar wurde es
+  // erst, als dieselbe Verbindung wiederverwendet wurde – über eine Verbindung
+  // zählte der Zähler sauber 9..0, über je eine eigene sprang er.
+  //
+  // Die Zahl ist die Anzahl der Sprünge von rechts: nur was die eigenen Proxies
+  // angehängt haben, zählt. Deshalb keine Einstellung "true" – die glaubte dem
+  // ganzen Header und liesse jeden Angreifer seine Absender-IP frei erfinden,
+  // also das Limit mit einer erfundenen IP je Versuch umgehen. Ein falsch
+  // gesetztes Limit ist schlimmer als ein fehlendes: es sieht nach Schutz aus.
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
 
   // Ursprung (Origin) des Web-Frontends – für CORS und für die Rückkehr-URLs
