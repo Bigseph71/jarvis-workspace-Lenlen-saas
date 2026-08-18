@@ -76,6 +76,12 @@ const schema = z.object({
   // lib/metrics.ts). Nur setzen, wenn tatsächlich ein Prometheus danebensteht.
   METRICS_TOKEN: z.string().min(24, "METRICS_TOKEN muss >= 24 Zeichen sein").optional(),
 
+  // Commit des laufenden Codes, für /health. Railway setzt
+  // RAILWAY_GIT_COMMIT_SHA von selbst; GIT_COMMIT_SHA erlaubt dasselbe bei
+  // jedem anderen Hoster und hat Vorrang.
+  GIT_COMMIT_SHA: z.string().optional(),
+  RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
+
   // Ursprung (Origin) des Web-Frontends – für CORS und für die Rückkehr-URLs
   // aus Stripe (Checkout/Portal führen nach /{locale}/billing zurück).
   // NICHT die API-URL: NEXT_PUBLIC_API_URL gehört dem Web und wird dort direkt
