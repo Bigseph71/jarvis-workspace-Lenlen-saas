@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { UserRole } from "@len-len/database";
 import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
+import { PLANNING_ROLES } from "../../lib/roles.js";
 import type { TenantContext } from "../../lib/context.js";
 import {
   createVisitSchema,
@@ -30,8 +31,8 @@ import {
 
 const idParamSchema = z.object({ id: z.string().uuid() });
 
-// Planung: Koordinator + Admin-Ebene.
-const canPlan = requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN, UserRole.KOORDINATOR);
+// Planung: Koordinator + Admin-Ebene (gemeinsame Liste, lib/roles.ts).
+const canPlan = requireRole(...PLANNING_ROLES);
 // Pointage: zusätzlich die Fachkraft selbst.
 const canTrack = requireRole(
   UserRole.SUPER_ADMIN,
