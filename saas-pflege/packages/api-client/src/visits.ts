@@ -40,6 +40,18 @@ export interface CreateVisitInput {
   caregiverId?: string;
 }
 
+/**
+ * Notfallbesuch (Regel métier 2): ausserhalb des Wochenzyklus, Motiv
+ * verpflichtend. Kein `assignedCaregiverId` – die Stamm-Fachkraft bleibt die
+ * des Patienten, `caregiverId` benennt nur, wer tatsächlich fährt.
+ */
+export interface CreateEmergencyVisitInput {
+  patientId: string;
+  scheduledAt: string;
+  caregiverId?: string;
+  emergencyReason: string;
+}
+
 export interface MissingWeekResult {
   week: { start: string; end: string };
   count: number;
@@ -63,6 +75,11 @@ export async function listVisits(params: ListVisitsParams = {}): Promise<Paginat
 
 export async function createVisit(input: CreateVisitInput): Promise<Visit> {
   return apiFetch<Visit>("/visits", { method: "POST", body: input });
+}
+
+/** Notfallbesuch anlegen (eigener Endpunkt, eigene Regeln). */
+export async function createEmergencyVisit(input: CreateEmergencyVisitInput): Promise<Visit> {
+  return apiFetch<Visit>("/visits/emergency", { method: "POST", body: input });
 }
 
 export async function cancelVisit(id: string): Promise<Visit> {
