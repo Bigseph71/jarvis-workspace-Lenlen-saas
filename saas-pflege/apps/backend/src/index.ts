@@ -78,7 +78,8 @@ await app.register(rateLimit, {
 await app.register(websocket);
 
 // Prometheus-Metriken (/metrics) + onResponse-Hook zur Erfassung jeder Anfrage.
-registerMetrics(app);
+// Nur aktiv, wenn METRICS_TOKEN gesetzt ist – sonst entsteht der Endpunkt nicht.
+registerMetrics(app, { token: env.METRICS_TOKEN });
 
 // Zentraler Error-Handler: Zod -> 400, AppError -> Status, Prisma-Unique -> 409.
 app.setErrorHandler((error, request, reply) => {

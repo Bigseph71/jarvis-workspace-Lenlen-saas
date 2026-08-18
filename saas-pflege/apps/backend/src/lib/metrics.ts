@@ -1,5 +1,6 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { collectDefaultMetrics, Counter, Histogram, Registry } from "prom-client";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 
 /**
  * Eigene Prometheus-Registry (nicht die globale Default-Registry). So bleiben
@@ -10,9 +11,6 @@ export const registry = new Registry();
 // Alle Zeitreihen tragen den Service-Namen – im Grafana-Dashboard lassen sich
 // so mehrere Dienste (backend, vrptw-worker, ...) sauber auseinanderhalten.
 registry.setDefaultLabels({ service: "backend" });
-
-// Node-/Prozess-Standardmetriken (Event-Loop-Lag, Heap, GC, CPU ...).
-collectDefaultMetrics({ register: registry });
 
 /** Anzahl abgeschlossener HTTP-Anfragen, aufgeschlüsselt nach Route/Methode/Status. */
 export const httpRequestsTotal = new Counter({
@@ -33,15 +31,71 @@ export const httpRequestDurationSeconds = new Histogram({
   registers: [registry],
 });
 
+// collectDefaultMetrics registriert seine Zeitreihen an der Registry und legt
+// Timer an; ein zweiter Aufruf auf derselben Registry wirft. Deshalb genau
+// einmal je Prozess, auch wenn mehrere Instanzen registriert werden (Tests).
+let defaultMetricsStarted = false;
+function startDefaultMetrics(): void {
+  if (defaultMetricsStarted) return;
+  collectDefaultMetrics({ register: registry });
+  defaultMetricsStarted = true;
+}
+
+/** Token aus `Authorization: Bearer <token>`; undefined, wenn nicht vorhanden. */
+export function bearerToken(header: string | undefined): string | undefined {
+  if (!header) return undefined;
+  const match = /^Bearer (.+)$/.exec(header.trim());
+  return match?.[1];
+}
+
 /**
- * Registriert den Prometheus-Endpunkt `/metrics` und einen Hook, der jede
- * Antwort in die Histogramm-/Counter-Metriken einträgt.
+ * Vergleich in konstanter Zeit. Beide Seiten werden gehasht, damit
+ * timingSafeEqual gleich lange Puffer bekommt und die Länge des erwarteten
+ * Tokens nicht über die Antwortzeit durchsickert.
+ */
+export function tokenMatches(expected: string, provided: string | undefined): boolean {
+  if (provided === undefined) return false;
+  const a = createHash("sha256").update(expected).digest();
+  const b = createHash("sha256").update(provided).digest();
+  return timingSafeEqual(a, b);
+}
+
+export interface MetricsOptions {
+  /**
+   * Scrape-Token. Ohne Token entsteht kein `/metrics`-Endpunkt.
+   *
+   * Der Vorgabezustand ist bewusst "gar nicht vorhanden" statt "offen": der
+   * Endpunkt war auf Railway monatelang ohne jede Prüfung aus dem Internet
+   * erreichbar. Der Kommentar im Code nahm an, er liege netzintern – das gilt
+   * für docker-compose, nicht für einen Dienst mit öffentlicher Domain. Wird
+   * eines Tages ein Prometheus danebengestellt, bekommt er ein Token; einen
+   * ungeschützten Zustand gibt es dann nicht mehr.
+   */
+  token?: string | undefined;
+}
+
+/**
+ * Registriert – sofern ein Scrape-Token gesetzt ist – den Prometheus-Endpunkt
+ * `/metrics` und einen Hook, der jede Antwort in die Histogramm-/Counter-
+ * Metriken einträgt.
  *
  * Als Route-Label wird das Fastify-Routen-Muster (z.B. `/patients/:id`) statt
  * der konkreten URL verwendet – das hält die Kardinalität der Zeitreihen niedrig.
  * Anfragen ohne gematchte Route (404) werden zu `unknown` zusammengefasst.
+ *
+ * Ohne Token wird nichts angelegt und nichts gesammelt: keine Route, kein
+ * Hook, keine Standardmetriken. Was niemand abholt, muss auch nicht erhoben
+ * werden – und was es nicht gibt, kann nicht ausgelesen werden.
  */
-export function registerMetrics(app: FastifyInstance): void {
+export function registerMetrics(app: FastifyInstance, options: MetricsOptions = {}): void {
+  const token = options.token;
+  if (!token) {
+    app.log.info("METRICS_TOKEN nicht gesetzt – /metrics ist deaktiviert");
+    return;
+  }
+
+  startDefaultMetrics();
+
   app.addHook("onResponse", async (request, reply) => {
     const route = request.routeOptions?.url ?? "unknown";
     // Der /metrics-Scrape selbst soll die Metriken nicht verfälschen.
@@ -57,9 +111,10 @@ export function registerMetrics(app: FastifyInstance): void {
     httpRequestDurationSeconds.observe(labels, reply.elapsedTime / 1000);
   });
 
-  // Kein Auth-Schutz: Der Endpunkt ist nur netzintern erreichbar (Prometheus
-  // scrape-Target), nicht öffentlich exponiert (siehe Architektur-Regeln).
-  app.get("/metrics", async (_request, reply) => {
+  app.get("/metrics", async (request: FastifyRequest, reply) => {
+    if (!tokenMatches(token, bearerToken(request.headers.authorization))) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
     reply.header("Content-Type", registry.contentType);
     return registry.metrics();
   });

@@ -72,6 +72,10 @@ const schema = z.object({
       }
     }, "APP_TIME_ZONE ist kein gültiger IANA-Zeitzonenname (z.B. Europe/Berlin)"),
 
+  // Scrape-Token für /metrics. Ohne Token gibt es den Endpunkt nicht (siehe
+  // lib/metrics.ts). Nur setzen, wenn tatsächlich ein Prometheus danebensteht.
+  METRICS_TOKEN: z.string().min(24, "METRICS_TOKEN muss >= 24 Zeichen sein").optional(),
+
   // Ursprung (Origin) des Web-Frontends – für CORS und für die Rückkehr-URLs
   // aus Stripe (Checkout/Portal führen nach /{locale}/billing zurück).
   // NICHT die API-URL: NEXT_PUBLIC_API_URL gehört dem Web und wird dort direkt

@@ -252,6 +252,27 @@ Deux chemins d'accès à la base (voir `packages/database/prisma/rls.sql`) :
 2. **Métier / Tenant** (rôle `app_user`, soumis à la RLS) : via `withTenant(orgId, …)`
    qui pose `app.current_org` au niveau transaction. Exemple dans `/auth/me`.
 
+## Monitoring (`/metrics`)
+
+**Désactivé par défaut.** Sans `METRICS_TOKEN`, le backend ne crée pas la route
+(404) et ne collecte rien : ni métriques HTTP, ni métriques Node par défaut.
+
+Ce n'était pas le cas auparavant. L'endpoint était monté sans aucune
+vérification, avec en commentaire l'hypothèse qu'il restait joignable depuis le
+seul réseau interne. Vrai sous `docker-compose`, faux sur Railway où le backend
+porte un domaine public : `/metrics` a été lisible depuis Internet, exposant la
+liste des routes, le volume de requêtes par endpoint et par code HTTP, les
+temps de réponse et la version de Node.
+
+Pour l'activer le jour où un Prometheus existe :
+
+1. `METRICS_TOKEN` = valeur aléatoire d'au moins 24 caractères ;
+2. dans le scrape job, envoyer `authorization: Bearer <token>`.
+
+Il n'y a pas de troisième état : soit la route n'existe pas, soit elle exige le
+token. La comparaison se fait à temps constant sur des hachages SHA-256, donc
+ni la valeur ni la longueur du token ne fuient par la durée de la réponse.
+
 ## Notes de production (à durcir)
 
 - Servir le refresh token en cookie `httpOnly` + `Secure` + `SameSite` plutôt
