@@ -82,6 +82,22 @@ const schema = z.object({
   GIT_COMMIT_SHA: z.string().optional(),
   RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
 
+  // Anzahl vertrauenswürdiger Proxies VOR der Anwendung. Bestimmt, welche IP
+  // als Absender gilt – und damit, worauf das Rate-Limit zählt.
+  //
+  // 0 (Vorgabe) heisst: `X-Forwarded-For` wird ignoriert, es zählt die IP der
+  // TCP-Verbindung. Richtig lokal und im docker-compose, wo niemand dazwischen
+  // steht; hinter Railway wäre es die IP des Edge-Proxys, alle Besucher teilten
+  // sich damit EINEN Zähler und blockierten sich gegenseitig.
+  //
+  // Hinter genau einem Proxy (Railway) gehört hier 1 hin. Die Zahl ist die
+  // Anzahl der Sprünge von rechts: nur was der eigene Proxy angehängt hat,
+  // zählt. Deshalb keine Einstellung "true" – die glaubte dem ganzen Header
+  // und liesse jeden Angreifer seine Absender-IP frei erfinden, also das Limit
+  // mit einer erfundenen IP je Versuch umgehen. Ein falsch gesetztes Limit ist
+  // schlimmer als ein fehlendes: es sieht nach Schutz aus.
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
+
   // Ursprung (Origin) des Web-Frontends – für CORS und für die Rückkehr-URLs
   // aus Stripe (Checkout/Portal führen nach /{locale}/billing zurück).
   // NICHT die API-URL: NEXT_PUBLIC_API_URL gehört dem Web und wird dort direkt

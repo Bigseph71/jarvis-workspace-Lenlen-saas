@@ -14,6 +14,7 @@ import { env } from "./config/env.js";
 import { AppError } from "./lib/errors.js";
 import { runHealthCheck } from "./lib/health.js";
 import { registerMetrics } from "./lib/metrics.js";
+import { createRateLimitRedis } from "./lib/rate-limit.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { patientRoutes } from "./modules/patients/patient.routes.js";
 import { caregiverRoutes } from "./modules/caregivers/caregiver.routes.js";
@@ -43,6 +44,9 @@ import { hrRoutes } from "./modules/hr/hr.routes.js";
 const isProduction = env.NODE_ENV === "production";
 
 const app = Fastify({
+  // Siehe TRUST_PROXY_HOPS in config/env.ts: entscheidet, welche IP als
+  // Absender gilt und worauf das Rate-Limit zählt.
+  trustProxy: env.TRUST_PROXY_HOPS,
   logger: {
     level: isProduction ? "info" : "debug",
     // Feste Basis-Felder auf jeder Logzeile (nützlich für die zentrale
@@ -70,10 +74,22 @@ await app.register(cors, {
   origin: [env.WEB_ORIGIN],
   credentials: true,
 });
+// Zähler in Redis, damit das Limit über alle Instanzen hinweg gilt. Ohne Store
+// zählte jede Instanz für sich und das Limit war praktisch wirkungslos.
 await app.register(rateLimit, {
   max: 100,
   timeWindow: "1 minute",
+  redis: createRateLimitRedis(),
 });
+
+if (isProduction && env.TRUST_PROXY_HOPS === 0) {
+  // Hinter einem Proxy zählt sonst jede Anfrage auf die IP des Proxys: ein
+  // einziger Zähler für alle Besucher, die sich gegenseitig aussperren.
+  app.log.warn(
+    "TRUST_PROXY_HOPS=0 in Produktion: läuft die Anwendung hinter einem Proxy, " +
+      "teilen sich alle Clients einen Rate-Limit-Zähler. Hinter Railway gehört 1 gesetzt.",
+  );
+}
 // WebSocket-Unterstützung (Echtzeit-Status VRPTW). Muss vor den WS-Routen stehen.
 await app.register(websocket);
 
