@@ -252,6 +252,31 @@ Deux chemins d'accès à la base (voir `packages/database/prisma/rls.sql`) :
 2. **Métier / Tenant** (rôle `app_user`, soumis à la RLS) : via `withTenant(orgId, …)`
    qui pose `app.current_org` au niveau transaction. Exemple dans `/auth/me`.
 
+## Health-Check (`/health`)
+
+```json
+{
+  "status": "ok",
+  "service": "backend",
+  "version": "36a4cb4",
+  "ts": "2026-08-18T13:20:32.000Z",
+  "checks": { "database": "up", "redis": "up" }
+}
+```
+
+`200` si tout répond, `503` dès qu'une dépendance est `down` (l'orchestrateur
+voit alors le conteneur comme *unhealthy*).
+
+`version` est le commit court du code en cours d'exécution. Railway fournit
+`RAILWAY_GIT_COMMIT_SHA` automatiquement ; ailleurs, passer `GIT_COMMIT_SHA`
+(prioritaire). Sans l'un ni l'autre : `"unknown"`.
+
+Pourquoi ce champ : sans lui, rien ne permet de savoir de l'extérieur quel
+état est réellement déployé après un merge. Tant que `/metrics` était ouvert,
+`process_start_time_seconds` donnait au moins l'heure de démarrage ; depuis sa
+fermeture, il ne restait rien. Le jour où un client remonte un bug, « quelle
+version tournait ? » est la première question.
+
 ## WebSockets (`/tracking/live/ws`, `/clustering/status/ws`, `/routes/:id/status/ws`)
 
 Un WebSocket ne peut pas porter d'en-tête `Authorization` au moment de la
