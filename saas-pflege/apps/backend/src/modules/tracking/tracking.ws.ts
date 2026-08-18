@@ -1,12 +1,17 @@
 import { z } from "zod";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
-import { verifyAccessToken } from "../../lib/tokens.js";
+import { UserRole } from "@len-len/database";
+import { authenticateSocket, closeWithAuthError } from "../../lib/ws-auth.js";
 import { canViewOrgLive } from "../../lib/tracking/scope.js";
 import { subscribeToOrg, type TrackingEvent } from "../../lib/realtime.js";
 import { livePositions } from "./tracking.service.js";
 
 const querySchema = z.object({ token: z.string().min(1) });
+
+// Aus der bestehenden Regel abgeleitet statt zweiter Aufzählung: ändert sich
+// canViewOrgLive, ändert sich diese Liste mit.
+const ORG_LIVE_ROLES: readonly UserRole[] = Object.values(UserRole).filter(canViewOrgLive);
 
 /** Sendet nur, wenn der Socket offen ist (OPEN === 1). */
 function send(socket: WebSocket, payload: unknown): void {
@@ -33,14 +38,14 @@ export async function trackingWsRoutes(app: FastifyInstance): Promise<void> {
 
     let ctx;
     try {
-      const claims = verifyAccessToken(query.data.token);
-      if (!canViewOrgLive(claims.role)) {
-        socket.close(1008, "Keine Berechtigung");
-        return;
-      }
+      // Rollenprüfung war hier schon richtig; über authenticateSocket kommen
+      // zusätzlich Sperrliste und erzwungener Passwortwechsel dazu.
+      const claims = await authenticateSocket(query.data.token, {
+        allow: ORG_LIVE_ROLES,
+      });
       ctx = { organizationId: claims.org, userId: claims.sub };
-    } catch {
-      socket.close(1008, "Nicht authentifiziert");
+    } catch (err) {
+      closeWithAuthError(socket, err);
       return;
     }
 

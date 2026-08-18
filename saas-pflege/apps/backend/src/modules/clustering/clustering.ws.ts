@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
-import { verifyAccessToken } from "../../lib/tokens.js";
+import { authenticateSocket, closeWithAuthError } from "../../lib/ws-auth.js";
+import { PLANNING_ROLES } from "../../lib/roles.js";
 import {
   clusteringJobId,
   getClusteringJobStatus,
@@ -52,6 +53,12 @@ function parseReturnValue(value: unknown): unknown {
  * kommt aus dem signierten Token. Ohne diese Herleitung wäre der Stream ein
  * Weg, das Ergebnis einer anderen Struktur mitzulesen.
  *
+ * Dieselben Rollen wie POST /clustering/daily. Das fehlte hier: die Prüfung
+ * beschränkte sich auf den Tenant, sodass JEDES angemeldete Konto derselben
+ * Organisation mitlesen konnte – auch eine Fachkraft und selbst die
+ * Personalverwaltung, die laut Rollenmodell keine Patientendaten sieht. Das
+ * Ergebnis führt Name, Vorname und Koordinaten jedes Patienten des Tages.
+ *
  * Statusfolge: pending -> processing -> done | failed.
  */
 export async function clusteringWsRoutes(app: FastifyInstance): Promise<void> {
@@ -65,9 +72,10 @@ export async function clusteringWsRoutes(app: FastifyInstance): Promise<void> {
 
     let organizationId: string;
     try {
-      organizationId = verifyAccessToken(query.data.token).org;
-    } catch {
-      socket.close(1008, "Nicht authentifiziert");
+      const claims = await authenticateSocket(query.data.token, { allow: PLANNING_ROLES });
+      organizationId = claims.org;
+    } catch (err) {
+      closeWithAuthError(socket, err);
       return;
     }
 

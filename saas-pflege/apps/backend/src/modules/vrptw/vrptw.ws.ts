@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
-import { verifyAccessToken } from "../../lib/tokens.js";
+import { authenticateSocket, closeWithAuthError } from "../../lib/ws-auth.js";
+import { PLANNING_ROLES } from "../../lib/roles.js";
 import {
   getVrptwJobStatus,
   getVrptwQueueEvents,
@@ -64,10 +65,13 @@ export async function vrptwWsRoutes(app: FastifyInstance): Promise<void> {
 
     let ctx;
     try {
-      const claims = verifyAccessToken(query.data.token);
+      // Dieselben Rollen wie POST /routes/:id/optimize und GET /routes/:id.
+      // Die Prüfung fehlte: der Tenant allein liess jedes angemeldete Konto der
+      // Organisation die Tourenplanung mitlesen (Reihenfolge, Kilometer, Score).
+      const claims = await authenticateSocket(query.data.token, { allow: PLANNING_ROLES });
       ctx = { organizationId: claims.org, userId: claims.sub };
-    } catch {
-      socket.close(1008, "Nicht authentifiziert");
+    } catch (err) {
+      closeWithAuthError(socket, err);
       return;
     }
 

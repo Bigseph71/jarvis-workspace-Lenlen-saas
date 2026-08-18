@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { UserRole } from "@len-len/database";
 import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
+import { PLANNING_ROLES } from "../../lib/roles.js";
 import { AppError } from "../../lib/errors.js";
 import { enqueueClustering } from "../../lib/queue.js";
 import type { TenantContext } from "../../lib/context.js";
@@ -14,7 +14,8 @@ import {
 } from "./clustering.service.js";
 
 /** Planung: Koordinator, Admins als Obermenge. Identisch zum VRPTW-Modul. */
-const canPlan = requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN, UserRole.KOORDINATOR);
+// Dieselbe Liste wie der WebSocket-Stream (lib/roles.ts).
+const canPlan = requireRole(...PLANNING_ROLES);
 
 function ctxFrom(req: FastifyRequest): TenantContext {
   return { organizationId: req.user!.organizationId, userId: req.user!.userId };

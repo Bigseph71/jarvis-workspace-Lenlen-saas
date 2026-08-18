@@ -252,6 +252,33 @@ Deux chemins d'accès à la base (voir `packages/database/prisma/rls.sql`) :
 2. **Métier / Tenant** (rôle `app_user`, soumis à la RLS) : via `withTenant(orgId, …)`
    qui pose `app.current_org` au niveau transaction. Exemple dans `/auth/me`.
 
+## WebSockets (`/tracking/live/ws`, `/clustering/status/ws`, `/routes/:id/status/ws`)
+
+Un WebSocket ne peut pas porter d'en-tête `Authorization` au moment de la
+poignée de main : le token voyage donc en query (`?token=<access-jwt>`).
+
+Cela n'exempte de rien. Tous les flux passent par `authenticateSocket`
+(`lib/ws-auth.ts`), qui applique dans l'ordre les mêmes contrôles que le
+preHandler `authenticate` du REST : signature, liste de révocation,
+changement de mot de passe forcé, puis rôle. Un refus ferme la connexion en
+`1008` avec le motif.
+
+Les rôles autorisés viennent d'une **liste unique** partagée avec le REST :
+`PLANNING_ROLES` dans `lib/roles.ts` pour la planification, `canViewOrgLive`
+pour le tracking. Il ne doit pas exister de seconde énumération.
+
+C'est né d'un défaut réel. Chaque flux vérifiait le token à sa façon : deux
+sur trois ne regardaient pas le rôle du tout, et aucun ne consultait la liste
+de révocation. Une Fachkraft, ou la gestion du personnel qui n'a pas accès aux
+données patients, pouvait ouvrir `/clustering/status/ws` et recevoir noms,
+prénoms et coordonnées de tous les patients du jour, là où l'endpoint REST
+équivalent répond 403. Un token révoqué continuait par ailleurs d'ouvrir les
+flux jusqu'à son expiration.
+
+`test/unit/ws-authorization.test.ts` démarre un vrai serveur et s'y connecte
+avec chaque rôle : c'est le seul niveau où l'oubli d'appeler la garde se voit,
+un test de la fonction seule ne l'aurait pas attrapé.
+
 ## Monitoring (`/metrics`)
 
 **Désactivé par défaut.** Sans `METRICS_TOKEN`, le backend ne crée pas la route
