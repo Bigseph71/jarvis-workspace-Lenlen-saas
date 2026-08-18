@@ -37,14 +37,6 @@
         {
           "locationWhenInUsePermission": "Die Position wird nur beim Pointage (Ankunft/Abfahrt beim Patienten) erfasst, wie in der Einwilligung beschrieben (DSGVO)."
         }
-      ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "usesCleartextTraffic": true
-          }
-        }
       ]
     ],
     "extra": {

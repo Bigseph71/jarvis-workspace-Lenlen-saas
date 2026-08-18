@@ -123,6 +123,39 @@ frontend vers l'API et l'application paraît vide sans message d'erreur clair.
 Les variables `NEXT_PUBLIC_*` sont lues à la **compilation**, pas au démarrage :
 les modifier impose un redéploiement, un simple redémarrage ne suffit pas.
 
+### Application mobile (EAS)
+
+`EXPO_PUBLIC_API_URL` obéit à la même règle que les `NEXT_PUBLIC_*` : la valeur
+est **figée au moment du bundle**, pas lue au lancement. Elle doit donc figurer
+dans **chaque** profil de `apps/mobile/eas.json`.
+
+| Profil | Sortie | Usage |
+|---|---|---|
+| `preview` | APK, distribution interne | essais, installation manuelle |
+| `production` | AAB (app-bundle) | Play Store / TestFlight |
+
+Le profil `production` n'avait pas cette variable, et le code retombait en
+silence sur `http://localhost:4000`, c'est-à-dire le téléphone lui-même : l'app
+s'installait, s'ouvrait, et échouait à chaque appel sans rien expliquer. C'est
+exactement la panne déjà vécue côté web. Un build de release sans cette
+variable **échoue maintenant explicitement** (`src/lib/api-url.ts`) ; en
+développement, le repli sur localhost reste en place.
+
+**HTTP en clair.** Interdit dans tous les builds. Pour développer contre un
+backend local en `http://192.168.x.y:4000`, poser `EXPO_ALLOW_CLEARTEXT=1` dans
+`apps/mobile/.env` : `app.config.js` n'ajoute `usesCleartextTraffic` que dans ce
+cas. Ce réglage était auparavant en dur dans `app.json`, donc présent dans les
+apps livrées — inutile puisque l'API est en HTTPS, visible pour qui ouvre l'APK,
+et surtout il masquait l'erreur de configuration ci-dessus au lieu de la
+révéler.
+
+**Distribution.** Une APK installée n'expire pas, mais les artefacts de build
+EAS ne sont plus téléchargeables après 30 jours : équiper un nouvel appareil
+impose alors un nouveau build. Les builds TestFlight, eux, expirent réellement
+au bout de 90 jours (le testeur perd l'app et ses données locales). Pour un
+pilote, viser Play Internal Testing et TestFlight plutôt qu'une APK transmise à
+la main.
+
 ## État
 
 Phase 1 (MVP) et l'essentiel de la Phase 2 livrés : auth multi-tenant, patients,
