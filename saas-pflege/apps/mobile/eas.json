@@ -13,7 +13,16 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://jarvis-workspace-lenlen-saas-production.up.railway.app"
+      }
     }
+  },
+  "submit": {
+    "production": {}
   }
 }
