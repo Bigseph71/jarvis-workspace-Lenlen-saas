@@ -54,6 +54,12 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+# Caches de build. Déjà couverts par saas-pflege/.gitignore, donc jamais
+# commités — mais les outils qui ne lisent QUE la racine ne les voyaient pas.
+# EAS Build est dans ce cas : il a tenté d'envoyer .turbo (2,1 Go) et .next
+# (~600 Mo) et a dépassé sa limite d'archive. Voir .easignore.
+.turbo/
+.next/
 
 # --- Logs et temporaires -----------------------------------------------------
 *.log
