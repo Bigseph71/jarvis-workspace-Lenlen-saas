@@ -328,6 +328,12 @@
     "error": "Visits could not be loaded.",
     "empty": "No visits this week.",
     "emergency": "Emergency",
+    "reasonPrefix": "Reason:",
+    "unassignedTitle": "{count} visits without a caregiver this week.",
+    "unassignedHint": "They appear in nobody's daily route until someone is assigned.",
+    "assignLabel": "Assign caregiver",
+    "assignChoose": "— Assign caregiver —",
+    "assignError": "The assignment failed.",
     "missingTitle": "{count} patients without a visit this week:",
     "columns": {
       "when": "When",

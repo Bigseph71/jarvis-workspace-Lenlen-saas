@@ -5,9 +5,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { addDays, formatDate, formatDateTime, startOfWeek } from "@/lib/datetime";
 import {
+  assignVisitCaregiver,
   cancelVisit,
+  listCaregivers,
   listVisits,
   missingWeek,
+  type Caregiver,
   type MissingWeekResult,
   type Visit,
   type VisitStatus,
@@ -34,6 +37,20 @@ const STATUS_STYLES: Record<VisitStatus, string> = {
 
 const CANCELABLE: VisitStatus[] = ["PLANNED", "IN_PROGRESS"];
 
+// Dieselben Status, die das Backend für eine Neuzuweisung zulässt
+// (assignCaregiver lehnt COMPLETED und CANCELED ab).
+const ASSIGNABLE: VisitStatus[] = ["PLANNED", "IN_PROGRESS"];
+
+/**
+ * Ein Besuch ohne effektive Fachkraft steht in keiner Tagesroute – die
+ * Mobile-App filtert auf caregiverId. Praktisch trifft das nur Notfälle: der
+ * Regelbesuch bekommt beim Anlegen immer eine. Ein solcher Besuch ist geplant
+ * und trotzdem niemandem zugeteilt, deshalb wird er oben eigens gemeldet.
+ */
+function needsCaregiver(visit: Visit): boolean {
+  return visit.caregiver === null && ASSIGNABLE.includes(visit.status);
+}
+
 export default function VisitsPage() {
   const t = useTranslations("visits");
   const locale = useLocale();
@@ -44,6 +61,8 @@ export default function VisitsPage() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [alerts, setAlerts] = useState<MissingWeekResult | null>(null);
+  const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
+  const [assignError, setAssignError] = useState<string | null>(null);
 
   const range = useMemo(() => {
     const to = addDays(weekStart, 7);
@@ -81,6 +100,23 @@ export default function VisitsPage() {
 
   useEffect(() => load(), [load]);
 
+  // Für die Nachzuweisung offener Notfälle; unabhängig von der Wochenauswahl.
+  useEffect(() => {
+    let active = true;
+    listCaregivers({ pageSize: 100 })
+      .then((res) => {
+        if (active) setCaregivers(res.data);
+      })
+      .catch(() => {
+        /* Ohne Liste bleibt nur die Meldung oben – besser als eine leere Seite. */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const unassigned = useMemo(() => visits.filter(needsCaregiver), [visits]);
+
   async function onCancel(id: string) {
     try {
       await cancelVisit(id);
@@ -90,8 +126,25 @@ export default function VisitsPage() {
     }
   }
 
+  async function onAssign(visitId: string, caregiverId: string) {
+    if (!caregiverId) return;
+    setAssignError(null);
+    try {
+      await assignVisitCaregiver(visitId, caregiverId);
+      load();
+    } catch {
+      setAssignError(t("assignError"));
+    }
+  }
+
+  /**
+   * Nur die effektive Fachkraft. Der frühere Rückfall auf assignedCaregiver
+   * zeigte bei einem Notfall die Stamm-Fachkraft des Patienten an – jemanden
+   * also, der den Besuch nie zu sehen bekommt, weil die Tagesroute auf der
+   * effektiven Fachkraft steht.
+   */
   function caregiverName(visit: Visit): string {
-    const c = visit.caregiver ?? visit.assignedCaregiver;
+    const c = visit.caregiver;
     return c ? `${c.lastName}, ${c.firstName}` : "—";
   }
 
@@ -149,6 +202,23 @@ export default function VisitsPage() {
         </select>
       </div>
 
+      {/* Notfälle ohne Fachkraft: geplant, aber in keiner Tagesroute */}
+      {unassigned.length > 0 ? (
+        <div
+          data-testid="unassigned-alert"
+          className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
+          <span className="font-medium">{t("unassignedTitle", { count: unassigned.length })}</span>{" "}
+          {t("unassignedHint")}
+        </div>
+      ) : null}
+
+      {assignError ? (
+        <p role="alert" className="mt-4 text-sm text-red-600">
+          {assignError}
+        </p>
+      ) : null}
+
       {/* Alerte Regel métier 3 : Patienten ohne Wochenbesuch */}
       {alerts && alerts.count > 0 ? (
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -204,8 +274,34 @@ export default function VisitsPage() {
                         {t("emergency")}
                       </span>
                     ) : null}
+                    {/* Das Motiv ist der Grund, warum dieser Besuch ausserhalb
+                        des Zyklus steht – es gehört neben den Besuch, nicht nur
+                        ins Audit-Log. */}
+                    {visit.emergencyReason ? (
+                      <p className="mt-0.5 text-xs font-normal text-gray-500">
+                        {t("reasonPrefix")} {visit.emergencyReason}
+                      </p>
+                    ) : null}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{caregiverName(visit)}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {needsCaregiver(visit) ? (
+                      <select
+                        aria-label={t("assignLabel")}
+                        value=""
+                        onChange={(e) => void onAssign(visit.id, e.target.value)}
+                        className="rounded-md border border-red-300 bg-white px-2 py-1 text-sm text-gray-900 focus:border-gray-900 focus:outline-none"
+                      >
+                        <option value="">{t("assignChoose")}</option>
+                        {caregivers.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.lastName}, {c.firstName}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      caregiverName(visit)
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[visit.status]}`}

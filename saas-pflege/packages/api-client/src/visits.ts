@@ -86,6 +86,15 @@ export async function cancelVisit(id: string): Promise<Visit> {
   return apiFetch<Visit>(`/visits/${id}/cancel`, { method: "POST" });
 }
 
+/**
+ * Effektive Fachkraft setzen (Vertretung oder Nachzuweisung eines Notfalls).
+ * Beim Regelbesuch prüft das Backend Qualifikation und Arbeitstag, beim Notfall
+ * nicht.
+ */
+export async function assignVisitCaregiver(id: string, caregiverId: string): Promise<Visit> {
+  return apiFetch<Visit>(`/visits/${id}/caregiver`, { method: "PUT", body: { caregiverId } });
+}
+
 export async function missingWeek(weekOf?: string): Promise<MissingWeekResult> {
   const qs = weekOf ? `?weekOf=${encodeURIComponent(weekOf)}` : "";
   return apiFetch<MissingWeekResult>(`/visits/alerts/missing-week${qs}`);

@@ -9,7 +9,7 @@ import { AppError, ConflictError, ForbiddenError } from "../../lib/errors.js";
 import { writeAudit } from "../../lib/audit.js";
 import { paginated, toSkipTake, type Paginated } from "../../lib/pagination.js";
 import { weekRange, dayRange, weekdayCode } from "../../lib/week.js";
-import { isWorkDay, sameQualification } from "./visit.rules.js";
+import { isWorkDay, sameQualification, enforcesStammRules } from "./visit.rules.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
 import type {
   CreateVisitInput,
@@ -252,7 +252,13 @@ export async function assignCaregiver(
   return withTenant(ctx.organizationId, async (tx) => {
     const visit = await tx.visit.findFirst({
       where: { id, organizationId: ctx.organizationId },
-      select: { id: true, status: true, assignedCaregiverId: true, scheduledAt: true },
+      select: {
+        id: true,
+        status: true,
+        assignedCaregiverId: true,
+        scheduledAt: true,
+        isEmergency: true,
+      },
     });
     if (!visit) throw new AppError(404, "Besuch nicht gefunden", "NotFound");
     if (visit.status === VisitStatus.COMPLETED || visit.status === VisitStatus.CANCELED) {
@@ -260,8 +266,11 @@ export async function assignCaregiver(
     }
 
     const replacement = await loadActiveCaregiver(tx, caregiverId);
-    if (visit.assignedCaregiverId) {
-      const attitre = await loadActiveCaregiver(tx, visit.assignedCaregiverId);
+    // Beim Notfall entfallen Qualifikations- und Arbeitstagsprüfung, wie schon
+    // beim Anlegen (siehe enforcesStammRules).
+    const attitreId = enforcesStammRules(visit) ? visit.assignedCaregiverId : null;
+    if (attitreId) {
+      const attitre = await loadActiveCaregiver(tx, attitreId);
       assertSameQualification(replacement, attitre);
       assertWorkDay(replacement, visit.scheduledAt);
     }

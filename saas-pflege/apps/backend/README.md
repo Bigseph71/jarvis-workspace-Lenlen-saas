@@ -119,6 +119,12 @@ Pointage GPS : `+ FACHKRAFT` (uniquement ses propres visites).
    pour la semaine demandée.
 4. **Remplacement** : la vertretung doit avoir la **même qualification** que la
    stamm-fachkraft ; traçabilité `caregiverId` (effectif) vs `assignedCaregiverId`.
+   Exception, symétrique de la règle 2 : sur une **urgence**, `PUT
+   /visits/:id/caregiver` n'exige ni la qualification ni le jour travaillé,
+   seulement une fachkraft active (`visit.rules.ts: enforcesStammRules`). Sans
+   cela une urgence créée sans fachkraft ne pourrait plus être attribuée à
+   personne, et resterait invisible dans toutes les routes du jour, celles-ci
+   étant filtrées sur `caregiverId`.
 5. **Jours travaillés** : un besuch ne peut tomber que sur un `workDay` de la
    fachkraft effective (les heures contractuelles restent un TODO, faute de
    modèle de durée/horaire de visite).
