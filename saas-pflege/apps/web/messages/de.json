@@ -354,12 +354,19 @@
       "caregiver": "Fachkraft",
       "defaultCaregiver": "— Stamm-Fachkraft des Patienten —",
       "caregiverHint": "Leer lassen, um die Stamm-Fachkraft des Patienten zu verwenden.",
+      "noCaregiver": "— Keine Fachkraft —",
+      "emergency": "Notfallbesuch",
+      "emergencyHint": "Ausserhalb des Wochenzyklus. Arbeitstag und Qualifikation werden nicht geprüft, der Besuch belegt die Woche des Patienten nicht und wird in den Berichten getrennt ausgewiesen.",
+      "emergencyReason": "Grund",
+      "emergencyReasonHint": "Pflichtangabe, 3 bis 500 Zeichen. Wird im Audit-Log festgehalten.",
+      "emergencyCaregiverHint": "Die Fachkraft, die tatsächlich fährt. Leer lassen, wenn noch offen.",
       "create": "Anlegen",
       "saving": "Wird gespeichert …",
       "cancel": "Abbrechen",
       "errors": {
         "patient": "Bitte einen Patienten wählen.",
-        "scheduledAt": "Bitte einen Termin wählen."
+        "scheduledAt": "Bitte einen Termin wählen.",
+        "emergencyReason": "Bitte einen Grund angeben (mindestens 3 Zeichen)."
       }
     }
   },

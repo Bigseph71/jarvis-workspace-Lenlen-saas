@@ -354,12 +354,19 @@
       "caregiver": "Caregiver",
       "defaultCaregiver": "— Patient's primary caregiver —",
       "caregiverHint": "Leave empty to use the patient's primary caregiver.",
+      "noCaregiver": "— No caregiver —",
+      "emergency": "Emergency visit",
+      "emergencyHint": "Outside the weekly cycle. Working day and qualification are not checked, the visit does not use up the patient's week, and it is reported separately.",
+      "emergencyReason": "Reason",
+      "emergencyReasonHint": "Required, 3 to 500 characters. Recorded in the audit log.",
+      "emergencyCaregiverHint": "The caregiver who actually drives. Leave empty if still open.",
       "create": "Create",
       "saving": "Saving …",
       "cancel": "Cancel",
       "errors": {
         "patient": "Please choose a patient.",
-        "scheduledAt": "Please choose a date and time."
+        "scheduledAt": "Please choose a date and time.",
+        "emergencyReason": "Please give a reason (at least 3 characters)."
       }
     }
   },

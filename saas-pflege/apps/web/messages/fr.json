@@ -354,12 +354,19 @@
       "caregiver": "Soignant",
       "defaultCaregiver": "— Soignant attitré du patient —",
       "caregiverHint": "Laisser vide pour utiliser le soignant attitré du patient.",
+      "noCaregiver": "— Aucun soignant —",
+      "emergency": "Visite d'urgence",
+      "emergencyHint": "Hors du cycle hebdomadaire. Le jour travaillé et la qualification ne sont pas vérifiés, la visite ne consomme pas la semaine du patient et elle est tracée séparément dans les rapports.",
+      "emergencyReason": "Motif",
+      "emergencyReasonHint": "Obligatoire, de 3 à 500 caractères. Consigné dans le journal d'audit.",
+      "emergencyCaregiverHint": "Le soignant qui se déplace réellement. Laisser vide si ce n'est pas encore décidé.",
       "create": "Créer",
       "saving": "Enregistrement …",
       "cancel": "Annuler",
       "errors": {
         "patient": "Veuillez choisir un patient.",
-        "scheduledAt": "Veuillez choisir une date et une heure."
+        "scheduledAt": "Veuillez choisir une date et une heure.",
+        "emergencyReason": "Veuillez indiquer un motif (3 caractères minimum)."
       }
     }
   },

@@ -4,17 +4,31 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { listPatients, type Patient } from "@len-len/api-client";
 import { listCaregivers, type Caregiver } from "@len-len/api-client";
-import type { CreateVisitInput } from "@len-len/api-client";
+import type { CreateVisitInput, CreateEmergencyVisitInput } from "@len-len/api-client";
+
+/**
+ * Ein Formular, zwei Endpunkte. Der reguläre Besuch und der Notfallbesuch
+ * unterscheiden sich in den Regeln (Wochenzyklus, Arbeitstag, Qualifikation)
+ * und damit im Backend-Endpunkt, nicht in den Feldern, die der Koordinator
+ * ausfüllt. Deshalb ein unterscheidbares Ergebnis statt zweier Formulare.
+ */
+export type VisitFormSubmit =
+  | { emergency: false; input: CreateVisitInput }
+  | { emergency: true; input: CreateEmergencyVisitInput };
 
 interface VisitCreateFormProps {
   submitting: boolean;
   error?: string | null;
-  onSubmit: (input: CreateVisitInput) => void;
+  onSubmit: (submission: VisitFormSubmit) => void;
   onCancel: () => void;
 }
 
 const fieldClass =
   "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none";
+
+// Spiegelt createEmergencyVisitSchema im Backend (min 3, max 500).
+const REASON_MIN = 3;
+const REASON_MAX = 500;
 
 export function VisitCreateForm({ submitting, error, onSubmit, onCancel }: VisitCreateFormProps) {
   const t = useTranslations("visits.form");
@@ -25,7 +39,13 @@ export function VisitCreateForm({ submitting, error, onSubmit, onCancel }: Visit
   const [patientId, setPatientId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [caregiverId, setCaregiverId] = useState("");
-  const [errors, setErrors] = useState<{ patientId?: string; scheduledAt?: string }>({});
+  const [emergency, setEmergency] = useState(false);
+  const [emergencyReason, setEmergencyReason] = useState("");
+  const [errors, setErrors] = useState<{
+    patientId?: string;
+    scheduledAt?: string;
+    emergencyReason?: string;
+  }>({});
 
   useEffect(() => {
     let active = true;
@@ -45,16 +65,39 @@ export function VisitCreateForm({ submitting, error, onSubmit, onCancel }: Visit
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const reason = emergencyReason.trim();
     const next: typeof errors = {};
     if (!patientId) next.patientId = t("errors.patient");
     if (!scheduledAt) next.scheduledAt = t("errors.scheduledAt");
+    if (emergency && reason.length < REASON_MIN) next.emergencyReason = t("errors.emergencyReason");
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
+    const when = new Date(scheduledAt).toISOString();
+
+    if (emergency) {
+      // Notfall: die gewählte Fachkraft ist die effektive (caregiverId). Die
+      // Stamm-Fachkraft des Patienten bleibt unangetastet, der Besuch läuft
+      // ausserhalb des Zyklus.
+      onSubmit({
+        emergency: true,
+        input: {
+          patientId,
+          scheduledAt: when,
+          emergencyReason: reason,
+          ...(caregiverId ? { caregiverId } : {}),
+        },
+      });
+      return;
+    }
+
     onSubmit({
-      patientId,
-      scheduledAt: new Date(scheduledAt).toISOString(),
-      ...(caregiverId ? { assignedCaregiverId: caregiverId } : {}),
+      emergency: false,
+      input: {
+        patientId,
+        scheduledAt: when,
+        ...(caregiverId ? { assignedCaregiverId: caregiverId } : {}),
+      },
     });
   }
 
@@ -104,14 +147,59 @@ export function VisitCreateForm({ submitting, error, onSubmit, onCancel }: Visit
           onChange={(e) => setCaregiverId(e.target.value)}
           className={fieldClass}
         >
-          <option value="">{t("defaultCaregiver")}</option>
+          <option value="">{emergency ? t("noCaregiver") : t("defaultCaregiver")}</option>
           {caregivers.map((c) => (
             <option key={c.id} value={c.id}>
               {c.lastName}, {c.firstName}
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-gray-400">{t("caregiverHint")}</p>
+        <p className="mt-1 text-xs text-gray-400">
+          {emergency ? t("emergencyCaregiverHint") : t("caregiverHint")}
+        </p>
+      </div>
+
+      {/* Notfall (Regel métier 2) */}
+      <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+        <label htmlFor="emergency" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <input
+            id="emergency"
+            type="checkbox"
+            checked={emergency}
+            onChange={(e) => {
+              setEmergency(e.target.checked);
+              // Ein abgewählter Notfall darf keinen Grund zurücklassen, der
+              // beim nächsten Anhaken ungeprüft wieder mitginge.
+              if (!e.target.checked) {
+                setEmergencyReason("");
+                setErrors((prev) => ({ ...prev, emergencyReason: undefined }));
+              }
+            }}
+            className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+          />
+          {t("emergency")}
+        </label>
+        <p className="mt-1 text-xs text-gray-500">{t("emergencyHint")}</p>
+
+        {emergency ? (
+          <div className="mt-3">
+            <label htmlFor="emergencyReason" className="block text-sm font-medium text-gray-700">
+              {t("emergencyReason")}
+            </label>
+            <textarea
+              id="emergencyReason"
+              rows={3}
+              maxLength={REASON_MAX}
+              value={emergencyReason}
+              onChange={(e) => setEmergencyReason(e.target.value)}
+              className={fieldClass}
+            />
+            <p className="mt-1 text-xs text-gray-500">{t("emergencyReasonHint")}</p>
+            {errors.emergencyReason ? (
+              <p className="mt-1 text-sm text-red-600">{errors.emergencyReason}</p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {error ? (
