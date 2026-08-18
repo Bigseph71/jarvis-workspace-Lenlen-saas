@@ -22,6 +22,16 @@ import type {
   ChangePasswordInput,
 } from "./auth.schemas.js";
 
+/**
+ * Hash ohne zugehöriges Konto. Wird geprüft, wenn die Adresse unbekannt ist,
+ * damit die Antwortzeit nicht verrät, ob es das Konto gibt.
+ */
+const DUMMY_PASSWORD_HASH =
+  "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$3vN5cQ6Yb0Qm5h0Yb0Qm5h0Yb0Qm5h0Yb0Qm5h0Yb0";
+
+/** Obergrenze der Konten, gegen die ein Anmeldeversuch rechnet (siehe login). */
+const MAX_LOGIN_CANDIDATES = 5;
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
@@ -119,25 +129,49 @@ export async function login(input: LoginInput): Promise<AuthResult> {
       isActive: true,
       ...(input.organizationId ? { organizationId: input.organizationId } : {}),
     },
+    // Dieselbe Adresse in mehreren Organisationen ist die Ausnahme (jemand
+    // arbeitet für zwei Strukturen). Die Obergrenze deckelt die Zahl der
+    // Argon2-Prüfungen je Anmeldeversuch: ohne sie liesse sich mit einer in
+    // vielen Organisationen angelegten Adresse Rechenzeit erzwingen. Wer
+    // darüber hinaus betroffen ist, meldet sich mit organizationId an.
+    take: MAX_LOGIN_CANDIDATES,
+    orderBy: { createdAt: "asc" },
   });
 
-  if (candidates.length > 1) {
+  // Passwort gegen ALLE Kandidaten prüfen, bevor irgendetwas über sie gesagt
+  // wird. Vorher entschied allein die Trefferzahl über die Antwort: eine
+  // Adresse in zwei Organisationen ergab "organizationId angeben" – ohne
+  // Passwort, für jeden. Damit liess sich von aussen abfragen, welche Adressen
+  // auf der Plattform mehrfach geführt werden.
+  //
+  // Parallel, nicht nacheinander: so hängt die Antwortzeit nicht an der Zahl
+  // der Kandidaten und verrät sie damit auch nicht.
+  const results = await Promise.all(
+    candidates.map(async (candidate) =>
+      (await verifyPassword(candidate.passwordHash, input.password).catch(() => false))
+        ? candidate
+        : undefined,
+    ),
+  );
+  const matches = results.filter((c): c is User => c !== undefined);
+
+  if (candidates.length === 0) {
+    // Kein Konto: trotzdem einmal rechnen, damit eine unbekannte Adresse nicht
+    // schneller beantwortet wird als eine bekannte.
+    await verifyPassword(DUMMY_PASSWORD_HASH, input.password).catch(() => false);
+  }
+
+  if (matches.length === 0) {
+    throw new UnauthorizedError("Ungültige Anmeldedaten");
+  }
+
+  if (matches.length > 1) {
+    // Dasselbe Passwort in mehreren Organisationen. Die Auskunft geht jetzt nur
+    // an jemanden, der es bereits kennt.
     throw new ConflictError("E-Mail in mehreren Organisationen vorhanden – organizationId angeben.");
   }
 
-  const user = candidates[0];
-  // Generische Meldung gegen User-Enumeration. Passwort trotzdem gegen einen
-  // Dummy-Hash prüfen, um Timing-Unterschiede zu vermeiden.
-  const ok = user
-    ? await verifyPassword(user.passwordHash, input.password)
-    : await verifyPassword(
-        "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$3vN5cQ6Yb0Qm5h0Yb0Qm5h0Yb0Qm5h0Yb0Qm5h0Yb0",
-        input.password,
-      ).catch(() => false);
-
-  if (!user || !ok) {
-    throw new UnauthorizedError("Ungültige Anmeldedaten");
-  }
+  const user = matches[0]!;
 
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 

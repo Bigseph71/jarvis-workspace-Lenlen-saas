@@ -15,6 +15,21 @@ API Fastify (TypeScript strict). Contient le **module d'authentification multi-t
   toute la famille de tokens de l'utilisateur (session terminée).
 - **RBAC** : 5 rôles (`SUPER_ADMIN`, `STRUKTUR_ADMIN`, `KOORDINATOR`, `HR`,
   `FACHKRAFT`) via le preHandler `requireRole(...)`.
+- **Aucune divulgation avant vérification du mot de passe** : tant qu'il n'est
+  pas correct, la réponse est toujours `401 Ungültige Anmeldedaten`, que
+  l'adresse existe ou non, et qu'elle soit présente dans une ou plusieurs
+  organisations. Auparavant, deux comptes portant la même adresse déclenchaient
+  « E-Mail in mehreren Organisationen vorhanden » **sans mot de passe** :
+  `/auth/login` étant public, cela permettait d'interroger la plateforme sur
+  les adresses qu'elle héberge plusieurs fois. Le mot de passe est désormais
+  vérifié contre tous les comptes candidats (en parallèle, pour que la durée de
+  réponse ne trahisse pas leur nombre) avant toute réponse ; il désigne du même
+  coup l'organisation, ce qui supprime la question dans le cas courant. Elle ne
+  subsiste que si le **même mot de passe** ouvre plusieurs comptes, et n'est
+  alors posée qu'à quelqu'un qui l'a déjà prouvé. Le nombre de vérifications
+  par tentative est plafonné (5) : chaque vérification est un calcul Argon2, et
+  une adresse enregistrée dans de nombreuses organisations deviendrait sinon un
+  levier de consommation de CPU.
 - **Rate limit** : 10 req/min sur les endpoints d'auth, 100 req/min ailleurs.
   Compteurs en Redis, voir [Rate limit et IP du client](#rate-limit-et-ip-du-client).
 
