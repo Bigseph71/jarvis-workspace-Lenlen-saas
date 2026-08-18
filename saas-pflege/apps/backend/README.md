@@ -16,6 +16,7 @@ API Fastify (TypeScript strict). Contient le **module d'authentification multi-t
 - **RBAC** : 5 rôles (`SUPER_ADMIN`, `STRUKTUR_ADMIN`, `KOORDINATOR`, `HR`,
   `FACHKRAFT`) via le preHandler `requireRole(...)`.
 - **Rate limit** : 10 req/min sur les endpoints d'auth, 100 req/min ailleurs.
+  Compteurs en Redis, voir [Rate limit et IP du client](#rate-limit-et-ip-du-client).
 
 ### Endpoints
 
@@ -324,6 +325,39 @@ Pour l'activer le jour où un Prometheus existe :
 Il n'y a pas de troisième état : soit la route n'existe pas, soit elle exige le
 token. La comparaison se fait à temps constant sur des hachages SHA-256, donc
 ni la valeur ni la longueur du token ne fuient par la durée de la réponse.
+
+## Rate limit et IP du client
+
+Deux réglages, indissociables. L'un dit *combien on compte*, l'autre *sur qui*.
+
+**Le compteur vit dans Redis** (`REDIS_URL`, préfixe `ratelimit:`). Sans store
+partagé, `@fastify/rate-limit` compte en mémoire, donc par instance : les
+10 tentatives d'authentification annoncées deviennent 10 fois le nombre
+d'instances. Mesuré en production avant correctif : 13 tentatives d'affilée
+sans un seul 429, avec un compteur qui oscillait entre 6 et 9. Si Redis tombe,
+le plugin laisse passer (`skipOnError`, valeur par défaut) : même arbitrage que
+pour la liste de révocation, une couche supplémentaire ne doit pas mettre l'API
+à terre.
+
+**`TRUST_PROXY_HOPS` désigne l'expéditeur.** C'est le nombre de proxies de
+confiance devant l'application.
+
+| Valeur | Effet | Où |
+|---|---|---|
+| `0` (défaut) | `X-Forwarded-For` ignoré, on compte l'IP de la connexion TCP | local, `docker-compose` |
+| `1` | on prend l'IP ajoutée par le proxy, une seule | **Railway** |
+| `true` | jamais | voir ci-dessous |
+
+Derrière Railway avec `0`, l'IP vue est celle de l'edge : tous les visiteurs
+partagent un compteur et se bloquent mutuellement. D'où l'avertissement au
+démarrage si la production tourne encore avec `0`.
+
+Et `trustProxy: true` fait confiance à l'en-tête entier. L'attaquant le pose
+lui-même, obtient un compteur neuf à chaque tentative, et la limite ne
+s'applique plus — tout en restant visible dans la configuration. Un garde-fou
+contournable est pire qu'un garde-fou absent : il rassure. Le comportement des
+deux réglages est figé dans `test/unit/rate-limit.test.ts`, y compris le cas
+qu'il ne faut pas reproduire.
 
 ## Notes de production (à durcir)
 
