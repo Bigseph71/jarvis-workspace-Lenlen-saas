@@ -328,6 +328,12 @@
     "error": "Impossible de charger les visites.",
     "empty": "Aucune visite cette semaine.",
     "emergency": "Urgence",
+    "reasonPrefix": "Motif :",
+    "unassignedTitle": "{count} visites sans soignant cette semaine.",
+    "unassignedHint": "Elles n'apparaissent dans la tournée de personne tant qu'aucun soignant n'est affecté.",
+    "assignLabel": "Affecter un soignant",
+    "assignChoose": "— Affecter un soignant —",
+    "assignError": "L'affectation a échoué.",
     "missingTitle": "{count} patients sans visite cette semaine :",
     "columns": {
       "when": "Échéance",

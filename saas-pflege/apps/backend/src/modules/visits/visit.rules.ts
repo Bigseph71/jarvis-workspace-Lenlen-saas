@@ -16,3 +16,22 @@ export function isWorkDay(input: { workDays: Prisma.JsonValue }, scheduledAt: Da
 export function sameQualification(a: Qualification, b: Qualification): boolean {
   return a === b;
 }
+
+/**
+ * Gelten beim Zuweisen einer Fachkraft die Stamm-Regeln (gleiche Qualifikation,
+ * Arbeitstag)?
+ *
+ * Beim Notfall nicht. Er entsteht ausserhalb des Zyklus und darf laut Regel
+ * métier 2 von einer beliebigen aktiven Fachkraft gefahren werden – genau das
+ * erlaubt createEmergencyVisit bereits beim Anlegen. Würde das Nachzuweisen
+ * strenger prüfen, liesse sich ein Notfall ohne Fachkraft anlegen und danach
+ * niemandem mehr geben: er bliebe in jeder Tagesroute unsichtbar.
+ *
+ * Ohne Stamm-Fachkraft gibt es ebenfalls nichts zu vergleichen.
+ */
+export function enforcesStammRules(visit: {
+  isEmergency: boolean;
+  assignedCaregiverId: string | null;
+}): boolean {
+  return !visit.isEmergency && visit.assignedCaregiverId !== null;
+}

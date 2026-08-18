@@ -328,6 +328,12 @@
     "error": "Visiten konnten nicht geladen werden.",
     "empty": "Keine Visiten in dieser Woche.",
     "emergency": "Notfall",
+    "reasonPrefix": "Grund:",
+    "unassignedTitle": "{count} Besuche ohne Fachkraft in dieser Woche.",
+    "unassignedHint": "Sie erscheinen in keiner Tagesroute, solange niemand zugewiesen ist.",
+    "assignLabel": "Fachkraft zuweisen",
+    "assignChoose": "— Fachkraft zuweisen —",
+    "assignError": "Die Zuweisung ist fehlgeschlagen.",
     "missingTitle": "{count} Patienten ohne Besuch diese Woche:",
     "columns": {
       "when": "Termin",
