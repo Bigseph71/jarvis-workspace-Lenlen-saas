@@ -68,8 +68,7 @@
     "dsgvo": "Datenschutz",
     "dsgvoExport": "Auskunft",
     "dsgvoErasure": "Löschung",
-    "clustering": "Gebiete",
-    "admin": "Plattform"
+    "clustering": "Gebiete"
   },
   "patients": {
     "title": "Patienten",
@@ -738,136 +737,6 @@
       "missingRoutes": "{count} angenommene(s) Gebiet(e) ohne bestehende Tour – dafür ist nichts zu optimieren.",
       "queued": "Optimierung eingereiht.",
       "error": "Die Optimierung konnte nicht gestartet werden."
-    }
-  },
-  "admin": {
-    "title": "Plattform-Verwaltung",
-    "scopeWarning": "Alle Organisationen",
-    "loading": "Wird geladen …",
-    "tabs": {
-      "dashboard": "Übersicht",
-      "organizations": "Organisationen",
-      "auditLogs": "Audit-Log"
-    },
-    "forbidden": {
-      "title": "Kein Zugriff",
-      "body": "Dieser Bereich ist der Plattform-Verwaltung vorbehalten.",
-      "back": "Zurück zur Übersicht"
-    },
-    "status": {
-      "ACTIVE": "Aktiv",
-      "TRIAL": "Testphase",
-      "PAST_DUE": "Zahlung offen",
-      "SUSPENDED": "Gesperrt",
-      "CANCELED": "Gekündigt"
-    },
-    "dashboard": {
-      "loading": "Wird geladen …",
-      "error": "Die Übersicht konnte nicht geladen werden.",
-      "totalOrgs": "Organisationen",
-      "mrr": "Monatsumsatz",
-      "mrrSubscriptions": "aus {count} Abos",
-      "mrrUnavailable": "Stripe nicht erreichbar – kein Wert (nicht 0 €).",
-      "new7": "Neu (7 Tage)",
-      "new30": "Neu (30 Tage)",
-      "byStatus": "Nach Status",
-      "trialsEnding": "{count} Testphasen enden in 48 Stunden",
-      "noTrials": "Keine Testphase endet in den nächsten 48 Stunden.",
-      "paymentFailures": "{count} Zahlungen offen",
-      "noPaymentFailures": "Keine offenen Zahlungen."
-    },
-    "organizations": {
-      "loading": "Wird geladen …",
-      "error": "Die Liste konnte nicht geladen werden.",
-      "empty": "Keine Organisation gefunden.",
-      "search": "Suche",
-      "searchPlaceholder": "Name der Organisation",
-      "statusFilter": "Status",
-      "planFilter": "Plan",
-      "allStatuses": "Alle Status",
-      "allPlans": "Alle Pläne",
-      "includeDeleted": "Gelöschte anzeigen",
-      "count": "{total} Organisationen",
-      "deletedBadge": "Gelöscht",
-      "usage": "{users} Nutzer · {patients} Patienten · {caregivers} Fachkräfte",
-      "columns": {
-        "name": "Name",
-        "plan": "Plan",
-        "status": "Status",
-        "usage": "Umfang",
-        "createdAt": "Angelegt"
-      },
-      "previous": "Zurück",
-      "next": "Weiter",
-      "pageOf": "Seite {page} von {totalPages}"
-    },
-    "detail": {
-      "loading": "Wird geladen …",
-      "error": "Die Organisation konnte nicht geladen werden.",
-      "back": "Zur Liste",
-      "since": "seit {date}",
-      "deletedOn": "Gelöscht am {date}",
-      "counts": {
-        "users": "Nutzer",
-        "patients": "Patienten",
-        "caregivers": "Fachkräfte",
-        "visits": "Besuche"
-      },
-      "actions": {
-        "title": "Aktionen",
-        "plan": "Plan",
-        "changePlan": "Plan wechseln",
-        "planDone": "Plan gewechselt.",
-        "trialUntil": "Testphase bis",
-        "extendTrial": "Testphase verlängern",
-        "trialDone": "Testphase verlängert.",
-        "suspend": "Sperren",
-        "suspendDone": "Organisation gesperrt.",
-        "reactivate": "Entsperren",
-        "reactivateDone": "Organisation entsperrt.",
-        "deleteTitle": "Organisation löschen",
-        "deleteHint": "Weiche Löschung: keine Anmeldung mehr möglich, die Daten bleiben erhalten. Begründung ab 10 Zeichen.",
-        "reason": "Begründung",
-        "reasonPlaceholder": "Warum wird diese Organisation gelöscht?",
-        "delete": "Löschen",
-        "deleteConfirm": "{name} wirklich löschen?",
-        "deleteYes": "Ja, löschen",
-        "deleteDone": "Organisation gelöscht."
-      },
-      "invoices": {
-        "title": "Letzte Rechnungen",
-        "empty": "Keine Rechnungen.",
-        "open": "Öffnen"
-      },
-      "audit": {
-        "title": "Letzte Audit-Einträge",
-        "empty": "Keine Einträge.",
-        "all": "Alle anzeigen"
-      }
-    },
-    "audit": {
-      "loading": "Wird geladen …",
-      "error": "Der Audit-Log konnte nicht geladen werden.",
-      "empty": "Keine Einträge.",
-      "organizationId": "Organisation (ID)",
-      "action": "Aktion",
-      "allActions": "Alle Aktionen",
-      "entityType": "Objekt",
-      "from": "Von",
-      "to": "Bis",
-      "exportCsv": "CSV exportieren",
-      "exporting": "Export läuft …",
-      "count": "{total} Einträge",
-      "columns": {
-        "when": "Zeitpunkt",
-        "organization": "Organisation",
-        "user": "Nutzer",
-        "action": "Aktion",
-        "entity": "Objekt"
-      },
-      "previous": "Zurück",
-      "next": "Weiter",
-      "pageOf": "Seite {page} von {totalPages}"
     }
   }
 }

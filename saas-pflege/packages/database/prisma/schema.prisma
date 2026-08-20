@@ -137,18 +137,6 @@ model Organization {
   // Abschluss eines Abos geleert, damit der Sweep einen zahlenden Tenant nicht
   // nachträglich suspendiert.
   trialEndsAt          DateTime?          @map("trial_ends_at")
-  // Löschung durch den Super-Admin. Bewusst weich: der Tenant verschwindet aus
-  // allen Listen und niemand kann sich mehr anmelden, die Daten bleiben aber
-  // liegen. Ein Pflegedienst hat Aufbewahrungspflichten (§ 630f BGB), und ein
-  // echtes DELETE wäre über die Kaskaden dieser Tabelle nicht rückholbar –
-  // Patienten, Besuche und Abrechnung eines ganzen Kunden hingen daran.
-  deletedAt            DateTime?          @map("deleted_at")
-  // Pflichtangabe: ohne Begründung keine Löschung.
-  deletionReason       String?            @map("deletion_reason")
-  // Wer gelöscht hat. Bewusst OHNE Fremdschlüssel: der Super-Admin gehört einer
-  // anderen Organisation an, und sein Konto darf verschwinden können, ohne die
-  // Spur an diesem Datensatz mitzureißen.
-  deletedByUserId      String?            @map("deleted_by_user_id") @db.Uuid
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
@@ -167,9 +155,6 @@ model Organization {
   workSchedules WorkSchedule[]
   absences      Absence[]
 
-  // Das Super-Admin-Panel listet und zählt nach Status, und filtert dabei
-  // immer die gelöschten heraus.
-  @@index([deletedAt, subscriptionStatus])
   @@map("organizations")
 }
 

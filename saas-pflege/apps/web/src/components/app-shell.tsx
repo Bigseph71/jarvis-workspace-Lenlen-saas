@@ -64,11 +64,6 @@ const SECONDARY_ITEMS: NavItem[] = [
   // Pflegedokumentation, deshalb nur die Admin-Ebene.
   { href: "/dsgvo/export", key: "dsgvoExport", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "HR"] },
   { href: "/dsgvo/erasure", key: "dsgvoErasure", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
-  // Plattform-Verwaltung: NUR der Super-Admin, bewusst nicht zusammen mit
-  // STRUKTUR_ADMIN wie die Einträge darüber. Der Struktur-Admin ist in seiner
-  // Organisation allmächtig; dieser Bereich geht über alle Organisationen
-  // hinweg (Backend: requireSuperAdmin).
-  { href: "/admin", key: "admin", roles: ["SUPER_ADMIN"] },
 ];
 
 function visibleFor(items: NavItem[], role: UserRole | undefined): NavItem[] {

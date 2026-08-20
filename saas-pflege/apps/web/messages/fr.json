@@ -68,8 +68,7 @@
     "dsgvo": "Protection des données",
     "dsgvoExport": "Droit d'accès",
     "dsgvoErasure": "Effacement",
-    "clustering": "Secteurs",
-    "admin": "Plateforme"
+    "clustering": "Secteurs"
   },
   "patients": {
     "title": "Patients",
@@ -738,136 +737,6 @@
       "missingRoutes": "{count} secteur(s) accepté(s) sans tournée existante — rien à optimiser pour eux.",
       "queued": "Optimisation mise en file.",
       "error": "L'optimisation n'a pas pu être lancée."
-    }
-  },
-  "admin": {
-    "title": "Administration de la plateforme",
-    "scopeWarning": "Toutes les organisations",
-    "loading": "Chargement …",
-    "tabs": {
-      "dashboard": "Vue d’ensemble",
-      "organizations": "Organisations",
-      "auditLogs": "Journal d’audit"
-    },
-    "forbidden": {
-      "title": "Accès refusé",
-      "body": "Cet espace est réservé à l’administration de la plateforme.",
-      "back": "Retour au tableau de bord"
-    },
-    "status": {
-      "ACTIVE": "Actif",
-      "TRIAL": "Essai",
-      "PAST_DUE": "Paiement en attente",
-      "SUSPENDED": "Suspendu",
-      "CANCELED": "Résilié"
-    },
-    "dashboard": {
-      "loading": "Chargement …",
-      "error": "Impossible de charger la vue d’ensemble.",
-      "totalOrgs": "Organisations",
-      "mrr": "Revenu mensuel",
-      "mrrSubscriptions": "sur {count} abonnements",
-      "mrrUnavailable": "Stripe injoignable : aucun montant (et non 0 €).",
-      "new7": "Nouvelles (7 jours)",
-      "new30": "Nouvelles (30 jours)",
-      "byStatus": "Par statut",
-      "trialsEnding": "{count} essais expirent sous 48 heures",
-      "noTrials": "Aucun essai n’expire dans les 48 heures.",
-      "paymentFailures": "{count} paiements en échec",
-      "noPaymentFailures": "Aucun paiement en échec."
-    },
-    "organizations": {
-      "loading": "Chargement …",
-      "error": "Impossible de charger la liste.",
-      "empty": "Aucune organisation trouvée.",
-      "search": "Recherche",
-      "searchPlaceholder": "Nom de l’organisation",
-      "statusFilter": "Statut",
-      "planFilter": "Plan",
-      "allStatuses": "Tous les statuts",
-      "allPlans": "Tous les plans",
-      "includeDeleted": "Afficher les supprimées",
-      "count": "{total} organisations",
-      "deletedBadge": "Supprimée",
-      "usage": "{users} utilisateurs · {patients} patients · {caregivers} soignants",
-      "columns": {
-        "name": "Nom",
-        "plan": "Plan",
-        "status": "Statut",
-        "usage": "Volume",
-        "createdAt": "Créée le"
-      },
-      "previous": "Précédent",
-      "next": "Suivant",
-      "pageOf": "Page {page} sur {totalPages}"
-    },
-    "detail": {
-      "loading": "Chargement …",
-      "error": "Impossible de charger l’organisation.",
-      "back": "Retour à la liste",
-      "since": "depuis le {date}",
-      "deletedOn": "Supprimée le {date}",
-      "counts": {
-        "users": "Utilisateurs",
-        "patients": "Patients",
-        "caregivers": "Soignants",
-        "visits": "Visites"
-      },
-      "actions": {
-        "title": "Actions",
-        "plan": "Plan",
-        "changePlan": "Changer de plan",
-        "planDone": "Plan modifié.",
-        "trialUntil": "Essai jusqu’au",
-        "extendTrial": "Prolonger l’essai",
-        "trialDone": "Essai prolongé.",
-        "suspend": "Suspendre",
-        "suspendDone": "Organisation suspendue.",
-        "reactivate": "Réactiver",
-        "reactivateDone": "Organisation réactivée.",
-        "deleteTitle": "Supprimer l’organisation",
-        "deleteHint": "Suppression douce : plus aucune connexion possible, les données sont conservées. Motif à partir de 10 caractères.",
-        "reason": "Motif",
-        "reasonPlaceholder": "Pourquoi cette organisation est-elle supprimée ?",
-        "delete": "Supprimer",
-        "deleteConfirm": "Supprimer vraiment {name} ?",
-        "deleteYes": "Oui, supprimer",
-        "deleteDone": "Organisation supprimée."
-      },
-      "invoices": {
-        "title": "Dernières factures",
-        "empty": "Aucune facture.",
-        "open": "Ouvrir"
-      },
-      "audit": {
-        "title": "Derniers événements d’audit",
-        "empty": "Aucun événement.",
-        "all": "Tout afficher"
-      }
-    },
-    "audit": {
-      "loading": "Chargement …",
-      "error": "Impossible de charger le journal d’audit.",
-      "empty": "Aucun événement.",
-      "organizationId": "Organisation (ID)",
-      "action": "Action",
-      "allActions": "Toutes les actions",
-      "entityType": "Objet",
-      "from": "Du",
-      "to": "Au",
-      "exportCsv": "Exporter en CSV",
-      "exporting": "Export en cours …",
-      "count": "{total} événements",
-      "columns": {
-        "when": "Date",
-        "organization": "Organisation",
-        "user": "Utilisateur",
-        "action": "Action",
-        "entity": "Objet"
-      },
-      "previous": "Précédent",
-      "next": "Suivant",
-      "pageOf": "Page {page} sur {totalPages}"
     }
   }
 }

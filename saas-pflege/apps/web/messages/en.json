@@ -68,8 +68,7 @@
     "dsgvo": "Data protection",
     "dsgvoExport": "Data access",
     "dsgvoErasure": "Erasure",
-    "clustering": "Sectors",
-    "admin": "Platform"
+    "clustering": "Sectors"
   },
   "patients": {
     "title": "Patients",
@@ -738,136 +737,6 @@
       "missingRoutes": "{count} accepted sector(s) without an existing route — there is nothing to optimise for them.",
       "queued": "Optimisation queued.",
       "error": "The optimisation could not be started."
-    }
-  },
-  "admin": {
-    "title": "Platform administration",
-    "scopeWarning": "All organizations",
-    "loading": "Loading …",
-    "tabs": {
-      "dashboard": "Overview",
-      "organizations": "Organizations",
-      "auditLogs": "Audit log"
-    },
-    "forbidden": {
-      "title": "No access",
-      "body": "This area is reserved for platform administration.",
-      "back": "Back to dashboard"
-    },
-    "status": {
-      "ACTIVE": "Active",
-      "TRIAL": "Trial",
-      "PAST_DUE": "Payment due",
-      "SUSPENDED": "Suspended",
-      "CANCELED": "Canceled"
-    },
-    "dashboard": {
-      "loading": "Loading …",
-      "error": "The overview could not be loaded.",
-      "totalOrgs": "Organizations",
-      "mrr": "Monthly revenue",
-      "mrrSubscriptions": "from {count} subscriptions",
-      "mrrUnavailable": "Stripe unreachable — no figure (not €0).",
-      "new7": "New (7 days)",
-      "new30": "New (30 days)",
-      "byStatus": "By status",
-      "trialsEnding": "{count} trials end within 48 hours",
-      "noTrials": "No trial ends in the next 48 hours.",
-      "paymentFailures": "{count} payments outstanding",
-      "noPaymentFailures": "No outstanding payments."
-    },
-    "organizations": {
-      "loading": "Loading …",
-      "error": "The list could not be loaded.",
-      "empty": "No organization found.",
-      "search": "Search",
-      "searchPlaceholder": "Organization name",
-      "statusFilter": "Status",
-      "planFilter": "Plan",
-      "allStatuses": "All statuses",
-      "allPlans": "All plans",
-      "includeDeleted": "Show deleted",
-      "count": "{total} organizations",
-      "deletedBadge": "Deleted",
-      "usage": "{users} users · {patients} patients · {caregivers} caregivers",
-      "columns": {
-        "name": "Name",
-        "plan": "Plan",
-        "status": "Status",
-        "usage": "Size",
-        "createdAt": "Created"
-      },
-      "previous": "Previous",
-      "next": "Next",
-      "pageOf": "Page {page} of {totalPages}"
-    },
-    "detail": {
-      "loading": "Loading …",
-      "error": "The organization could not be loaded.",
-      "back": "Back to list",
-      "since": "since {date}",
-      "deletedOn": "Deleted on {date}",
-      "counts": {
-        "users": "Users",
-        "patients": "Patients",
-        "caregivers": "Caregivers",
-        "visits": "Visits"
-      },
-      "actions": {
-        "title": "Actions",
-        "plan": "Plan",
-        "changePlan": "Change plan",
-        "planDone": "Plan changed.",
-        "trialUntil": "Trial until",
-        "extendTrial": "Extend trial",
-        "trialDone": "Trial extended.",
-        "suspend": "Suspend",
-        "suspendDone": "Organization suspended.",
-        "reactivate": "Reactivate",
-        "reactivateDone": "Organization reactivated.",
-        "deleteTitle": "Delete organization",
-        "deleteHint": "Soft delete: nobody can log in any more, the data is kept. Reason from 10 characters.",
-        "reason": "Reason",
-        "reasonPlaceholder": "Why is this organization being deleted?",
-        "delete": "Delete",
-        "deleteConfirm": "Really delete {name}?",
-        "deleteYes": "Yes, delete",
-        "deleteDone": "Organization deleted."
-      },
-      "invoices": {
-        "title": "Latest invoices",
-        "empty": "No invoices.",
-        "open": "Open"
-      },
-      "audit": {
-        "title": "Latest audit entries",
-        "empty": "No entries.",
-        "all": "Show all"
-      }
-    },
-    "audit": {
-      "loading": "Loading …",
-      "error": "The audit log could not be loaded.",
-      "empty": "No entries.",
-      "organizationId": "Organization (ID)",
-      "action": "Action",
-      "allActions": "All actions",
-      "entityType": "Object",
-      "from": "From",
-      "to": "To",
-      "exportCsv": "Export CSV",
-      "exporting": "Exporting …",
-      "count": "{total} entries",
-      "columns": {
-        "when": "When",
-        "organization": "Organization",
-        "user": "User",
-        "action": "Action",
-        "entity": "Object"
-      },
-      "previous": "Previous",
-      "next": "Next",
-      "pageOf": "Page {page} of {totalPages}"
     }
   }
 }
