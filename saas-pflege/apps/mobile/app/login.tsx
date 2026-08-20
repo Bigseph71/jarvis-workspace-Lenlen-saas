@@ -11,8 +11,16 @@ import {
 } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import * as Application from "expo-application";
 import { ApiError } from "@len-len/api-client";
 import { ROLE_NOT_ALLOWED, useAuth } from "@/lib/auth-context";
+import { formatAppVersion } from "@/lib/app-version";
+
+// Modulweit statt im Render: der native Wert ändert sich zur Laufzeit nie.
+const appVersion = formatAppVersion({
+  version: Application.nativeApplicationVersion,
+  build: Application.nativeBuildVersion,
+});
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -97,6 +105,12 @@ export default function LoginScreen() {
           )}
         </Pressable>
       </View>
+
+      {/* Sichtbar ohne Anmeldung – genau der Fall, in dem jemand anruft, weil
+          er sich NICHT anmelden kann. */}
+      {appVersion ? (
+        <Text style={styles.version}>{t("common.version", { version: appVersion })}</Text>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -136,4 +150,5 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: "#fff", fontWeight: "600", fontSize: 15 },
+  version: { marginTop: 16, textAlign: "center", fontSize: 12, color: "#9ca3af" },
 });

@@ -4,7 +4,8 @@
     "loading": "Chargement …",
     "retry": "Réessayer",
     "logout": "Se déconnecter",
-    "errorGeneric": "Une erreur est survenue. Veuillez réessayer."
+    "errorGeneric": "Une erreur est survenue. Veuillez réessayer.",
+    "version": "Version {{version}}"
   },
   "auth": {
     "login": {

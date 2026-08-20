@@ -4,7 +4,8 @@
     "loading": "Loading …",
     "retry": "Try again",
     "logout": "Log out",
-    "errorGeneric": "Something went wrong. Please try again."
+    "errorGeneric": "Something went wrong. Please try again.",
+    "version": "Version {{version}}"
   },
   "auth": {
     "login": {
