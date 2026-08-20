@@ -13,6 +13,7 @@
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "rls": "psql \"$DATABASE_URL\" -f prisma/rls.sql",
+    "apply:sql": "tsx scripts/apply-sql.mts",
     "provision:test": "tsx scripts/provision-test-db.mts",
     "studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",

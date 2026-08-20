@@ -37,3 +37,14 @@ export function canPlanVisits(role: UserRole | undefined): boolean {
 export function canManageHr(role: UserRole | undefined): boolean {
   return has(role, [...ADMIN, "HR"]);
 }
+
+/**
+ * Super-Admin-Panel (/admin, Backend: requireSuperAdmin).
+ *
+ * Nur diese eine Rolle – und ausdrücklich NICHT die ADMIN-Liste oben, in der
+ * auch STRUKTUR_ADMIN steht. Der Struktur-Admin ist in seiner Organisation
+ * allmächtig; das Panel geht über alle Organisationen.
+ */
+export function canAccessAdminPanel(role: UserRole | undefined): boolean {
+  return role === "SUPER_ADMIN";
+}
