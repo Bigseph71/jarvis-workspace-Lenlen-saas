@@ -5,7 +5,6 @@ import type {
   CheckoutSession,
   PlanChangeParams,
   PortalParams,
-  RecurringRevenue,
   SubscriptionState,
 } from "./types.js";
 
@@ -37,12 +36,5 @@ export class StubBillingProvider implements BillingProvider {
 
   constructEvent(payload: Buffer): BillingEvent {
     return JSON.parse(payload.toString("utf8")) as BillingEvent;
-  }
-
-  // Ohne Stripe gibt es keine Abos und damit keinen Umsatz. Null zurückgeben,
-  // nicht eine erfundene Zahl: das Panel zeigt in Dev sonst einen Betrag an,
-  // den niemand zuordnen kann.
-  async getRecurringRevenue(): Promise<RecurringRevenue> {
-    return { amountCents: 0, currency: "eur", subscriptions: 0, truncated: false };
   }
 }

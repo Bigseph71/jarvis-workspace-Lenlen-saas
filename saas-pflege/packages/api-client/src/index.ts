@@ -20,4 +20,3 @@ export * from "./consent";
 export * from "./dsgvo";
 export * from "./billing";
 export * from "./hr";
-export * from "./admin";

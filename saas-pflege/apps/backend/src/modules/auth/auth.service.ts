@@ -127,11 +127,6 @@ export async function login(input: LoginInput): Promise<AuthResult> {
     where: {
       email: input.email,
       isActive: true,
-      // Eine vom Super-Admin gelöschte Organisation lässt niemanden mehr
-      // herein. Ohne diese Zeile wäre die Löschung reine Anzeige: der Tenant
-      // verschwände aus den Listen des Panels, während seine Konten
-      // weiterarbeiten.
-      organization: { deletedAt: null },
       ...(input.organizationId ? { organizationId: input.organizationId } : {}),
     },
     // Dieselbe Adresse in mehreren Organisationen ist die Ausnahme (jemand

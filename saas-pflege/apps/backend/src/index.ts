@@ -40,7 +40,6 @@ import { trackingWsRoutes } from "./modules/tracking/tracking.ws.js";
 import { consentRoutes } from "./modules/consent/consent.routes.js";
 import { exportRoutes } from "./modules/export/export.routes.js";
 import { hrRoutes } from "./modules/hr/hr.routes.js";
-import { adminRoutes } from "./modules/admin/admin.routes.js";
 
 const isProduction = env.NODE_ENV === "production";
 
@@ -152,8 +151,6 @@ await app.register(trackingWsRoutes);
 await app.register(consentRoutes);
 await app.register(exportRoutes);
 await app.register(hrRoutes);
-// Super-Admin-Panel: eigener Wächter, Abfragen über alle Tenants hinweg.
-await app.register(adminRoutes);
 
 // Async Geocoding-Worker (in-process für MVP). In Test-Umgebung aus.
 if (env.NODE_ENV !== "test") {
