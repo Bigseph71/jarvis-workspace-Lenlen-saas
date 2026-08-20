@@ -1,0 +1,83 @@
+# =============================================================================
+# .easignore — ce qui NE PART PAS vers EAS Build
+# =============================================================================
+#
+# Pourquoi ce fichier existe : l'archive envoyée à EAS atteignait 2,1 Go et
+# dépassait la limite de 2,0 Go. La cause n'était pas le code mais les caches.
+# EAS applique le .gitignore de la RACINE DU DÉPÔT, pas celui de
+# saas-pflege/ — or la racine n'exclut ni `.turbo/` (2,1 Go à elle seule) ni
+# `.next/` (env. 600 Mo). Git les ignore bien, grâce au .gitignore imbriqué,
+# ce qui rendait le problème invisible côté commit.
+#
+# ATTENTION, à lire avant toute modification : dès qu'un .easignore existe, il
+# REMPLACE le .gitignore pour cet archivage. Tout ce qui n'est pas listé ici
+# part vers les serveurs EAS, y compris des secrets. Les règles de la section
+# « Secrets » ne sont donc pas décoratives : elles reprennent celles du
+# .gitignore et doivent y rester.
+#
+# Ne PAS exclure les sources des paquets du workspace (apps/*, packages/*) :
+# EAS y lance `pnpm install`, et un paquet manquant fait échouer le lockfile.
+
+# --- Secrets (reprise du .gitignore : leur absence ici les enverrait) --------
+.env
+.env.*
+*.env
+!.env.example
+*.pem
+*.key
+*.ppk
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+*.token
+*credential*.json
+*credential*.yaml
+*credential*.yml
+*credential*.txt
+*credential*.csv
+*secret*.json
+*secret*.yaml
+*secret*.yml
+*secret*.txt
+*secret*.csv
+client_secret*.json
+*service-account*.json
+secrets/
+
+# --- Dépendances et caches de build (la cause du dépassement) ---------------
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+dist/
+build/
+.expo/
+*.tsbuildinfo
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Sans objet pour un build mobile ----------------------------------------
+autre-projet/
+livrables/
+context/
+module-installs/
+n8n-workflows/
+workflows/
+.claude/
+.github/
+# Microservice Python : aucun package.json, pnpm ne le voit pas.
+saas-pflege/apps/ki-service/
+
+# --- Logs, temporaires, fichiers système ------------------------------------
+*.log
+*.tmp
+tmp/
+.cache/
+*.rdb
+dump.rdb
+Thumbs.db
+desktop.ini
+.DS_Store
