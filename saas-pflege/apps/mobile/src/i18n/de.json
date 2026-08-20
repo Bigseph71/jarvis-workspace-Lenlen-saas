@@ -4,7 +4,8 @@
     "loading": "Wird geladen …",
     "retry": "Erneut versuchen",
     "logout": "Abmelden",
-    "errorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
+    "errorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+    "version": "Version {{version}}"
   },
   "auth": {
     "login": {

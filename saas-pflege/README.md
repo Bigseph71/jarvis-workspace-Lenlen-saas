@@ -134,6 +134,15 @@ dans **chaque** profil de `apps/mobile/eas.json`.
 | `preview` | APK, distribution interne | essais, installation manuelle |
 | `production` | AAB (app-bundle) | Play Store / TestFlight |
 
+**Numéro de build.** Les deux profils utilisent `autoIncrement`, et le compteur
+vit chez EAS (`cli.appVersionSource: "remote"`) : chaque build reçoit un
+`versionCode` unique sans qu'aucun fichier ne soit modifié ni commité. La
+valeur est affichée en pied de l'écran de connexion, lue depuis le **paquet
+natif** (`expo-application`) et non depuis `app.json` — puisqu'elle n'y figure
+pas. C'est le seul chiffre qui identifie le binaire réellement installé, et
+l'écran de connexion est accessible sans compte, donc y compris quand quelqu'un
+appelle justement parce qu'il n'arrive pas à se connecter.
+
 Le profil `production` n'avait pas cette variable, et le code retombait en
 silence sur `http://localhost:4000`, c'est-à-dire le téléphone lui-même : l'app
 s'installait, s'ouvrait, et échouait à chaque appel sans rien expliquer. C'est
