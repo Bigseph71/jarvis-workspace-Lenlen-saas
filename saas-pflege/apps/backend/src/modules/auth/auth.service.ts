@@ -119,6 +119,46 @@ export async function registerOrganization(input: RegisterOrganizationInput): Pr
 }
 
 /**
+ * Ist die Organisation vom Super-Admin gelöscht worden?
+ *
+ * Eigene Abfrage statt eines Joins in der Kandidatensuche, und das ist der
+ * ganze Punkt dieser Funktion.
+ *
+ * Vorgeschichte: derselbe Filter, als Join geschrieben, hat die Anmeldung in
+ * Produktion lahmgelegt. Der Pooler (Supavisor, Transaktionsmodus) hält
+ * Server-Verbindungen, die einen Neustart der Anwendung überdauern; eine davon
+ * servierte einen Plan aus der Zeit vor der Migration, die Abfrage scheiterte,
+ * und mit ihr JEDE Anmeldung – Web wie App. Ein Panel, das nicht lädt, ist ein
+ * Ärgernis; ein Login, der nicht mehr geht, ist ein geschlossenes Produkt.
+ *
+ * Diese Trennung kostet eine Abfrage je ERFOLGREICHER Anmeldung (Lesen über den
+ * Primärschlüssel; fehlgeschlagene Versuche zahlen nichts) und kauft dafür
+ * zweierlei: die Kandidatensuche bleibt genau die erprobte Abfrage, und der
+ * Fehlerfall ist abfangbar.
+ *
+ * Fail open, wenn die Abfrage scheitert: es wird angemeldet und gewarnt.
+ * Dieselbe Abwägung wie bei der Token-Sperrliste (lib/token-revocation.ts) –
+ * eine zusätzliche Schicht darf das Produkt nicht schliessen. Die Löschung
+ * bleibt in diesem Fenster nicht wirkungslos: sie setzt CANCELED, und die
+ * Plan-Prüfung weist jeden Schreibzugriff mit 402 ab.
+ */
+async function organizationIsDeleted(organizationId: string): Promise<boolean> {
+  try {
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { deletedAt: true },
+    });
+    return organization?.deletedAt != null;
+  } catch (err) {
+    console.warn(
+      "[auth] Löschstatus der Organisation nicht lesbar – Anmeldung wird durchgelassen:",
+      err,
+    );
+    return false;
+  }
+}
+
+/**
  * Login per E-Mail + Passwort. E-Mail ist nur pro Tenant eindeutig; existiert
  * sie in mehreren Organisationen, ist organizationId zur Auflösung nötig.
  */
@@ -127,22 +167,12 @@ export async function login(input: LoginInput): Promise<AuthResult> {
     where: {
       email: input.email,
       isActive: true,
-      // NOCH NICHT: der Filter auf eine gelöschte Organisation
-      // (`organization: { deletedAt: null }`) gehört fachlich hierher, wird
-      // aber getrennt nachgezogen.
-      //
-      // Grund: er hat die Anmeldung in Produktion lahmgelegt. Der Login ist der
-      // einzige Endpunkt, den JEDER braucht – im Web wie in der App. Hängt er
-      // an einer Spalte, die auf einer Umgebung fehlt, wird aus einem Panel,
-      // das nicht lädt, ein Produkt, in das niemand mehr hineinkommt.
-      //
-      // Erst wenn dieser Stand läuft und die Spalten nachweislich gelesen
-      // werden, kommt der Filter als eigene, für sich zurücknehmbare Änderung
-      // dazu.
-      //
-      // Solange gilt: die Löschung setzt CANCELED, wodurch die Plan-Prüfung
-      // jeden Schreibzugriff mit 402 abweist. Anmelden und LESEN bleibt bis
-      // dahin möglich – bekannte Lücke, kein Versehen.
+      // Bewusst KEIN Join auf organizations (`organization: { deletedAt: null }`).
+      // Genau der hatte die Anmeldung lahmgelegt: der Pooler servierte einen vor
+      // der Migration erstellten Plan, die Abfrage scheiterte, und niemand kam
+      // mehr ins Produkt. Diese Abfrage bleibt deshalb die erprobte.
+      // Die Prüfung auf eine gelöschte Organisation steht weiter unten, als
+      // eigene, abfangbare Abfrage.
       ...(input.organizationId ? { organizationId: input.organizationId } : {}),
     },
     // Dieselbe Adresse in mehreren Organisationen ist die Ausnahme (jemand
@@ -188,6 +218,15 @@ export async function login(input: LoginInput): Promise<AuthResult> {
   }
 
   const user = matches[0]!;
+
+  // Gelöschte Organisation: niemand kommt mehr herein. Absichtlich HIER und
+  // nicht als Filter oben – siehe organizationIsDeleted.
+  //
+  // Dieselbe generische Meldung wie bei falschem Passwort: dass eine
+  // Organisation gelöscht wurde, geht einen Anfragenden nichts an.
+  if (await organizationIsDeleted(user.organizationId)) {
+    throw new UnauthorizedError("Ungültige Anmeldedaten");
+  }
 
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 

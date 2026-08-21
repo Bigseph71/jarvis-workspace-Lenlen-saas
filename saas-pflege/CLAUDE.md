@@ -292,18 +292,29 @@ Conséquences, à respecter pour toute évolution :
    conservation (§ 630f BGB). La suppression passe le statut à `CANCELED`, ce
    qui fait refuser toute écriture par la vérification de plan (402).
 
-   **Lacune connue : la connexion n'est pas encore coupée.** Le filtre
-   correspondant dans `auth.service` (`organization: { deletedAt: null }`) a
-   mis la production à terre — porté par le login, un défaut de migration
-   empêchait *toute* connexion au produit, web et mobile compris. Il sera
-   rétabli dans une modification séparée, une fois les colonnes vérifiées sur
-   la base réellement servie. D'ici là, un compte d'organisation supprimée peut
-   encore se connecter et lire.
+   La connexion est également refusée (`auth.service: organizationIsDeleted`),
+   sans quoi la suppression ne serait qu'un changement d'affichage.
 
-   La leçon vaut au-delà de ce cas : **ne jamais faire dépendre le chemin
-   d'authentification d'une colonne fraîchement ajoutée.** Une fonctionnalité
-   qui ne charge pas est un incident local ; un login cassé est une panne
-   totale.
+   **Comment cette vérification est écrite, et pourquoi.** Elle est une requête
+   séparée, exécutée après la validation du mot de passe, et **jamais** une
+   jointure dans la recherche des comptes. Écrite en jointure, elle a mis la
+   production à terre : le pooler Supabase conserve des connexions serveur qui
+   survivent au redémarrage de l'application, l'une d'elles servait un plan
+   antérieur à la migration, la requête échouait — et avec elle *toute*
+   connexion, web et mobile.
+
+   Trois conséquences à préserver :
+   - la recherche des comptes reste la requête éprouvée, sans `organization` ;
+   - l'échec de la vérification laisse entrer (`fail open`) avec un
+     avertissement, même arbitrage que la liste de révocation des jetons : une
+     couche supplémentaire ne doit pas fermer le produit. Le statut `CANCELED`
+     reste la seconde barrière, qui refuse les écritures en 402 ;
+   - une tentative avec un mauvais mot de passe ne consulte pas la table, donc
+     ne coûte rien de plus qu'avant.
+
+   La règle générale : **ne jamais faire dépendre le chemin d'authentification
+   d'une colonne fraîchement ajoutée.** Une fonctionnalité qui ne charge pas est
+   un incident local ; un login cassé est une panne totale.
 2. **`plan_limits` n'est jamais réécrit** lors d'un changement de plan. La
    colonne porte des dérogations négociées par ressource, que
    `resolvePlanLimits` superpose au défaut du plan ; l'écraser supprimerait un

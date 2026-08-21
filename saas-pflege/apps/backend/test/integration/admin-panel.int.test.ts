@@ -129,24 +129,27 @@ describe.skipIf(!runDbTests)("Panel Super-Admin (DB)", () => {
     expect(users).toBeGreaterThan(0);
   });
 
-  it("laisse encore entrer après suppression — lacune connue de cette étape", async () => {
-    // Ce test décrit l'état actuel, il ne l'approuve pas.
-    //
-    // Le filtre qui coupe la connexion (auth.service: organization.deletedAt)
-    // a mis la production à terre : porté par le login, un défaut de migration
-    // empêchait toute connexion au produit. Il revient dans une PR séparée,
-    // une fois les colonnes vérifiées sur la base servie en production.
-    //
-    // Ce test bascule alors en `rejects.toThrow()` — et son échec est
-    // précisément le signal que le filtre est arrivé.
-    const stillWorks = await auth.login({ email: targetEmail, password: targetPassword });
-    expect(stillWorks.accessToken).toBeTruthy();
+  it("interdit la connexion après suppression", async () => {
+    // La lacune de l'étape précédente est fermée. Sans cette garantie, la
+    // suppression ne serait qu'un changement d'affichage dans le panel : le
+    // tenant disparaîtrait des listes pendant que ses comptes continuent de
+    // travailler.
+    await expect(auth.login({ email: targetEmail, password: targetPassword })).rejects.toThrow();
 
-    // Ce qui protège en attendant : le statut CANCELED, qui fait refuser toute
-    // écriture par la vérification de plan (402). Lecture et connexion restent
-    // possibles.
+    // Le statut reste la seconde barrière : la vérification de plan refuse
+    // toute écriture en 402, y compris si la lecture du drapeau échouait.
     const org = await prisma.organization.findUnique({ where: { id: targetOrgId } });
     expect(org?.subscriptionStatus).toBe("CANCELED");
+  });
+
+  it("répond comme pour un mot de passe faux, sans nommer la suppression", async () => {
+    // Ce que voit l'utilisateur ne doit pas révéler l'état de l'organisation.
+    const err = await auth
+      .login({ email: targetEmail, password: targetPassword })
+      .catch((e: unknown) => e);
+
+    expect((err as Error).message).toBe("Ungültige Anmeldedaten");
+    expect((err as { statusCode?: number }).statusCode).toBe(401);
   });
 
   it("écarte une organisation supprimée des listes et du dashboard", async () => {
