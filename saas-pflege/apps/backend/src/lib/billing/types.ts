@@ -49,6 +49,26 @@ export interface SubscriptionState {
   plan: string | null;
 }
 
+/**
+ * Wiederkehrender Monatsumsatz, aus den laufenden Abos des Anbieters.
+ *
+ * Betrag in der kleinsten Währungseinheit (Cent), wie überall im Billing.
+ * `subscriptions` ist die Zahl der Abos, aus denen er stammt – ohne sie liesse
+ * sich ein Wert von 0 nicht deuten (kein Abo? oder alle beitragsfrei?).
+ */
+export interface RecurringRevenue {
+  amountCents: number;
+  currency: string;
+  subscriptions: number;
+  /**
+   * true, wenn nicht alle Abos gezählt werden konnten (Seitenlimit erreicht).
+   * Der Wert ist dann eine Untergrenze und wird im Panel so ausgewiesen –
+   * eine zu niedrige Zahl als exakt auszugeben wäre schlimmer als sie zu
+   * kennzeichnen.
+   */
+  truncated: boolean;
+}
+
 /** Vereinfachtes Event (kompatibel zu Stripe.Event-Struktur). */
 export interface BillingEvent {
   id?: string;
@@ -74,4 +94,11 @@ export interface BillingProvider {
   getSubscriptionState(subscriptionId: string): Promise<SubscriptionState | null>;
   /** Verifiziert die Signatur und liefert das Event (oder wirft). */
   constructEvent(payload: Buffer, signature: string | undefined): BillingEvent;
+  /**
+   * Summiert die laufenden Abos zum monatlichen Umsatz (Super-Admin-Panel).
+   * Quelle ist der Anbieter, nicht die eigene Datenbank: was ein Tenant zahlt,
+   * weiss nur Stripe – die lokale Tabelle kennt den Plan, nicht den Preis, und
+   * Rabatte oder Sonderpreise gar nicht.
+   */
+  getRecurringRevenue(): Promise<RecurringRevenue>;
 }

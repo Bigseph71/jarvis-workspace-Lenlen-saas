@@ -127,6 +127,22 @@ export async function login(input: LoginInput): Promise<AuthResult> {
     where: {
       email: input.email,
       isActive: true,
+      // NOCH NICHT: der Filter auf eine gelöschte Organisation
+      // (`organization: { deletedAt: null }`) gehört fachlich hierher, wird
+      // aber getrennt nachgezogen.
+      //
+      // Grund: er hat die Anmeldung in Produktion lahmgelegt. Der Login ist der
+      // einzige Endpunkt, den JEDER braucht – im Web wie in der App. Hängt er
+      // an einer Spalte, die auf einer Umgebung fehlt, wird aus einem Panel,
+      // das nicht lädt, ein Produkt, in das niemand mehr hineinkommt.
+      //
+      // Erst wenn dieser Stand läuft und die Spalten nachweislich gelesen
+      // werden, kommt der Filter als eigene, für sich zurücknehmbare Änderung
+      // dazu.
+      //
+      // Solange gilt: die Löschung setzt CANCELED, wodurch die Plan-Prüfung
+      // jeden Schreibzugriff mit 402 abweist. Anmelden und LESEN bleibt bis
+      // dahin möglich – bekannte Lücke, kein Versehen.
       ...(input.organizationId ? { organizationId: input.organizationId } : {}),
     },
     // Dieselbe Adresse in mehreren Organisationen ist die Ausnahme (jemand
