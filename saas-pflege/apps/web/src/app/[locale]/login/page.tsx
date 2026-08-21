@@ -24,12 +24,15 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login({
+      const loggedIn = await login({
         email: email.trim(),
         password,
         organizationId: organizationId.trim() || undefined,
       });
-      router.replace("/dashboard");
+      // Der Super-Admin hat kein Tenant-Dashboard – seine Navigation führt nur
+      // in die Plattform-Verwaltung. Ohne diese Weiche landete er auf einer
+      // Seite, die in seiner eigenen Leiste nicht mehr vorkommt.
+      router.replace(loggedIn.role === "SUPER_ADMIN" ? "/admin" : "/dashboard");
     } catch (err) {
       if (err instanceof Error && err.message === ROLE_NOT_ALLOWED) {
         setError(t("mobileOnly"));
