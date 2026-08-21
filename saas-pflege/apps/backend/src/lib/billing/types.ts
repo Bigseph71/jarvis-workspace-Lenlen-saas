@@ -96,9 +96,19 @@ export interface BillingProvider {
   constructEvent(payload: Buffer, signature: string | undefined): BillingEvent;
   /**
    * Summiert die laufenden Abos zum monatlichen Umsatz (Super-Admin-Panel).
-   * Quelle ist der Anbieter, nicht die eigene Datenbank: was ein Tenant zahlt,
-   * weiss nur Stripe – die lokale Tabelle kennt den Plan, nicht den Preis, und
-   * Rabatte oder Sonderpreise gar nicht.
+   *
+   * Die BETRÄGE kommen vom Anbieter – was ein Tenant zahlt, weiss nur Stripe:
+   * die lokale Tabelle kennt den Plan, nicht den Preis, und Rabatte oder
+   * Sonderpreise gar nicht.
+   *
+   * WELCHE Abos zählen, entscheidet dagegen die eigene Datenbank, und deshalb
+   * gibt der Aufrufer sie vor. Stripe weiss nichts von einer im Panel
+   * gelöschten Organisation und nichts von unseren Status: ohne diese Liste
+   * zählte ein Abo weiter mit, dessen Kunde bei uns längst gelöscht ist.
+   *
+   * @param eligibleSubscriptionIds Abos, die gezählt werden dürfen. Leer =
+   *   Ergebnis 0, nicht "alle" – ein leerer Filter darf nie zu einer Summe
+   *   über fremde Abos führen.
    */
-  getRecurringRevenue(): Promise<RecurringRevenue>;
+  getRecurringRevenue(eligibleSubscriptionIds: ReadonlySet<string>): Promise<RecurringRevenue>;
 }

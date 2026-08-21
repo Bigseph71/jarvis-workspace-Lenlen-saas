@@ -184,59 +184,73 @@ export class StripeBillingProvider implements BillingProvider {
   /**
    * Monatsumsatz aus den laufenden Abos.
    *
-   * Gezählt werden `active` und `trialing`; ein Abo in `past_due` rechnet
-   * womöglich nie mehr ab, und es mitzuzählen hiesse, das Panel schön zu
-   * rechnen. Testphasen zählen mit, weil sie planmässig in ein zahlendes Abo
-   * übergehen – wer sie getrennt sehen will, liest die Zahl der Tenants im
-   * Status TRIAL daneben.
+   * Zwei Filter, und beide sind nötig.
+   *
+   * Bei Stripe wird nur `active` abgefragt. `trialing` zählte hier zunächst
+   * mit, mit der Begründung, eine Testphase gehe planmässig in ein zahlendes
+   * Abo über. Das war falsch: ein Umsatz, der noch nicht bezahlt wird, ist
+   * kein Umsatz, und das Panel wies damit Geld aus, das niemand überwiesen
+   * hat. Wer die Testphasen sehen will, liest die Zahl der Tenants im Status
+   * TRIAL daneben. `past_due` bleibt ebenfalls draussen – ein Abo, das nicht
+   * mehr abrechnet, gehört nicht in den laufenden Umsatz.
+   *
+   * Und gezählt wird nur, was in `eligible` steht. Stripe kennt weder unsere
+   * Status noch unsere Löschungen: eine im Panel gelöschte Organisation hat
+   * dort weiterhin ein aktives Abo (die Löschung kündigt es nicht), und ohne
+   * diesen zweiten Filter erschiene sie weiter im Umsatz.
    *
    * Jährliche Preise werden auf den Monat umgelegt (das ist die Bedeutung von
    * "monatlich wiederkehrend"), Wochen- und Tagespreise hochgerechnet.
    */
-  async getRecurringRevenue(): Promise<RecurringRevenue> {
+  async getRecurringRevenue(eligible: ReadonlySet<string>): Promise<RecurringRevenue> {
+    // Kein zählbares Abo: gar nicht erst bei Stripe nachfragen.
+    if (eligible.size === 0) {
+      return { amountCents: 0, currency: "eur", subscriptions: 0, truncated: false };
+    }
+
     let amountCents = 0;
     let subscriptions = 0;
     let currency = "eur";
     let truncated = false;
 
-    for (const status of ["active", "trialing"] as const) {
-      // Obergrenze: ein Dashboard darf nicht minutenlang durch Stripe blättern.
-      // Bei mehr Abos ist der Wert eine Untergrenze und wird als solche
-      // ausgewiesen.
-      const MAX_PAGES = 10;
-      let page = 0;
-      let startingAfter: string | undefined;
+    // Obergrenze: ein Dashboard darf nicht minutenlang durch Stripe blättern.
+    // Bei mehr Abos ist der Wert eine Untergrenze und wird als solche
+    // ausgewiesen.
+    const MAX_PAGES = 10;
+    let page = 0;
+    let startingAfter: string | undefined;
 
-      do {
-        const batch: Stripe.ApiList<Stripe.Subscription> = await this.stripe.subscriptions.list({
-          status,
-          limit: 100,
-          ...(startingAfter ? { starting_after: startingAfter } : {}),
-        });
+    do {
+      const batch: Stripe.ApiList<Stripe.Subscription> = await this.stripe.subscriptions.list({
+        status: "active",
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      });
 
-        for (const subscription of batch.data) {
-          for (const item of subscription.items.data) {
-            const price = item.price;
-            const unit = price.unit_amount;
-            // Gestaffelte Preise (tiers) haben kein unit_amount. Sie zu
-            // überspringen ist ehrlicher als sie mit 0 zu bewerten.
-            if (unit === null || !price.recurring) continue;
+      for (const subscription of batch.data) {
+        if (!eligible.has(subscription.id)) continue;
 
-            amountCents += monthlyAmount(unit * (item.quantity ?? 1), price.recurring);
-            currency = price.currency;
-          }
-          subscriptions += 1;
+        for (const item of subscription.items.data) {
+          const price = item.price;
+          const unit = price.unit_amount;
+          // Gestaffelte Preise (tiers) haben kein unit_amount. Sie zu
+          // überspringen ist ehrlicher als sie mit 0 zu bewerten.
+          if (unit === null || !price.recurring) continue;
+
+          amountCents += monthlyAmount(unit * (item.quantity ?? 1), price.recurring);
+          currency = price.currency;
         }
+        subscriptions += 1;
+      }
 
-        startingAfter = batch.data.at(-1)?.id;
-        page += 1;
-        if (batch.has_more && page >= MAX_PAGES) {
-          truncated = true;
-          break;
-        }
-        if (!batch.has_more) break;
-      } while (startingAfter);
-    }
+      startingAfter = batch.data.at(-1)?.id;
+      page += 1;
+      if (batch.has_more && page >= MAX_PAGES) {
+        truncated = true;
+        break;
+      }
+      if (!batch.has_more) break;
+    } while (startingAfter);
 
     return { amountCents: Math.round(amountCents), currency, subscriptions, truncated };
   }

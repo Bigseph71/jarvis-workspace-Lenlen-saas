@@ -346,10 +346,20 @@ Conséquences, à respecter pour toute évolution :
    appartiennent à Stripe ; les forcer découplerait l'affichage du paiement
    réel. Seuls `SUSPENDED` et `TRIAL` sont attribuables, plus une réactivation
    explicite (qui remet `past_due_since` à null, sinon le worker resuspend).
-4. **MRR : Stripe est la source.** La base connaît le plan, pas le prix, et
-   ignore remises et tarifs négociés. Si Stripe est injoignable, le panel
-   affiche « indisponible » et **jamais 0 €** : la distinction décide si
-   quelqu'un doit aller voir.
+4. **MRR : les montants viennent de Stripe, l'éligibilité de la base.** Stripe
+   seul connaît les prix, remises et tarifs négociés — mais il ignore nos
+   statuts et nos suppressions. Le calcul croise donc les deux : côté Stripe,
+   uniquement les abonnements `active` (ni `trialing`, ni `past_due`) ; côté
+   base, uniquement les organisations `ACTIVE` non supprimées avec un
+   abonnement (`payingSubscriptionIds`).
+
+   Sans ce croisement, deux erreurs se produisaient : une organisation en
+   période d'essai apparaissait dans le revenu alors qu'elle ne paie rien, et
+   une organisation supprimée y restait — car **la suppression douce ne résilie
+   pas l'abonnement Stripe**.
+
+   Si Stripe est injoignable, le panel affiche « indisponible » et **jamais
+   0 €** : la distinction décide si quelqu'un doit aller voir.
 5. **Export CSV : neutraliser les formules.** Les cellules commençant par
    `=`, `+`, `-` ou `@` sont préfixées d'une apostrophe. L'audit log contient
    du texte saisi par des utilisateurs, et un fichier venant du panel n'éveille

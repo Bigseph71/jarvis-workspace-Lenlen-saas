@@ -152,6 +152,49 @@ describe.skipIf(!runDbTests)("Panel Super-Admin (DB)", () => {
     expect((err as { statusCode?: number }).statusCode).toBe(401);
   });
 
+  it("exclut du revenu mensuel les essais et les organisations supprimées", async () => {
+    // La sélection en base, côté du calcul du MRR. Les montants viennent de
+    // Stripe, mais c'est ici qu'on décide QUI compte — et c'est ici que les
+    // deux erreurs se logeaient.
+    const trialOrg = await auth.registerOrganization({
+      organizationName: `Testphase ${stamp}`,
+      country: "DE",
+      adminEmail: `essai+${stamp}@demo.de`,
+      adminPassword: "Encore-Un-Passwort-789",
+    });
+    orgIds.push(trialOrg.user.organizationId);
+
+    // Un abonnement Stripe existe dans les deux cas : c'est bien la raison pour
+    // laquelle ils étaient comptés à tort.
+    await prisma.organization.update({
+      where: { id: trialOrg.user.organizationId },
+      data: { subscriptionStatus: "TRIAL", stripeSubscriptionId: `sub_essai_${stamp}` },
+    });
+    await prisma.organization.update({
+      where: { id: targetOrgId },
+      data: { stripeSubscriptionId: `sub_supprimee_${stamp}` },
+    });
+
+    // Et une organisation qui paie réellement.
+    const payingOrg = await auth.registerOrganization({
+      organizationName: `Zahlend ${stamp}`,
+      country: "DE",
+      adminEmail: `zahlend+${stamp}@demo.de`,
+      adminPassword: "Noch-Ein-Passwort-012",
+    });
+    orgIds.push(payingOrg.user.organizationId);
+    await prisma.organization.update({
+      where: { id: payingOrg.user.organizationId },
+      data: { subscriptionStatus: "ACTIVE", stripeSubscriptionId: `sub_zahlend_${stamp}` },
+    });
+
+    const eligible = await admin.payingSubscriptionIds();
+
+    expect(eligible.has(`sub_zahlend_${stamp}`)).toBe(true);
+    expect(eligible.has(`sub_essai_${stamp}`)).toBe(false);
+    expect(eligible.has(`sub_supprimee_${stamp}`)).toBe(false);
+  });
+
   it("écarte une organisation supprimée des listes et du dashboard", async () => {
     const list = await admin.listOrganizations({ page: 1, pageSize: 100, includeDeleted: false });
     const ids = (list.data as { id: string }[]).map((o) => o.id);
