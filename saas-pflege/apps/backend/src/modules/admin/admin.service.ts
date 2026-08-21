@@ -76,6 +76,35 @@ export interface AdminDashboard {
   };
 }
 
+/**
+ * Abos, die in den Monatsumsatz zählen dürfen.
+ *
+ * Stripe allein kann diese Frage nicht beantworten: es kennt weder unsere
+ * Status noch unsere Löschungen. Zwei Fälle, die genau deshalb falsch gezählt
+ * wurden:
+ *
+ *   - Eine Organisation in der TESTPHASE zahlt noch nichts. Sie mitzuzählen
+ *     wies Geld aus, das niemand überwiesen hat.
+ *   - Eine im Panel GELÖSCHTE Organisation behält ihr Stripe-Abo (die Löschung
+ *     kündigt es nicht, siehe softDeleteOrganization) und erschien weiter im
+ *     Umsatz.
+ *
+ * Gezählt wird deshalb nur, was hier UND bei Stripe als laufend gilt: Status
+ * ACTIVE, nicht gelöscht, mit hinterlegtem Abo.
+ */
+export async function payingSubscriptionIds(): Promise<ReadonlySet<string>> {
+  const rows = await prisma.organization.findMany({
+    where: {
+      ...NOT_DELETED,
+      subscriptionStatus: SubscriptionStatus.ACTIVE,
+      stripeSubscriptionId: { not: null },
+    },
+    select: { stripeSubscriptionId: true },
+  });
+
+  return new Set(rows.map((r) => r.stripeSubscriptionId).filter((id): id is string => id !== null));
+}
+
 export async function getDashboard(now: Date = new Date()): Promise<AdminDashboard> {
   const { from, to } = trialAlertWindow(now);
 
@@ -110,7 +139,8 @@ export async function getDashboard(now: Date = new Date()): Promise<AdminDashboa
   // `available: false` sagt der Oberfläche, dass sie nicht 0 € anzeigen soll.
   let revenue: RecurringRevenue & { available: boolean };
   try {
-    revenue = { ...(await getBillingProvider().getRecurringRevenue()), available: true };
+    const eligible = await payingSubscriptionIds();
+    revenue = { ...(await getBillingProvider().getRecurringRevenue(eligible)), available: true };
   } catch {
     revenue = {
       amountCents: 0,
