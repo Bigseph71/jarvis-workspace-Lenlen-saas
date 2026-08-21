@@ -268,6 +268,8 @@ async function requireLiveOrganization(id: string) {
       subscriptionStatus: true,
       trialEndsAt: true,
       deletedAt: true,
+      // Für die Kündigung beim Löschen; kostet nichts, spart eine zweite Abfrage.
+      stripeSubscriptionId: true,
     },
   });
   if (!organization) throw new AppError(404, "Organisation nicht gefunden", "NotFound");
@@ -333,10 +335,30 @@ export async function updateOrganization(
   return updated;
 }
 
+/** Was aus dem Abo des Tenants bei der Löschung geworden ist. */
+export interface SubscriptionCancellation {
+  /** Lag überhaupt ein Abo vor? */
+  attempted: boolean;
+  /** Beim Anbieter beendet (oder war es schon)? */
+  canceled: boolean;
+  /** Gesetzt, wenn die Kündigung fehlschlug – dann läuft die Abbuchung weiter. */
+  error?: string;
+}
+
 /**
  * Weiche Löschung. Der Tenant verschwindet aus den Listen und niemand kann sich
  * mehr anmelden (siehe auth.service: die Abfrage schliesst gelöschte
  * Organisationen aus), die Daten bleiben liegen.
+ *
+ * UND das Abo wird beim Anbieter sofort beendet. Ohne diesen Schritt
+ * verschwand der Kunde aus dem Panel und wurde weiter abgebucht – niemandem
+ * fiel es auf, seit der Monatsumsatz gelöschte Organisationen ausblendet.
+ *
+ * Reihenfolge mit Absicht: erst die Datenbank, dann Stripe. Scheitert Stripe,
+ * ist der Tenant gelöscht und wird noch abgerechnet – ein sichtbarer,
+ * nachholbarer Zustand, den das Ergebnis dieser Funktion und der Audit-Log
+ * benennen. Andersherum wäre die stille Variante: Abo beendet, Organisation
+ * noch aktiv, und niemand erführe es.
  */
 export async function softDeleteOrganization(
   ctx: AdminContext,
@@ -358,6 +380,8 @@ export async function softDeleteOrganization(
     select: ORGANIZATION_LIST_SELECT,
   });
 
+  const cancellation = await cancelSubscriptionFor(before.stripeSubscriptionId, input.reason);
+
   await writeAdminAudit(id, ctx, {
     action: AuditAction.DELETE,
     entityId: id,
@@ -365,10 +389,37 @@ export async function softDeleteOrganization(
       bySuperAdmin: true,
       reason: input.reason,
       before: { name: before.name, status: before.subscriptionStatus },
+      // Die Abrechnung gehört in dieselbe Zeile wie die Löschung: wer später
+      // fragt, warum ein gelöschter Kunde noch abgebucht wurde, findet die
+      // Antwort hier und nicht in einem Log, das längst rotiert ist.
+      subscription: cancellation as unknown as Prisma.InputJsonValue,
     },
   });
 
-  return deleted;
+  return { ...deleted, subscription: cancellation };
+}
+
+/** Beendet das Abo, ohne die bereits vollzogene Löschung scheitern zu lassen. */
+async function cancelSubscriptionFor(
+  subscriptionId: string | null,
+  reason: string,
+): Promise<SubscriptionCancellation> {
+  if (!subscriptionId) return { attempted: false, canceled: false };
+
+  try {
+    const result = await getBillingProvider().cancelSubscription(subscriptionId, reason);
+    return { attempted: true, canceled: result.canceled };
+  } catch (err) {
+    // Nicht werfen: die Organisation IST gelöscht, ein Fehler hier würde dem
+    // Aufrufer eine misslungene Löschung melden und ihn zum Wiederholen
+    // verleiten. Stattdessen: benennen, damit es jemand nachholt.
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[admin] Abo ${subscriptionId} konnte nicht gekündigt werden – Abbuchung läuft weiter:`,
+      message,
+    );
+    return { attempted: true, canceled: false, error: message };
+  }
 }
 
 // ── Audit-Log (global) ─────────────────────────────────────────────────────

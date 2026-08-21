@@ -69,6 +69,17 @@ export interface RecurringRevenue {
   truncated: boolean;
 }
 
+/** Ergebnis einer Kündigung beim Anbieter. */
+export interface CancellationResult {
+  /** true, wenn das Abo jetzt (oder bereits vorher) beendet ist. */
+  canceled: boolean;
+  /**
+   * true, wenn beim Anbieter gar kein laufendes Abo mehr lag. Kein Fehler:
+   * eine zweite Löschung desselben Tenants soll nicht scheitern.
+   */
+  alreadyGone: boolean;
+}
+
 /** Vereinfachtes Event (kompatibel zu Stripe.Event-Struktur). */
 export interface BillingEvent {
   id?: string;
@@ -111,4 +122,14 @@ export interface BillingProvider {
    *   über fremde Abos führen.
    */
   getRecurringRevenue(eligibleSubscriptionIds: ReadonlySet<string>): Promise<RecurringRevenue>;
+  /**
+   * Beendet ein Abo SOFORT (keine Weiterlaufzeit bis Periodenende).
+   *
+   * Gebraucht beim Löschen einer Organisation im Panel: ohne diesen Schritt
+   * verschwindet der Kunde aus unseren Listen und wird weiter abgebucht.
+   *
+   * @param reason Wird beim Anbieter als Kündigungsgrund hinterlegt, damit die
+   *   Abrechnungshistorie dort dieselbe Geschichte erzählt wie unser Audit-Log.
+   */
+  cancelSubscription(subscriptionId: string, reason?: string): Promise<CancellationResult>;
 }
