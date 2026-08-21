@@ -11,7 +11,6 @@ import { recordPosition, livePositions } from "./tracking.service.js";
 const canTrack = requireRole(UserRole.FACHKRAFT);
 // Live-Karte: Koordination + Admins (organisationsweit).
 const canViewLive = requireRole(
-  UserRole.SUPER_ADMIN,
   UserRole.STRUKTUR_ADMIN,
   UserRole.KOORDINATOR,
 );

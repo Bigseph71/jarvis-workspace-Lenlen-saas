@@ -7,8 +7,7 @@ import {
 } from "../../src/lib/tracking/scope.js";
 
 describe("canViewOrgLive (RLS-Regel: wer sieht die ganze Organisation)", () => {
-  it("erlaubt Koordination und Admins", () => {
-    expect(canViewOrgLive(UserRole.SUPER_ADMIN)).toBe(true);
+  it("erlaubt Koordination und Struktur-Admin", () => {
     expect(canViewOrgLive(UserRole.STRUKTUR_ADMIN)).toBe(true);
     expect(canViewOrgLive(UserRole.KOORDINATOR)).toBe(true);
   });
@@ -16,6 +15,12 @@ describe("canViewOrgLive (RLS-Regel: wer sieht die ganze Organisation)", () => {
   it("verweigert Fachkraft und HR", () => {
     expect(canViewOrgLive(UserRole.FACHKRAFT)).toBe(false);
     expect(canViewOrgLive(UserRole.HR)).toBe(false);
+  });
+
+  it("verweigert dem Super-Admin die Standortdaten", () => {
+    // Er betreibt die Plattform. Wo eine Fachkraft sich gerade aufhält, ist
+    // ein personenbezogenes Datum ihres Arbeitgebers – nicht seines.
+    expect(canViewOrgLive(UserRole.SUPER_ADMIN)).toBe(false);
   });
 });
 

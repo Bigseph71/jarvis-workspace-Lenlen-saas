@@ -236,11 +236,34 @@ intégrations sans refactoring.** Concrètement :
 
 | Rôle | Périmètre |
 |---|---|
-| Super-Admin | Tous les tenants, billing, audit-logs |
+| Super-Admin | Exploitation de la plateforme : organisations, facturation, audit-logs. **Aucune donnée d'un tenant** |
 | Struktur-Admin | Son organisation complète |
 | Koordinator | Planung, Zuweisung, Echtzeit-Tracking, KI-Vorschläge genehmigen |
 | HR | Vertragsmodul, Auslastungsberichte (pas de données patients) |
 | Fachkraft | App mobile uniquement : sa route du jour, pointage GPS, chat |
+
+### Le Super-Admin ne voit aucune donnée d'un tenant
+
+Règle structurante, à respecter pour toute route ajoutée. `SUPER_ADMIN`
+n'apparaît dans **aucun** `requireRole` d'un module tenant : patients, visites,
+fachkräfte, HR, geocodage, clustering, VRPTW, tracking, chat, comptes,
+export/effacement des personnes concernées. Ces endpoints lui répondent 403.
+
+Ce qui lui reste : `/admin/*` (son bureau), la facturation et les véhicules
+(exploitation, sans donnée personnelle), et `/auth/me` (son propre compte).
+
+**Pourquoi** : minimisation des données. Celui qui exploite le logiciel n'a
+besoin ni des noms de patients, ni des adresses, ni des positions GPS des
+soignantes pour faire son travail — il gère des abonnements et des
+organisations. C'est aussi ce qui se défend devant un Pflegedienst qui demande
+qui, chez l'éditeur, peut voir ses dossiers : personne.
+
+**Conséquence à assumer** : il n'y a pas d'accès de dépannage. Pour regarder
+dans les données d'un client, il faut un compte de ce client, créé par lui.
+
+Côté interface, la navigation du Super-Admin ne contient que « Plattform », et
+`SuperAdminScope` le ramène sur `/admin` s'il ouvre une adresse tenant
+(signet, lien). Ce n'est que du confort : la barrière est le 403 du backend.
 
 ---
 

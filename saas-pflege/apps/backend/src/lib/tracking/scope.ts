@@ -8,13 +8,14 @@ import { UserRole } from "@len-len/database";
  *   - HR: keine Standortdaten (kein Patient-/Einsatzbezug).
  */
 
-/** Darf organisationsweite Live-Positionen sehen (GET /tracking/live, WS)? */
+/**
+ * Darf organisationsweite Live-Positionen sehen (GET /tracking/live, WS)?
+ *
+ * Ohne SUPER_ADMIN: Standortdaten von Fachkräften sind personenbezogen, und der
+ * Plattformbetrieb hat in den Daten eines Tenants nichts zu suchen.
+ */
 export function canViewOrgLive(role: UserRole): boolean {
-  return (
-    role === UserRole.SUPER_ADMIN ||
-    role === UserRole.STRUKTUR_ADMIN ||
-    role === UserRole.KOORDINATOR
-  );
+  return role === UserRole.STRUKTUR_ADMIN || role === UserRole.KOORDINATOR;
 }
 
 export interface PositionScope {

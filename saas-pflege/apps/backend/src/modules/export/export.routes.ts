@@ -11,11 +11,11 @@ const idParamSchema = z.object({ id: z.string().uuid() });
 
 // Patientenauskunft: dieselbe Abgrenzung wie die Patientenverwaltung. HR ist
 // laut RBAC von Patientendaten ausgeschlossen, auch auf diesem Weg.
-const canExportPatient = requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN);
+const canExportPatient = requireRole(UserRole.STRUKTUR_ADMIN);
 
 // Beschäftigtenauskunft: Admin-Ebene und HR – deren Modul verwaltet Verträge,
 // Zeiten und Abwesenheiten, also genau diesen Datenbestand.
-const canExportCaregiver = requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN, UserRole.HR);
+const canExportCaregiver = requireRole(UserRole.STRUKTUR_ADMIN, UserRole.HR);
 
 function ctxFrom(req: FastifyRequest): TenantContext {
   return { organizationId: req.user!.organizationId, userId: req.user!.userId };
@@ -59,7 +59,7 @@ export async function exportRoutes(app: FastifyInstance): Promise<void> {
   // und beruehrt die Pflegedokumentation.
   app.delete(
     "/erasure/caregivers/:id",
-    { preHandler: [requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN)] },
+    { preHandler: [requireRole(UserRole.STRUKTUR_ADMIN)] },
     async (request) => {
       const { id } = idParamSchema.parse(request.params);
       return anonymizeCaregiver(ctxFrom(request), id);
@@ -71,7 +71,7 @@ export async function exportRoutes(app: FastifyInstance): Promise<void> {
   // Stufe 2 moeglich ist. Der Aufrufer muss die Fristen nicht kennen.
   app.delete(
     "/erasure/patients/:id",
-    { preHandler: [requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN)] },
+    { preHandler: [requireRole(UserRole.STRUKTUR_ADMIN)] },
     async (request) => {
       const { id } = idParamSchema.parse(request.params);
       return erasePatient(ctxFrom(request), id);

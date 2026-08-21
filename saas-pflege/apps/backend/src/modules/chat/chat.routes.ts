@@ -8,7 +8,6 @@ import { listMessages, sendMessage, unreadCount, unreadByCaregiver } from "./cha
 
 // Chat: Fachkraft + Planungsebene (HR hat keinen Zugriff).
 const canChat = requireRole(
-  UserRole.SUPER_ADMIN,
   UserRole.STRUKTUR_ADMIN,
   UserRole.KOORDINATOR,
   UserRole.FACHKRAFT,

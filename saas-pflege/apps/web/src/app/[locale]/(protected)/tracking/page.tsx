@@ -127,7 +127,7 @@ export default function PlanungPage() {
   };
 
   // Zugriffsschutz zusätzlich zur Nav-Filterung (Backend erzwingt es ohnehin).
-  if (user && !["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"].includes(user.role)) {
+  if (user && !["STRUKTUR_ADMIN", "KOORDINATOR"].includes(user.role)) {
     return null;
   }
 

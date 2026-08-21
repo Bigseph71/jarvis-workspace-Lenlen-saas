@@ -20,7 +20,7 @@ import {
 const idParamSchema = z.object({ id: z.string().uuid() });
 
 // HR hat laut RBAC KEINEN Zugriff auf Patientendaten; Fachkraft nur Mobile-App.
-const canManage = requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN, UserRole.KOORDINATOR);
+const canManage = requireRole(UserRole.STRUKTUR_ADMIN, UserRole.KOORDINATOR);
 
 function ctxFrom(req: { user?: { userId: string; organizationId: string } }): TenantContext {
   return { organizationId: req.user!.organizationId, userId: req.user!.userId };
