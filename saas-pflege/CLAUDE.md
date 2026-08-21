@@ -244,6 +244,88 @@ intégrations sans refactoring.** Concrètement :
 
 ---
 
+## Panel Super-Admin
+
+Exploitation de la plateforme, **au-dessus** des tenants. Backend sous
+`/admin/*`, frontend sous `/[locale]/admin`.
+
+### Ce qui distingue ce module de tous les autres
+
+Partout ailleurs, deux barrières se superposent : le contrôle de rôle, et la
+RLS qui filtre par `organization_id`. Une erreur de rôle y est rattrapée par la
+base. **Ici, la seconde barrière n'existe pas** : les requêtes passent par le
+chemin système (`prisma` direct, rôle propriétaire), sans filtre tenant, parce
+que voir toutes les organisations est précisément la fonction du module.
+
+Conséquences, à respecter pour toute évolution :
+
+- Garde dédié `requireSuperAdmin` (`plugins/require-super-admin.ts`), **et non**
+  `requireRole(SUPER_ADMIN)`. Il vérifie lui-même signature, liste de
+  révocation, mot de passe forcé et rôle, sans dépendre d'un hook enregistré
+  ailleurs dont l'ordre pourrait changer.
+- Le garde est posé en `addHook` sur l'ensemble du plugin : une route ajoutée
+  sous `/admin` est protégée sans que personne ait à y penser.
+- `STRUKTUR_ADMIN` n'a **aucun** accès. Il est tout-puissant dans son
+  organisation, ce qui en fait le rôle le plus dangereux à laisser entrer ici.
+- Toute écriture est tracée dans l'audit log **de l'organisation visée**, avec
+  `metadata.bySuperAdmin = true` et l'`userId` de l'opérateur — qui appartient
+  à une autre organisation, ce qui rend l'intervention externe identifiable en
+  relisant l'historique d'un client.
+
+### Endpoints
+
+| Méthode | Route | Effet |
+|---|---|---|
+| GET | `/admin/dashboard` | orgs par statut, MRR Stripe, nouveaux tenants 7/30 j, alertes |
+| GET | `/admin/organizations` | liste paginée, filtres statut/plan/recherche |
+| GET | `/admin/organizations/:id` | fiche + 5 dernières factures + 50 derniers audit logs |
+| PATCH | `/admin/organizations/:id` | plan, prolongation d'essai, suspension, réactivation |
+| DELETE | `/admin/organizations/:id` | suppression douce, motif obligatoire (≥ 10 caractères) |
+| GET | `/admin/audit-logs` | audit log global filtrable |
+| GET | `/admin/audit-logs/export` | même filtre en CSV |
+
+### Règles
+
+1. **Suppression douce uniquement.** `deleted_at`, `deletion_reason`,
+   `deleted_by_user_id`. Un vrai `DELETE` emporterait par cascade patients,
+   visites et facturation d'un client entier, contre les obligations de
+   conservation (§ 630f BGB). La suppression passe le statut à `CANCELED`, ce
+   qui fait refuser toute écriture par la vérification de plan (402).
+
+   **Lacune connue : la connexion n'est pas encore coupée.** Le filtre
+   correspondant dans `auth.service` (`organization: { deletedAt: null }`) a
+   mis la production à terre — porté par le login, un défaut de migration
+   empêchait *toute* connexion au produit, web et mobile compris. Il sera
+   rétabli dans une modification séparée, une fois les colonnes vérifiées sur
+   la base réellement servie. D'ici là, un compte d'organisation supprimée peut
+   encore se connecter et lire.
+
+   La leçon vaut au-delà de ce cas : **ne jamais faire dépendre le chemin
+   d'authentification d'une colonne fraîchement ajoutée.** Une fonctionnalité
+   qui ne charge pas est un incident local ; un login cassé est une panne
+   totale.
+2. **`plan_limits` n'est jamais réécrit** lors d'un changement de plan. La
+   colonne porte des dérogations négociées par ressource, que
+   `resolvePlanLimits` superpose au défaut du plan ; l'écraser supprimerait un
+   accord commercial en silence.
+3. **`ACTIVE` et `PAST_DUE` ne se posent pas à la main.** Ces états
+   appartiennent à Stripe ; les forcer découplerait l'affichage du paiement
+   réel. Seuls `SUSPENDED` et `TRIAL` sont attribuables, plus une réactivation
+   explicite (qui remet `past_due_since` à null, sinon le worker resuspend).
+4. **MRR : Stripe est la source.** La base connaît le plan, pas le prix, et
+   ignore remises et tarifs négociés. Si Stripe est injoignable, le panel
+   affiche « indisponible » et **jamais 0 €** : la distinction décide si
+   quelqu'un doit aller voir.
+5. **Export CSV : neutraliser les formules.** Les cellules commençant par
+   `=`, `+`, `-` ou `@` sont préfixées d'une apostrophe. L'audit log contient
+   du texte saisi par des utilisateurs, et un fichier venant du panel n'éveille
+   aucune méfiance à l'ouverture dans un tableur.
+6. **L'export passe par l'API authentifiée**, pas par un lien de
+   téléchargement : un `<a href>` ne porte pas d'en-tête, le jeton finirait
+   dans l'URL et donc dans les journaux d'accès.
+
+---
+
 ## Abonnements (Stripe)
 
 | Plan | Patients | Fachkräfte | Fahrzeuge | KI |
