@@ -9,10 +9,14 @@ import type { UserRole } from "@len-len/api-client";
  * "Etwas ist schiefgelaufen": ein Vorgang, den kein Wiederholen retten kann.
  *
  * Wer einen Wächter im Backend ändert, pflegt hier mit.
+ *
+ * SUPER_ADMIN kommt in KEINER dieser Listen vor: er sieht keine Daten eines
+ * Tenants (Datenminimierung, siehe plugins/rbac.ts). Seine einzige Fähigkeit
+ * steht unten in canAccessAdminPanel.
  */
 
-const PLANNING: readonly UserRole[] = ["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"];
-const ADMIN: readonly UserRole[] = ["SUPER_ADMIN", "STRUKTUR_ADMIN"];
+const PLANNING: readonly UserRole[] = ["STRUKTUR_ADMIN", "KOORDINATOR"];
+const ADMIN: readonly UserRole[] = ["STRUKTUR_ADMIN"];
 
 function has(role: UserRole | undefined, allowed: readonly UserRole[]): boolean {
   return role !== undefined && allowed.includes(role);

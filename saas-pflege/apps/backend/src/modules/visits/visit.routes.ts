@@ -35,7 +35,6 @@ const idParamSchema = z.object({ id: z.string().uuid() });
 const canPlan = requireRole(...PLANNING_ROLES);
 // Pointage: zusätzlich die Fachkraft selbst.
 const canTrack = requireRole(
-  UserRole.SUPER_ADMIN,
   UserRole.STRUKTUR_ADMIN,
   UserRole.KOORDINATOR,
   UserRole.FACHKRAFT,

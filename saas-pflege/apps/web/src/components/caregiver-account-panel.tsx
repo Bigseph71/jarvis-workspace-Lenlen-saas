@@ -12,7 +12,7 @@ import { FachkraftAccessData } from "./fachkraft-access-data";
 
 // Spiegelt die Rollen, die das Backend auf /users/* zulässt – damit kein
 // Button erscheint, der beim Klick zwangsläufig 403 liefert.
-const ACCOUNT_MANAGER_ROLES: readonly UserRole[] = ["SUPER_ADMIN", "STRUKTUR_ADMIN", "HR"];
+const ACCOUNT_MANAGER_ROLES: readonly UserRole[] = ["STRUKTUR_ADMIN", "HR"];
 
 // Bewusst permissiv: die verbindliche Prüfung macht Zod im Backend.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

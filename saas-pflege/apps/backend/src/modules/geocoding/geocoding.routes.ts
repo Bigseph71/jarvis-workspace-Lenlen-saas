@@ -11,8 +11,8 @@ const processQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 
-const canManage = requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN, UserRole.KOORDINATOR);
-const canAdmin = requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN);
+const canManage = requireRole(UserRole.STRUKTUR_ADMIN, UserRole.KOORDINATOR);
+const canAdmin = requireRole(UserRole.STRUKTUR_ADMIN);
 
 function ctxFrom(req: FastifyRequest): TenantContext {
   return { organizationId: req.user!.organizationId, userId: req.user!.userId };

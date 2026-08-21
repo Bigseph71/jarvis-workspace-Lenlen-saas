@@ -23,8 +23,7 @@ function tokenFor(role: UserRole, extra: { chpw?: boolean } = {}): string {
 }
 
 describe("canPlan", () => {
-  it("erlaubt Koordination und Admin-Ebene", () => {
-    expect(canPlan(UserRole.SUPER_ADMIN)).toBe(true);
+  it("erlaubt Koordination und Struktur-Admin", () => {
     expect(canPlan(UserRole.STRUKTUR_ADMIN)).toBe(true);
     expect(canPlan(UserRole.KOORDINATOR)).toBe(true);
   });
@@ -34,6 +33,13 @@ describe("canPlan", () => {
     // eigene Tagesroute. Beide dürfen die Planung nicht mitlesen.
     expect(canPlan(UserRole.FACHKRAFT)).toBe(false);
     expect(canPlan(UserRole.HR)).toBe(false);
+  });
+
+  it("schliesst den Super-Admin aus", () => {
+    // Planung heisst Namen, Adressen und Besuche von Patienten. Der
+    // Plattformbetrieb braucht sie nicht und bekommt sie deshalb nicht – auch
+    // nicht über den WebSocket-Stream, der dieselbe Liste benutzt.
+    expect(canPlan(UserRole.SUPER_ADMIN)).toBe(false);
   });
 
   it("deckt jede Rolle des Modells ab", () => {

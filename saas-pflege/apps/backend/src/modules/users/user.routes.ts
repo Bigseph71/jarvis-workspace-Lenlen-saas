@@ -9,7 +9,6 @@ import { createFachkraftUser, resetFachkraftPassword } from "./user.service.js";
 // Kontenverwaltung ist Admin-/HR-Sache – identisch zum Schreibrecht auf
 // Fachkräfte, damit der Anlage-Flow (Fachkraft + Konto) in einer Rolle bleibt.
 const canManageAccounts = requireRole(
-  UserRole.SUPER_ADMIN,
   UserRole.STRUKTUR_ADMIN,
   UserRole.HR,
 );

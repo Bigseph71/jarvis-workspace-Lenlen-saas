@@ -20,7 +20,7 @@ interface NavItem {
 }
 
 /** Rollen des jeweiligen Backend-Wächters, als benannte Konstanten. */
-const PLANNING: readonly UserRole[] = ["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"];
+const PLANNING: readonly UserRole[] = ["STRUKTUR_ADMIN", "KOORDINATOR"];
 const PLANNING_AND_HR: readonly UserRole[] = [...PLANNING, "HR"];
 
 /**
@@ -57,13 +57,13 @@ const SECONDARY_ITEMS: NavItem[] = [
   { href: "/clustering", key: "clustering", roles: PLANNING },
   { href: "/tracking", key: "tracking", roles: PLANNING },
   { href: "/chat", key: "chat", roles: PLANNING },
-  { href: "/leasing", key: "leasing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
-  { href: "/billing", key: "billing", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
+  { href: "/leasing", key: "leasing", roles: ["STRUKTUR_ADMIN"] },
+  { href: "/billing", key: "billing", roles: ["STRUKTUR_ADMIN"] },
   // Betroffenenrechte. Die Auskunft steht laut export.routes.ts auch HR offen,
   // die Löschung NICHT: sie ist nicht umkehrbar und berührt die
   // Pflegedokumentation, deshalb nur die Admin-Ebene.
-  { href: "/dsgvo/export", key: "dsgvoExport", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "HR"] },
-  { href: "/dsgvo/erasure", key: "dsgvoErasure", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
+  { href: "/dsgvo/export", key: "dsgvoExport", roles: ["STRUKTUR_ADMIN", "HR"] },
+  { href: "/dsgvo/erasure", key: "dsgvoErasure", roles: ["STRUKTUR_ADMIN"] },
 ];
 
 /** Plattform-Verwaltung. Einziger Punkt des Super-Admins (siehe navigationFor). */
@@ -76,17 +76,14 @@ function visibleFor(items: NavItem[], role: UserRole | undefined): NavItem[] {
 /**
  * Navigation je Rolle.
  *
- * Der Super-Admin bekommt AUSSCHLIESSLICH die Plattform-Verwaltung, obwohl die
- * Backend-Wächter ihm die Tenant-Module offenstehen lassen (requireRole führt
- * SUPER_ADMIN bei Patienten, Fachkräften und Planung ausdrücklich auf). Das ist
- * eine Entscheidung der Oberfläche, keine Rechteänderung: wer die Plattform
- * betreibt, soll nicht beiläufig in den Daten eines Kunden landen. Über die URL
- * käme er weiterhin hinein – und zwar in seine EIGENE Organisation, denn ein
- * Konto ohne organization_id gibt es im Datenmodell nicht.
+ * Der Super-Admin bekommt AUSSCHLIESSLICH die Plattform-Verwaltung – und das
+ * deckt sich seit dieser Änderung mit dem Backend: SUPER_ADMIN steht in keinem
+ * Wächter eines Tenant-Moduls mehr, diese Endpunkte antworten ihm mit 403
+ * (Datenminimierung, begründet in plugins/rbac.ts).
  *
- * Wer das zu einer echten Sperre machen will, nimmt SUPER_ADMIN aus den
- * Wächtern des Backends; das ist ein eigener Eingriff mit Folgen für Tests und
- * Notfallzugriff.
+ * Die Liste bietet also nichts an, was ohnehin abgewiesen würde. Eine
+ * Tenant-Adresse, die von aussen kommt (Lesezeichen, Link in einer E-Mail),
+ * fängt SuperAdminScope ab und führt nach /admin.
  */
 function navigationFor(role: UserRole | undefined): { primary: NavItem[]; secondary: NavItem[] } {
   if (role === "SUPER_ADMIN") {

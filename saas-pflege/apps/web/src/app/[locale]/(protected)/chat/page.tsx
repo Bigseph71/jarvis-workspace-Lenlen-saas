@@ -25,7 +25,7 @@ import { useAuth } from "@/lib/auth/auth-context";
  */
 
 // Rollen, die das Backend auf /chat zulässt (ohne FACHKRAFT: die nutzt die App).
-const PLANNER_ROLES: readonly UserRole[] = ["SUPER_ADMIN", "STRUKTUR_ADMIN", "KOORDINATOR"];
+const PLANNER_ROLES: readonly UserRole[] = ["STRUKTUR_ADMIN", "KOORDINATOR"];
 
 const POLL_INTERVAL_MS = 30_000;
 const CAREGIVER_PAGE_SIZE = 100;

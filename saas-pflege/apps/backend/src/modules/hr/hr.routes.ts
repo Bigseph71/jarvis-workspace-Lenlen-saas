@@ -45,13 +45,12 @@ const idParamSchema = z.object({ id: z.string().uuid() });
 
 // Lesen: Admin, HR und Koordinator (die Planung braucht Verfügbarkeiten).
 const canRead = requireRole(
-  UserRole.SUPER_ADMIN,
   UserRole.STRUKTUR_ADMIN,
   UserRole.HR,
   UserRole.KOORDINATOR,
 );
 // Schreiben: Vertragsmodul = Admin + HR.
-const canWrite = requireRole(UserRole.SUPER_ADMIN, UserRole.STRUKTUR_ADMIN, UserRole.HR);
+const canWrite = requireRole(UserRole.STRUKTUR_ADMIN, UserRole.HR);
 
 function ctxFrom(req: { user?: { userId: string; organizationId: string } }): TenantContext {
   return { organizationId: req.user!.organizationId, userId: req.user!.userId };
