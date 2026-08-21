@@ -50,6 +50,8 @@ export default function AdminOrganizationDetailPage() {
   const [trialUntil, setTrialUntil] = useState(inDays(14));
   const [reason, setReason] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  /** Suppression faite, mais l'abonnement n'a pas pu être résilié. */
+  const [billingWarning, setBillingWarning] = useState<string | null>(null);
 
   const load = useCallback(() => {
     let active = true;
@@ -113,6 +115,20 @@ export default function AdminOrganizationDetailPage() {
             {t("deletedOn", { date: formatDateTime(org.deletedAt!, locale) })}
           </p>
           <p className="mt-1 text-sm text-gray-700">{org.deletionReason}</p>
+        </div>
+      ) : null}
+
+      {/* L'organisation est supprimée mais l'abonnement court toujours : le
+          client continue d'être prélevé tant que personne n'intervient. */}
+      {billingWarning ? (
+        <div
+          data-testid="billing-warning"
+          role="alert"
+          className="rounded-lg border border-red-300 bg-red-50 p-4"
+        >
+          <p className="text-sm font-medium text-red-900">{t("billing.cancelFailedTitle")}</p>
+          <p className="mt-1 text-sm text-red-800">{t("billing.cancelFailedBody")}</p>
+          <p className="mt-2 font-mono text-xs text-red-700">{billingWarning}</p>
         </div>
       ) : null}
 
@@ -255,7 +271,14 @@ export default function AdminOrganizationDetailPage() {
                   disabled={busy}
                   onClick={() =>
                     void run(async () => {
-                      await adminDeleteOrganization(id, reason.trim());
+                      const result = await adminDeleteOrganization(id, reason.trim());
+                      if (result.subscription.error) {
+                        // L'organisation EST supprimée, mais l'abonnement court
+                        // encore : rester sur la fiche pour que l'avertissement
+                        // soit lu. Rediriger l'enterrerait.
+                        setBillingWarning(result.subscription.error);
+                        return;
+                      }
                       router.replace("/admin/organizations");
                     }, "actions.deleteDone")
                   }

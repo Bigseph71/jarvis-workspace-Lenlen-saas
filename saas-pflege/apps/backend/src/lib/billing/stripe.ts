@@ -7,6 +7,7 @@ import type {
   CheckoutParams,
   CheckoutSession,
   PlanChangeParams,
+  CancellationResult,
   PortalParams,
   RecurringRevenue,
   SubscriptionState,
@@ -179,6 +180,42 @@ export class StripeBillingProvider implements BillingProvider {
     if (!signature) throw new Error("Fehlende Stripe-Signatur");
     const event = this.stripe.webhooks.constructEvent(payload, signature, this.webhookSecret);
     return event as unknown as BillingEvent;
+  }
+
+  /**
+   * Beendet ein Abo sofort.
+   *
+   * `subscriptions.cancel` IST die sofortige Kündigung – das Abo endet mit dem
+   * Aufruf. Das Gegenstück, das Abo bis zum Periodenende weiterlaufen zu
+   * lassen, wäre `subscriptions.update({ cancel_at_period_end: true })`; dieser
+   * Parameter existiert an `cancel` nicht.
+   *
+   * `prorate` bleibt beim Standard false: kein Gutschrift-Posten für die
+   * angebrochene Periode. Wer eine Organisation im Panel löscht, beendet ein
+   * Kundenverhältnis – eine automatische Rückerstattung wäre eine
+   * kaufmännische Entscheidung, die nicht in einem Löschknopf versteckt
+   * gehören.
+   *
+   * Ein bereits beendetes oder unbekanntes Abo ist KEIN Fehler: die zweite
+   * Löschung desselben Tenants soll durchgehen.
+   */
+  async cancelSubscription(subscriptionId: string, reason?: string): Promise<CancellationResult> {
+    try {
+      await this.stripe.subscriptions.cancel(subscriptionId, {
+        ...(reason ? { cancellation_details: { comment: reason.slice(0, 500) } } : {}),
+      });
+      return { canceled: true, alreadyGone: false };
+    } catch (err) {
+      if (
+        err instanceof Stripe.errors.StripeInvalidRequestError &&
+        (err.code === "resource_missing" ||
+          // Stripe lehnt die Kündigung eines bereits beendeten Abos ab.
+          err.message.includes("canceled"))
+      ) {
+        return { canceled: true, alreadyGone: true };
+      }
+      throw err;
+    }
   }
 
   /**

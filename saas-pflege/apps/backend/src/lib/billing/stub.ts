@@ -4,6 +4,7 @@ import type {
   CheckoutParams,
   CheckoutSession,
   PlanChangeParams,
+  CancellationResult,
   PortalParams,
   RecurringRevenue,
   SubscriptionState,
@@ -44,5 +45,12 @@ export class StubBillingProvider implements BillingProvider {
   // den niemand zuordnen kann.
   async getRecurringRevenue(_eligible: ReadonlySet<string>): Promise<RecurringRevenue> {
     return { amountCents: 0, currency: "eur", subscriptions: 0, truncated: false };
+  }
+
+  // Ohne Stripe gibt es kein Abo zu kündigen. `alreadyGone` sagt genau das –
+  // und nicht "gekündigt", was in Dev/Test eine Handlung vortäuschen würde,
+  // die nirgends stattgefunden hat.
+  async cancelSubscription(_subscriptionId: string): Promise<CancellationResult> {
+    return { canceled: false, alreadyGone: true };
   }
 }

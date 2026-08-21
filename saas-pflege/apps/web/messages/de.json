@@ -843,6 +843,10 @@
         "title": "Letzte Audit-Einträge",
         "empty": "Keine Einträge.",
         "all": "Alle anzeigen"
+      },
+      "billing": {
+        "cancelFailedTitle": "Organisation gelöscht – Abo NICHT gekündigt",
+        "cancelFailedBody": "Die Löschung ist vollzogen, die Kündigung beim Zahlungsanbieter ist fehlgeschlagen. Der Kunde wird weiter abgebucht, bis das Abo dort von Hand beendet wird."
       }
     },
     "audit": {

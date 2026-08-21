@@ -315,6 +315,15 @@ Conséquences, à respecter pour toute évolution :
    conservation (§ 630f BGB). La suppression passe le statut à `CANCELED`, ce
    qui fait refuser toute écriture par la vérification de plan (402).
 
+   **Elle résilie aussi l'abonnement chez Stripe, immédiatement.** Sans cela le
+   client disparaissait des listes et continuait d'être prélevé — d'autant plus
+   discrètement que le revenu mensuel exclut désormais les organisations
+   supprimées. L'ordre est délibéré : base d'abord, Stripe ensuite. Si Stripe
+   échoue, l'organisation est supprimée et encore facturée, ce que la réponse
+   de l'API, l'audit log et un bandeau rouge dans la fiche disent explicitement.
+   L'ordre inverse produirait la panne silencieuse : abonnement résilié,
+   organisation toujours active, personne au courant.
+
    La connexion est également refusée (`auth.service: organizationIsDeleted`),
    sans quoi la suppression ne serait qu'un changement d'affichage.
 

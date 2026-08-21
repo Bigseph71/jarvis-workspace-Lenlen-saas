@@ -843,6 +843,10 @@
         "title": "Latest audit entries",
         "empty": "No entries.",
         "all": "Show all"
+      },
+      "billing": {
+        "cancelFailedTitle": "Organization deleted — subscription NOT cancelled",
+        "cancelFailedBody": "The deletion went through, but cancelling with the payment provider failed. The customer keeps being charged until the subscription is ended there by hand."
       }
     },
     "audit": {

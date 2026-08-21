@@ -843,6 +843,10 @@
         "title": "Derniers événements d’audit",
         "empty": "Aucun événement.",
         "all": "Tout afficher"
+      },
+      "billing": {
+        "cancelFailedTitle": "Organisation supprimée — abonnement NON résilié",
+        "cancelFailedBody": "La suppression a bien eu lieu, mais la résiliation chez le prestataire de paiement a échoué. Le client continue d’être prélevé tant que l’abonnement n’y est pas arrêté à la main."
       }
     },
     "audit": {

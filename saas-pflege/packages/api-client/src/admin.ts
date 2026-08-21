@@ -145,12 +145,34 @@ export async function adminUpdateOrganization(
   });
 }
 
-/** Weiche Löschung. Die Begründung ist Pflicht (mindestens 10 Zeichen). */
+/** Was aus dem Abo des Tenants bei der Löschung geworden ist. */
+export interface SubscriptionCancellation {
+  /** Lag überhaupt ein Abo vor? */
+  attempted: boolean;
+  /** Beim Anbieter beendet (oder war es schon)? */
+  canceled: boolean;
+  /**
+   * Gesetzt, wenn die Kündigung fehlschlug. Die Organisation IST dann gelöscht,
+   * aber die Abbuchung läuft weiter – das muss die Oberfläche zeigen, sonst
+   * bleibt es in einem Log stehen, das niemand liest.
+   */
+  error?: string;
+}
+
+export interface AdminDeletedOrganization extends AdminOrganizationRow {
+  subscription: SubscriptionCancellation;
+}
+
+/**
+ * Weiche Löschung. Die Begründung ist Pflicht (mindestens 10 Zeichen).
+ * Beendet zugleich das Abo beim Zahlungsanbieter – das Ergebnis steht in
+ * `subscription`.
+ */
 export async function adminDeleteOrganization(
   id: string,
   reason: string,
-): Promise<AdminOrganizationRow> {
-  return apiFetch<AdminOrganizationRow>(`/admin/organizations/${id}`, {
+): Promise<AdminDeletedOrganization> {
+  return apiFetch<AdminDeletedOrganization>(`/admin/organizations/${id}`, {
     method: "DELETE",
     body: { reason },
   });
