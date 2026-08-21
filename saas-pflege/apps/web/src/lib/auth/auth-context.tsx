@@ -24,7 +24,12 @@ type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 interface AuthContextValue {
   user: AuthUser | null;
   status: AuthStatus;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  /**
+   * Liefert das angemeldete Konto zurück (wie in der Mobile-App). Der Aufrufer
+   * braucht die Rolle SOFORT, um das Ziel der Weiterleitung zu wählen; der
+   * `user`-State steht in derselben Funktion noch nicht zur Verfügung.
+   */
+  login: (credentials: LoginCredentials) => Promise<AuthUser>;
   /** Selbstregistrierung: legt Organisation + ersten Admin an und meldet an. */
   register: (input: RegisterOrganizationInput) => Promise<void>;
   logout: () => Promise<void>;
@@ -60,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (credentials: LoginCredentials) => {
+  const login = useCallback(async (credentials: LoginCredentials): Promise<AuthUser> => {
     const loggedIn = await apiLogin(credentials);
     if (loggedIn.role === "FACHKRAFT") {
       await apiLogout();
@@ -68,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setUser(loggedIn);
     setStatus("authenticated");
+    return loggedIn;
   }, []);
 
   // Der Registrierung folgt KEIN zweiter Login: das Backend gibt bereits ein

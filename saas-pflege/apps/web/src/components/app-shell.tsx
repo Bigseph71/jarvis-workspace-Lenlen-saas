@@ -64,15 +64,35 @@ const SECONDARY_ITEMS: NavItem[] = [
   // Pflegedokumentation, deshalb nur die Admin-Ebene.
   { href: "/dsgvo/export", key: "dsgvoExport", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN", "HR"] },
   { href: "/dsgvo/erasure", key: "dsgvoErasure", roles: ["SUPER_ADMIN", "STRUKTUR_ADMIN"] },
-  // Plattform-Verwaltung: NUR der Super-Admin, bewusst nicht zusammen mit
-  // STRUKTUR_ADMIN wie die Einträge darüber. Der Struktur-Admin ist in seiner
-  // Organisation allmächtig; dieser Bereich geht über alle Organisationen
-  // hinweg (Backend: requireSuperAdmin).
-  { href: "/admin", key: "admin", roles: ["SUPER_ADMIN"] },
 ];
+
+/** Plattform-Verwaltung. Einziger Punkt des Super-Admins (siehe navigationFor). */
+const ADMIN_ITEM: NavItem = { href: "/admin", key: "admin", roles: ["SUPER_ADMIN"] };
 
 function visibleFor(items: NavItem[], role: UserRole | undefined): NavItem[] {
   return items.filter((item) => !item.roles || (role != null && item.roles.includes(role)));
+}
+
+/**
+ * Navigation je Rolle.
+ *
+ * Der Super-Admin bekommt AUSSCHLIESSLICH die Plattform-Verwaltung, obwohl die
+ * Backend-Wächter ihm die Tenant-Module offenstehen lassen (requireRole führt
+ * SUPER_ADMIN bei Patienten, Fachkräften und Planung ausdrücklich auf). Das ist
+ * eine Entscheidung der Oberfläche, keine Rechteänderung: wer die Plattform
+ * betreibt, soll nicht beiläufig in den Daten eines Kunden landen. Über die URL
+ * käme er weiterhin hinein – und zwar in seine EIGENE Organisation, denn ein
+ * Konto ohne organization_id gibt es im Datenmodell nicht.
+ *
+ * Wer das zu einer echten Sperre machen will, nimmt SUPER_ADMIN aus den
+ * Wächtern des Backends; das ist ein eigener Eingriff mit Folgen für Tests und
+ * Notfallzugriff.
+ */
+function navigationFor(role: UserRole | undefined): { primary: NavItem[]; secondary: NavItem[] } {
+  if (role === "SUPER_ADMIN") {
+    return { primary: [ADMIN_ITEM], secondary: [] };
+  }
+  return { primary: visibleFor(PRIMARY_ITEMS, role), secondary: visibleFor(SECONDARY_ITEMS, role) };
 }
 
 const linkClass = (active: boolean): string =>
@@ -167,8 +187,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
 
-  const primary = visibleFor(PRIMARY_ITEMS, user?.role);
-  const secondary = visibleFor(SECONDARY_ITEMS, user?.role);
+  const { primary, secondary } = navigationFor(user?.role);
 
   return (
     <div className="min-h-screen bg-gray-50">
