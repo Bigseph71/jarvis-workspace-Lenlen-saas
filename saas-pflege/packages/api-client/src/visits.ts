@@ -123,6 +123,10 @@ export interface MyVisit {
   emergencyReason: string | null;
   gpsArrivalAt: string | null;
   gpsDepartureAt: string | null;
+  /** Bereits geschriebene Notiz, null solange keine vorliegt. */
+  visitNote: string | null;
+  hasIncident: boolean;
+  visitNoteWrittenAt: string | null;
   patient: MyDayPatient;
 }
 
@@ -154,4 +158,59 @@ export async function checkInVisit(id: string, pointage?: PointagePayload): Prom
 /** Pointage Abfahrt (IN_PROGRESS -> COMPLETED). */
 export async function checkOutVisit(id: string, pointage?: PointagePayload): Promise<Visit> {
   return apiFetch<Visit>(`/visits/${id}/check-out`, { method: "POST", body: pointage });
+}
+
+// ── Besuchsnotizen ─────────────────────────────────────────────────────────
+
+export interface VisitNoteInput {
+  note: string;
+  /** „Besonderes aufgefallen“. Ist sie gesetzt, ist der Text Pflicht. */
+  hasIncident: boolean;
+}
+
+export interface VisitNote {
+  id: string;
+  visitNote: string | null;
+  hasIncident: boolean;
+  visitNoteWrittenAt: string | null;
+}
+
+/**
+ * Notiz zu einem Besuch schreiben oder ändern (nur die Fachkraft, die ihn
+ * gefahren hat).
+ *
+ * Das Backend weist ab, wenn der Besuch noch nicht begonnen wurde (409), die
+ * Notiz bei gemeldetem Vorfall fehlt (422) oder die Zwei-Stunden-Frist für eine
+ * Änderung abgelaufen ist (409).
+ */
+export async function writeVisitNote(visitId: string, input: VisitNoteInput): Promise<VisitNote> {
+  return apiFetch<VisitNote>(`/visits/${visitId}/note`, { method: "PUT", body: input });
+}
+
+/** Ein Besuch mit Notiz im Verlauf eines Patienten (Web). */
+export interface PatientVisitNote {
+  id: string;
+  scheduledAt: string;
+  status: VisitStatus;
+  isEmergency: boolean;
+  visitNote: string | null;
+  hasIncident: boolean;
+  visitNoteWrittenAt: string | null;
+  gpsArrivalAt: string | null;
+  gpsDepartureAt: string | null;
+  caregiver: PersonRef | null;
+}
+
+/** Verlauf eines Patienten: seine Besuche mit Notiz, neueste zuerst. */
+export async function patientVisitNotes(
+  patientId: string,
+  params: { page?: number; pageSize?: number } = {},
+): Promise<Paginated<PatientVisitNote>> {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  if (params.pageSize) query.set("pageSize", String(params.pageSize));
+  const qs = query.toString();
+  return apiFetch<Paginated<PatientVisitNote>>(
+    `/patients/${patientId}/visit-notes${qs ? `?${qs}` : ""}`,
+  );
 }

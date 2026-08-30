@@ -144,6 +144,24 @@
       "visitsEmpty": "Noch keine Besuche erfasst.",
       "visitsError": "Die Besuche konnten nicht geladen werden.",
       "emergency": "Notfall",
+      "tabs": {
+        "overview": "Übersicht",
+        "notes": "Verlauf"
+      },
+      "notes": {
+        "loading": "Verlauf wird geladen …",
+        "error": "Der Verlauf konnte nicht geladen werden.",
+        "empty": "Zu diesem Patienten wurde noch keine Besuchsnotiz geschrieben.",
+        "count": "{count} Notizen",
+        "incident": "Vorfall",
+        "emergency": "Notfall",
+        "byCaregiver": "Geleistet von {name}",
+        "noCaregiver": "Fachkraft nicht mehr zugeordnet",
+        "writtenAt": "notiert am {date}",
+        "previous": "Zurück",
+        "next": "Weiter",
+        "pageOf": "Seite {page} von {totalPages}"
+      },
       "dsgvo": {
         "restrictedTitle": "Löschverlangen – Datensatz gesperrt",
         "restrictedBody": "Am {date} ging ein Löschverlangen ein. Die Aufbewahrungsfrist der Pflegedokumentation läuft noch (§ 630f BGB): es wurde nichts gelöscht, der Datensatz ist gesperrt und aus Planung, Alarmen und Tourenoptimierung genommen.",

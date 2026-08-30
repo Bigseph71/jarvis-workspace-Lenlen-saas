@@ -7,9 +7,15 @@ import {
 } from "@len-len/database";
 import { AppError, ConflictError, ForbiddenError } from "../../lib/errors.js";
 import { writeAudit } from "../../lib/audit.js";
-import { paginated, toSkipTake, type Paginated } from "../../lib/pagination.js";
+import { paginated, toSkipTake, type Paginated, type Pagination } from "../../lib/pagination.js";
 import { weekRange, dayRange, weekdayCode } from "../../lib/week.js";
-import { isWorkDay, sameQualification, enforcesStammRules } from "./visit.rules.js";
+import {
+  isWorkDay,
+  sameQualification,
+  enforcesStammRules,
+  checkVisitNote,
+  type NoteRejection,
+} from "./visit.rules.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
 import type {
   CreateVisitInput,
@@ -17,6 +23,7 @@ import type {
   RescheduleVisitInput,
   ListVisitsQuery,
   PointageInput,
+  WriteVisitNoteInput,
 } from "./visit.schemas.js";
 
 // Status, die eine Wochenbelegung "verbrauchen" (CANCELED/MISSED zählen nicht).
@@ -439,5 +446,149 @@ export async function myVisitsForDay(ctx: TenantContext, date: Date): Promise<un
       include: MY_DAY_INCLUDE,
     });
     return { date: start, count: visits.length, visits };
+  });
+}
+
+// ── Besuchsnotizen ─────────────────────────────────────────────────────────
+
+/**
+ * Notiz zu einem Besuch schreiben oder ändern (Fachkraft, Mobile-App).
+ *
+ * Nur die Fachkraft, die den Besuch GEFAHREN hat: `caregiver.userId` muss dem
+ * angemeldeten Konto entsprechen. Die Stamm-Fachkraft zählt hier nicht – wer
+ * vertreten wurde, war nicht vor Ort und hat nichts zu berichten.
+ *
+ * Die Prüfungen selbst stehen in visit.rules (checkVisitNote), damit sie ohne
+ * Datenbank geprüft werden können.
+ */
+export async function writeVisitNote(
+  ctx: TenantContext,
+  id: string,
+  input: WriteVisitNoteInput,
+  now: Date = new Date(),
+): Promise<unknown> {
+  return withTenant(ctx.organizationId, async (tx) => {
+    const visit = await tx.visit.findFirst({
+      where: { id, organizationId: ctx.organizationId },
+      select: {
+        id: true,
+        gpsArrivalAt: true,
+        gpsDepartureAt: true,
+        visitNote: true,
+        caregiver: { select: { userId: true } },
+      },
+    });
+    if (!visit) throw new AppError(404, "Besuch nicht gefunden", "NotFound");
+
+    if (visit.caregiver?.userId !== ctx.userId) {
+      throw new ForbiddenError("Nur die durchführende Fachkraft kann eine Notiz schreiben");
+    }
+
+    const rejection = checkVisitNote(visit, input, now);
+    if (rejection) throw noteRejectionError(rejection);
+
+    const isUpdate = visit.visitNote !== null;
+
+    const updated = await tx.visit.update({
+      where: { id },
+      data: {
+        visitNote: input.note.trim(),
+        hasIncident: input.hasIncident,
+        visitNoteWrittenAt: now,
+      },
+      select: {
+        id: true,
+        visitNote: true,
+        hasIncident: true,
+        visitNoteWrittenAt: true,
+      },
+    });
+
+    // Anlegen und Ändern getrennt festhalten: bei einer Pflegedokumentation ist
+    // die Frage "wurde das nachträglich umgeschrieben?" die eigentliche Frage.
+    await writeAudit(tx, ctx, {
+      action: isUpdate ? AuditAction.UPDATE : AuditAction.CREATE,
+      entityType: "visit_note",
+      entityId: id,
+      metadata: { hasIncident: input.hasIncident, length: input.note.trim().length },
+    });
+
+    return updated;
+  });
+}
+
+/** Übersetzt die Regelverletzung in die Antwort, die der Client bekommt. */
+function noteRejectionError(rejection: NoteRejection): AppError {
+  switch (rejection) {
+    case "not_started":
+      return new ConflictError("Der Besuch wurde noch nicht begonnen (kein Ankunfts-Pointage)");
+    case "incident_without_note":
+      return new AppError(
+        422,
+        "Bei „Besonderes aufgefallen“ ist eine Notiz erforderlich",
+        "UnprocessableEntity",
+      );
+    case "empty_note":
+      return new AppError(422, "Die Notiz darf nicht leer sein", "UnprocessableEntity");
+    case "edit_window_expired":
+      return new ConflictError(
+        "Die Notiz kann nur innerhalb von zwei Stunden nach dem Besuch geändert werden",
+      );
+  }
+}
+
+/**
+ * Verlauf eines Patienten: seine Besuche MIT Notiz, neueste zuerst.
+ *
+ * Der Lesezugriff wird protokolliert (DSGVO): es sind Angaben zur Pflege einer
+ * benannten Person, wie die Patientenakte selbst.
+ */
+export async function patientVisitNotes(
+  ctx: TenantContext,
+  patientId: string,
+  query: Pagination,
+): Promise<Paginated<unknown>> {
+  return withTenant(ctx.organizationId, async (tx) => {
+    const patient = await tx.patient.findFirst({
+      where: { id: patientId, organizationId: ctx.organizationId },
+      select: { id: true },
+    });
+    if (!patient) throw new AppError(404, "Patient nicht gefunden", "NotFound");
+
+    const where: Prisma.VisitWhereInput = {
+      organizationId: ctx.organizationId,
+      patientId,
+      visitNote: { not: null },
+    };
+
+    const [data, total] = await Promise.all([
+      tx.visit.findMany({
+        where,
+        orderBy: { scheduledAt: "desc" },
+        select: {
+          id: true,
+          scheduledAt: true,
+          status: true,
+          isEmergency: true,
+          visitNote: true,
+          hasIncident: true,
+          visitNoteWrittenAt: true,
+          gpsArrivalAt: true,
+          gpsDepartureAt: true,
+          caregiver: { select: { id: true, firstName: true, lastName: true } },
+        },
+        ...toSkipTake(query),
+      }),
+      tx.visit.count({ where }),
+    ]);
+
+    await writeAudit(tx, ctx, {
+      action: AuditAction.READ,
+      entityType: "patient_visit_notes",
+      entityId: patientId,
+      metadata: { count: data.length },
+    });
+
+    return paginated(data, total, query);
   });
 }

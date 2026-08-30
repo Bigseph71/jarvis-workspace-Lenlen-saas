@@ -37,6 +37,20 @@ export function canPlanVisits(role: UserRole | undefined): boolean {
   return has(role, PLANNING);
 }
 
+/**
+ * Besuchsnotizen eines Patienten lesen (visit.routes.ts: canPlan auf
+ * /patients/:id/visit-notes).
+ *
+ * Eigene Funktion statt canPlanVisits, obwohl die Liste heute dieselbe ist: das
+ * eine ist eine Planungsbefugnis, das andere ein Blick in die Pflegenotizen
+ * einer benannten Person. Fällt eine der beiden Regeln später anders aus, soll
+ * sich die andere nicht stillschweigend mitbewegen. HR steht in keiner von
+ * beiden – die Rolle sieht keine Patientendaten.
+ */
+export function canReadVisitNotes(role: UserRole | undefined): boolean {
+  return has(role, PLANNING);
+}
+
 /** HR-Daten schreiben: Verträge, Dienstpläne, Abwesenheiten (hr.routes.ts: canWrite). */
 export function canManageHr(role: UserRole | undefined): boolean {
   return has(role, [...ADMIN, "HR"]);

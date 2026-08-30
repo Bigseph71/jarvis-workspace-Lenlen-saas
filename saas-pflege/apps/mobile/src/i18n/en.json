@@ -43,9 +43,12 @@
     "pendingSync_one": "{{count}} check-in/out pending sync (recorded offline).",
     "pendingSync_other": "{{count}} check-ins/outs pending sync (recorded offline).",
     "emergency": "Emergency",
+    "incident": "Incident",
     "navigate": "Navigate",
     "checkIn": "Arrival",
     "checkOut": "Departure",
+    "noteWrite": "Write note",
+    "noteEdit": "Edit note",
     "status": {
       "PLANNED": "Planned",
       "IN_PROGRESS": "In progress",
@@ -56,6 +59,21 @@
     "noCaregiverProfile": "No caregiver profile is linked to your account. Please contact your coordination.",
     "trackingNoPermission": "Location permission missing – the route is not being recorded. Please allow it in your system settings.",
     "trackingUnavailable": "Location tracking currently unavailable (no connection). The visit continues normally."
+  },
+  "visitNote": {
+    "title": "Visit note",
+    "field": "Note",
+    "placeholder": "What did you notice during the visit?",
+    "incident": "Something noteworthy",
+    "incidentHint": "Tick this if coordination should see the note separately. A description is then mandatory.",
+    "editWindow": "You can edit a note you have already written up to two hours after departure.",
+    "notStarted": "The note can only be written once you have recorded your arrival.",
+    "windowExpired": "The two-hour window has passed. The note is final and can no longer be changed.",
+    "incidentNeedsNote": "A description is mandatory when “Something noteworthy” is ticked.",
+    "emptyNote": "The note cannot be empty.",
+    "notFound": "This visit is not part of your route for today.",
+    "save": "Save note",
+    "back": "Back to my route"
   },
   "chat": {
     "title": "Chat",
