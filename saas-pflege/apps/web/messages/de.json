@@ -350,6 +350,14 @@
     "reasonPrefix": "Grund:",
     "unassignedTitle": "{count} Besuche ohne Fachkraft in dieser Woche.",
     "unassignedHint": "Sie erscheinen in keiner Tagesroute, solange niemand zugewiesen ist.",
+    "incidents": {
+      "title": "{count} gemeldete Vorfälle ohne Kenntnisnahme",
+      "emergency": "Notfall",
+      "byCaregiver": "gemeldet von {name}",
+      "acknowledge": "Zur Kenntnis genommen",
+      "ackError": "Die Kenntnisnahme konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      "more": "und {count} weitere"
+    },
     "assignLabel": "Fachkraft zuweisen",
     "assignChoose": "— Fachkraft zuweisen —",
     "assignError": "Die Zuweisung ist fehlgeschlagen.",

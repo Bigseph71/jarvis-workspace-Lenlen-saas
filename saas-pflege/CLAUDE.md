@@ -85,6 +85,7 @@ translations         id, locale, key, value
 7. **Geocodage** : l'optimisation VRPTW est bloquée si `geocoding_status = invalid` pour un patient.
 8. **Billing** : suspension automatique du tenant si paiement Stripe échoue (après karenzzeit configurable).
 9. **Notes de visite** : la note appartient à la visite (pas de table dédiée). Seule la fachkraft qui a effectué la visite peut l'écrire, et seulement une fois l'arrivée pointée. Une note est obligatoire si l'incident est signalé. La réécriture est possible pendant 2 h après le pointage de départ, ensuite la note est figée. Création et modification tracées séparément dans l'audit log (CREATE vs UPDATE).
+10. **Alertes incidents** : tout incident signalé reste ouvert jusqu'à sa prise en compte explicite par la coordination. La prise en compte vaut pour toute l'organisation, pas par utilisateur. Réécrire la note annule la prise en compte : ce qui avait été acquitté était un texte, pas une case.
 
 ---
 
@@ -101,6 +102,17 @@ Documentation de soins rédigée par la fachkraft sur son mobile, consultée par
 | Lecture | `GET /patients/:id/visit-notes`, rôles Koordinator et Struktur-Admin. Pas HR (aucune donnée patient). Seules les visites avec note remontent. |
 | Audit | Écriture : `visit_note`, action CREATE ou UPDATE selon qu'une note existait. Lecture : `patient_visit_notes`, action READ. Le web ne charge l'onglet qu'à son ouverture, pour que le journal reflète l'accès réel et non l'accès possible. |
 | Frontend | Mobile : écran `visit-note` depuis la carte de visite. Web : onglet « Verlauf » sur `/[locale]/patients/[id]`. |
+
+### Alertes incidents (coordination)
+
+| Aspect | Décision |
+|---|---|
+| Stockage | `incident_ack_at` et `incident_ack_by_user_id` sur `visits`. Sans accusé de réception, une alerte resterait affichée tant que `has_incident` vaut true, sans moyen de la clore : une alerte qu'on ne peut pas fermer finit ignorée. |
+| Lecture | `GET /visits/alerts/incidents`, rôles Koordinator et Struktur-Admin. Incidents non acquittés, **plus anciens d'abord** : c'est une liste de travail, ce qui traîne le plus est le plus urgent. |
+| Prise en compte | `POST /visits/:id/incident-ack`. Vaut pour toute l'organisation : la coordination est un poste, pas une boîte de réception. Un second appel ne change rien et n'échoue pas, pour que deux coordinateurs qui cliquent sur la même alerte n'écrasent pas le premier nom. |
+| Réécriture | Toute réécriture de la note remet `incident_ack_at` à null. Ce qui a été acquitté est un texte ; s'il change dans les 2 h, la coordination n'a jamais vu le nouveau. |
+| Audit | `visit_incident_ack`, action UPDATE, à la première prise en compte seulement. La **lecture** de la liste n'est pas journalisée : elle est appelée à chaque chargement de la page Besuche, et un enregistrement par appel noierait le journal. |
+| Frontend | `IncidentAlerts` au-dessus du tableau des visites, avant l'alerte visite hebdomadaire manquante : un incident est une observation sur un patient, une visite manquante un trou dans le plan. |
 
 ---
 

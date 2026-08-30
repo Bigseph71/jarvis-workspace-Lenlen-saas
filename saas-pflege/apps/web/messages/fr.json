@@ -350,6 +350,14 @@
     "reasonPrefix": "Motif :",
     "unassignedTitle": "{count} visites sans soignant cette semaine.",
     "unassignedHint": "Elles n'apparaissent dans la tournée de personne tant qu'aucun soignant n'est affecté.",
+    "incidents": {
+      "title": "{count} incidents signalés sans prise en compte",
+      "emergency": "Urgence",
+      "byCaregiver": "signalé par {name}",
+      "acknowledge": "Pris en compte",
+      "ackError": "La prise en compte n'a pas pu être enregistrée. Veuillez réessayer.",
+      "more": "et {count} autres"
+    },
     "assignLabel": "Affecter un soignant",
     "assignChoose": "— Affecter un soignant —",
     "assignError": "L'affectation a échoué.",

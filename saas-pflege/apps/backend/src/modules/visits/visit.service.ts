@@ -14,6 +14,7 @@ import {
   sameQualification,
   enforcesStammRules,
   checkVisitNote,
+  checkIncidentAck,
   type NoteRejection,
 } from "./visit.rules.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
@@ -495,6 +496,12 @@ export async function writeVisitNote(
         visitNote: input.note.trim(),
         hasIncident: input.hasIncident,
         visitNoteWrittenAt: now,
+        // Eine bestehende Kenntnisnahme verfällt beim Neuschreiben, ausnahmslos.
+        // Quittiert wurde ein TEXT, nicht ein Häkchen: ändert die Fachkraft ihn
+        // innerhalb ihrer zwei Stunden, hat die Koordination den neuen nie
+        // gesehen, und die Warnung muss zurückkommen.
+        incidentAckAt: null,
+        incidentAckByUserId: null,
       },
       select: {
         id: true,
@@ -590,5 +597,108 @@ export async function patientVisitNotes(
     });
 
     return paginated(data, total, query);
+  });
+}
+
+// ── Vorfall-Alarme der Koordination ────────────────────────────────────────
+
+/**
+ * Offene Vorfälle: gemeldet, aber noch von niemandem quittiert. Älteste zuerst.
+ *
+ * Aufsteigend sortiert, anders als der Verlauf. Eine Alarmliste ist eine
+ * Arbeitsliste: was am längsten liegt, ist das Dringendste. Neueste zuerst
+ * würde genau die Meldung nach unten drücken, die am längsten unbeachtet ist.
+ *
+ * KEIN Lese-Eintrag im Audit-Log, obwohl die Notiztexte mitkommen: die Liste
+ * wird bei jedem Laden der Besuchsseite abgefragt, also im Minutentakt. Ein
+ * Eintrag je Abruf würde das Protokoll fluten und damit unbrauchbar machen –
+ * das Gegenteil dessen, wozu es da ist. Wer eine Patientenakte oder deren
+ * Verlauf öffnet, wird weiterhin protokolliert; dort ist es eine Handlung.
+ */
+export async function openIncidents(
+  ctx: TenantContext,
+  query: Pagination,
+): Promise<Paginated<unknown>> {
+  return withTenant(ctx.organizationId, async (tx) => {
+    const where: Prisma.VisitWhereInput = {
+      organizationId: ctx.organizationId,
+      hasIncident: true,
+      incidentAckAt: null,
+    };
+
+    const [data, total] = await Promise.all([
+      tx.visit.findMany({
+        where,
+        orderBy: { scheduledAt: "asc" },
+        select: {
+          id: true,
+          scheduledAt: true,
+          status: true,
+          isEmergency: true,
+          visitNote: true,
+          visitNoteWrittenAt: true,
+          patient: { select: { id: true, firstName: true, lastName: true } },
+          caregiver: { select: { id: true, firstName: true, lastName: true } },
+        },
+        ...toSkipTake(query),
+      }),
+      tx.visit.count({ where }),
+    ]);
+
+    return paginated(data, total, query);
+  });
+}
+
+/**
+ * Vorfall zur Kenntnis nehmen. Schliesst die Warnung für die ganze
+ * Organisation, nicht nur für den Klickenden.
+ *
+ * Das ist die Absicht: die Koordination ist eine Stelle, kein Postfach je
+ * Person. Wer quittiert, erklärt damit, dass sich jemand darum kümmert – und
+ * dieser Name steht danach in der Datenbank und im Audit-Log.
+ */
+export async function acknowledgeIncident(
+  ctx: TenantContext,
+  id: string,
+  now: Date = new Date(),
+): Promise<unknown> {
+  return withTenant(ctx.organizationId, async (tx) => {
+    const visit = await tx.visit.findFirst({
+      where: { id, organizationId: ctx.organizationId },
+      select: { id: true, hasIncident: true, incidentAckAt: true, incidentAckByUserId: true },
+    });
+    if (!visit) throw new AppError(404, "Besuch nicht gefunden", "NotFound");
+
+    const outcome = checkIncidentAck(visit);
+
+    if (outcome === "no_incident") {
+      throw new ConflictError("An diesem Besuch ist kein Vorfall gemeldet");
+    }
+
+    // Bereits quittiert: unverändert zurückgeben. Der zweite Klick zweier
+    // Koordinatoren auf dieselbe Warnung darf weder scheitern noch den ersten
+    // Namen überschreiben.
+    if (outcome === "already") {
+      return {
+        id: visit.id,
+        incidentAckAt: visit.incidentAckAt,
+        incidentAckByUserId: visit.incidentAckByUserId,
+      };
+    }
+
+    const updated = await tx.visit.update({
+      where: { id },
+      data: { incidentAckAt: now, incidentAckByUserId: ctx.userId },
+      select: { id: true, incidentAckAt: true, incidentAckByUserId: true },
+    });
+
+    await writeAudit(tx, ctx, {
+      action: AuditAction.UPDATE,
+      entityType: "visit_incident_ack",
+      entityId: id,
+      metadata: { acknowledgedAt: now.toISOString() },
+    });
+
+    return updated;
   });
 }

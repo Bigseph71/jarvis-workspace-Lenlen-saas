@@ -18,15 +18,23 @@ import { render, t } from "./helpers/render";
  *      Koordinator sah ein rotes Abzeichen ohne Begründung.
  */
 
-const { listVisits, missingWeek, cancelVisit, listCaregivers, assignVisitCaregiver } = vi.hoisted(
-  () => ({
-    listVisits: vi.fn(),
-    missingWeek: vi.fn(),
-    cancelVisit: vi.fn(),
-    listCaregivers: vi.fn(),
-    assignVisitCaregiver: vi.fn(),
-  }),
-);
+const {
+  listVisits,
+  missingWeek,
+  cancelVisit,
+  listCaregivers,
+  assignVisitCaregiver,
+  openIncidents,
+  acknowledgeIncident,
+} = vi.hoisted(() => ({
+  listVisits: vi.fn(),
+  missingWeek: vi.fn(),
+  cancelVisit: vi.fn(),
+  listCaregivers: vi.fn(),
+  assignVisitCaregiver: vi.fn(),
+  openIncidents: vi.fn(),
+  acknowledgeIncident: vi.fn(),
+}));
 
 vi.mock("@len-len/api-client", () => ({
   listVisits: (...args: unknown[]) => listVisits(...args),
@@ -34,6 +42,10 @@ vi.mock("@len-len/api-client", () => ({
   cancelVisit: (...args: unknown[]) => cancelVisit(...args),
   listCaregivers: (...args: unknown[]) => listCaregivers(...args),
   assignVisitCaregiver: (...args: unknown[]) => assignVisitCaregiver(...args),
+  // Die Seite bindet seit den Vorfall-Alarmen zwei weitere Aufrufe ein. Ohne
+  // Attrappe liefe der Test gegen `undefined` und prüfte still den Fehlerpfad.
+  openIncidents: (...args: unknown[]) => openIncidents(...args),
+  acknowledgeIncident: (...args: unknown[]) => acknowledgeIncident(...args),
 }));
 
 vi.mock("@/i18n/navigation", async () => {
@@ -89,6 +101,14 @@ describe("Besuchsliste", () => {
     cancelVisit.mockReset().mockResolvedValue(undefined);
     listCaregivers.mockReset().mockResolvedValue({ data: [ANNA, BERND] });
     assignVisitCaregiver.mockReset().mockResolvedValue(undefined);
+    openIncidents.mockReset().mockResolvedValue({
+      data: [],
+      total: 0,
+      page: 1,
+      pageSize: 20,
+      totalPages: 0,
+    });
+    acknowledgeIncident.mockReset().mockResolvedValue(undefined);
   });
 
   it("zeigt das Motiv eines Notfalls neben dem Patienten", async () => {

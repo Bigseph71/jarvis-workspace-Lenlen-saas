@@ -350,6 +350,14 @@
     "reasonPrefix": "Reason:",
     "unassignedTitle": "{count} visits without a caregiver this week.",
     "unassignedHint": "They appear in nobody's daily route until someone is assigned.",
+    "incidents": {
+      "title": "{count} reported incidents not yet acknowledged",
+      "emergency": "Emergency",
+      "byCaregiver": "reported by {name}",
+      "acknowledge": "Acknowledge",
+      "ackError": "The acknowledgement could not be saved. Please try again.",
+      "more": "and {count} more"
+    },
     "assignLabel": "Assign caregiver",
     "assignChoose": "— Assign caregiver —",
     "assignError": "The assignment failed.",

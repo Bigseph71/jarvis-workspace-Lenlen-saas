@@ -200,6 +200,7 @@ model User {
   auditLogs       AuditLog[]
   sentMessages    Message[]
   decidedAbsences Absence[]      @relation("AbsenceDecider")
+  acknowledgedIncidents Visit[]  @relation("IncidentAcknowledger")
 
   // E-Mail eindeutig pro Tenant
   @@unique([organizationId, email])
@@ -474,6 +475,14 @@ model Visit {
   // ohne diesen Zeitpunkt liesse sich eine Änderung nicht von der ersten
   // Fassung unterscheiden.
   visitNoteWrittenAt   DateTime?   @map("visit_note_written_at")
+  // Kenntnisnahme eines gemeldeten Vorfalls durch die Koordination.
+  //
+  // Ohne diese beiden Felder bliebe die Meldung ein Zustand ohne Ausgang: die
+  // Warnung stünde so lange auf dem Bildschirm, wie hasIncident gesetzt ist,
+  // und niemand könnte sie schliessen. Eine Warnung, die sich nicht schliessen
+  // lässt, wird nach zwei Wochen weggesehen – und dann trägt sie nichts mehr.
+  incidentAckAt        DateTime?   @map("incident_ack_at")
+  incidentAckByUserId  String?     @map("incident_ack_by_user_id") @db.Uuid
   createdAt            DateTime    @default(now()) @map("created_at")
   updatedAt            DateTime    @updatedAt @map("updated_at")
 
@@ -482,6 +491,7 @@ model Visit {
   caregiver         Caregiver?    @relation("PerformingCaregiver", fields: [caregiverId], references: [id], onDelete: SetNull)
   assignedCaregiver Caregiver?    @relation("AssignedVisitCaregiver", fields: [assignedCaregiverId], references: [id], onDelete: SetNull)
   route             Route?        @relation(fields: [routeId], references: [id], onDelete: SetNull)
+  incidentAckBy     User?         @relation("IncidentAcknowledger", fields: [incidentAckByUserId], references: [id], onDelete: SetNull)
   gpsPositions      GpsPosition[]
 
   @@index([organizationId])
@@ -492,6 +502,10 @@ model Visit {
   // [patientId, scheduledAt] deckt die Sortierung schon ab; dieser hier hält
   // zusätzlich die Vorfälle beisammen, nach denen die Koordination sucht.
   @@index([organizationId, hasIncident, scheduledAt])
+  // Die Alarmliste der Koordination fragt genau das ab: offene Vorfälle dieser
+  // Organisation. Der Index oben trägt sie nicht gut, weil er nach Datum
+  // sortiert und die quittierten mitzieht – und quittiert wird die Mehrzahl.
+  @@index([organizationId, incidentAckAt])
   @@map("visits")
 }
 

@@ -96,3 +96,33 @@ export function checkVisitNote(
 
   return null;
 }
+
+// ── Vorfall-Kenntnisnahme ──────────────────────────────────────────────────
+
+export type IncidentAckOutcome = "acknowledge" | "already" | "no_incident";
+
+/**
+ * Was passiert, wenn die Koordination einen Vorfall quittiert?
+ *
+ * Drei Ausgänge statt zwei, und der mittlere ist der wichtige.
+ *
+ * - `no_incident`: an diesem Besuch ist nichts gemeldet. Das ist ein Fehler des
+ *   Aufrufers und wird abgewiesen – sonst liessen sich beliebige Besuche mit
+ *   einem Quittungsvermerk versehen, den niemand je erzeugt hat.
+ *
+ * - `already`: schon quittiert. KEIN Fehler und KEIN erneutes Schreiben. Zwei
+ *   Koordinatoren, die dieselbe Warnung sehen, klicken beide – der zweite Klick
+ *   darf weder scheitern noch den ersten Namen überschreiben. Wer den Vorfall
+ *   zur Kenntnis genommen hat, ist die Person, die zuerst da war.
+ *
+ * - `acknowledge`: offener Vorfall, wird quittiert.
+ */
+export function checkIncidentAck(visit: {
+  hasIncident: boolean;
+  incidentAckAt: Date | null;
+}): IncidentAckOutcome {
+  if (!visit.hasIncident) return "no_incident";
+  if (visit.incidentAckAt !== null) return "already";
+  return "acknowledge";
+}
+
