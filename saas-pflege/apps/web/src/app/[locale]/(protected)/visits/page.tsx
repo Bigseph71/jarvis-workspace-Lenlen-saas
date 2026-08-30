@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { IncidentAlerts } from "@/components/incident-alerts";
 import { addDays, formatDate, formatDateTime, startOfWeek } from "@/lib/datetime";
 import {
   assignVisitCaregiver,
@@ -218,6 +219,10 @@ export default function VisitsPage() {
           {assignError}
         </p>
       ) : null}
+
+      {/* Gemeldete Vorfälle zuerst: ein Vorfall ist eine Beobachtung am
+          Patienten, ein fehlender Wochenbesuch eine Lücke im Plan. */}
+      <IncidentAlerts />
 
       {/* Alerte Regel métier 3 : Patienten ohne Wochenbesuch */}
       {alerts && alerts.count > 0 ? (

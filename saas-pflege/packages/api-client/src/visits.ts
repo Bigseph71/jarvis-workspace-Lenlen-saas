@@ -214,3 +214,45 @@ export async function patientVisitNotes(
     `/patients/${patientId}/visit-notes${qs ? `?${qs}` : ""}`,
   );
 }
+
+// ── Vorfall-Alarme (Koordination) ──────────────────────────────────────────
+
+/** Ein gemeldeter, noch nicht quittierter Vorfall. */
+export interface OpenIncident {
+  id: string;
+  scheduledAt: string;
+  status: VisitStatus;
+  isEmergency: boolean;
+  visitNote: string | null;
+  visitNoteWrittenAt: string | null;
+  patient: PersonRef;
+  caregiver: PersonRef | null;
+}
+
+/**
+ * Offene Vorfälle der Organisation, ÄLTESTE zuerst: eine Arbeitsliste, und was
+ * am längsten liegt, ist das Dringendste.
+ */
+export async function openIncidents(
+  params: { page?: number; pageSize?: number } = {},
+): Promise<Paginated<OpenIncident>> {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  if (params.pageSize) query.set("pageSize", String(params.pageSize));
+  const qs = query.toString();
+  return apiFetch<Paginated<OpenIncident>>(`/visits/alerts/incidents${qs ? `?${qs}` : ""}`);
+}
+
+export interface IncidentAck {
+  id: string;
+  incidentAckAt: string | null;
+  incidentAckByUserId: string | null;
+}
+
+/**
+ * Vorfall zur Kenntnis nehmen. Schliesst die Warnung für die ganze
+ * Organisation. Ein zweiter Aufruf ändert nichts und scheitert nicht.
+ */
+export async function acknowledgeIncident(visitId: string): Promise<IncidentAck> {
+  return apiFetch<IncidentAck>(`/visits/${visitId}/incident-ack`, { method: "POST" });
+}

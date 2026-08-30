@@ -31,6 +31,8 @@ import {
   myVisitsForDay,
   writeVisitNote,
   patientVisitNotes,
+  openIncidents,
+  acknowledgeIncident,
 } from "./visit.service.js";
 
 const idParamSchema = z.object({ id: z.string().uuid() });
@@ -112,6 +114,28 @@ export async function visitRoutes(app: FastifyInstance): Promise<void> {
   app.get("/visits/alerts/missing-week", { preHandler: [canPlan] }, async (request) => {
     const { weekOf } = missingWeekQuerySchema.parse(request.query);
     return patientsMissingWeeklyVisit(ctxFrom(request), weekOf ?? new Date());
+  });
+
+  /**
+   * Offene Vorfälle: von einer Fachkraft gemeldet, von der Koordination noch
+   * nicht quittiert. Dieselbe Rollenmenge wie der Verlauf – die Antwort enthält
+   * die Notiztexte.
+   */
+  app.get("/visits/alerts/incidents", { preHandler: [canPlan] }, async (request) => {
+    const query = paginationSchema.parse(request.query);
+    return openIncidents(ctxFrom(request), query);
+  });
+
+  /**
+   * Vorfall zur Kenntnis nehmen.
+   *
+   * POST und nicht PUT: der Vorgang ist nicht das Setzen eines Wertes, sondern
+   * eine Handlung, die genau einmal wirkt. Ein zweiter Aufruf ändert nichts
+   * mehr (siehe acknowledgeIncident), scheitert aber auch nicht.
+   */
+  app.post("/visits/:id/incident-ack", { preHandler: [canPlan] }, async (request) => {
+    const { id } = idParamSchema.parse(request.params);
+    return acknowledgeIncident(ctxFrom(request), id);
   });
 
   // Tagesroute der eingeloggten Fachkraft.
