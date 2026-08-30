@@ -144,6 +144,24 @@
       "visitsEmpty": "Aucune visite enregistrée.",
       "visitsError": "Les visites n'ont pas pu être chargées.",
       "emergency": "Urgence",
+      "tabs": {
+        "overview": "Vue d'ensemble",
+        "notes": "Historique"
+      },
+      "notes": {
+        "loading": "Chargement de l'historique …",
+        "error": "L'historique n'a pas pu être chargé.",
+        "empty": "Aucune note de visite n'a encore été rédigée pour ce patient.",
+        "count": "{count} notes",
+        "incident": "Incident",
+        "emergency": "Urgence",
+        "byCaregiver": "Effectuée par {name}",
+        "noCaregiver": "Soignant plus rattaché",
+        "writtenAt": "notée le {date}",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "pageOf": "Page {page} sur {totalPages}"
+      },
       "dsgvo": {
         "restrictedTitle": "Demande d'effacement – dossier restreint",
         "restrictedBody": "Une demande d'effacement a été reçue le {date}. Le délai de conservation de la documentation des soins court encore (§ 630f BGB) : rien n'a été supprimé, le dossier est restreint et retiré de la planification, des alertes et de l'optimisation des tournées.",

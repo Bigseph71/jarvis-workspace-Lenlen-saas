@@ -188,6 +188,8 @@ export default function TodayScreen() {
   const renderVisit = ({ item }: { item: MyVisit }) => {
     const address = item.patient.normalizedAddress ?? item.patient.rawAddress;
     const pointable = item.status === "PLANNED" || item.status === "IN_PROGRESS";
+    // Notiz erst ab der Ankunft: vorher war niemand beim Patienten.
+    const notable = item.gpsArrivalAt !== null;
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -197,6 +199,9 @@ export default function TodayScreen() {
           </Text>
           {item.isEmergency ? (
             <Text style={[styles.badge, styles.badgeEmergency]}>{t("today.emergency")}</Text>
+          ) : null}
+          {item.hasIncident ? (
+            <Text style={[styles.badge, styles.badgeIncident]}>{t("today.incident")}</Text>
           ) : null}
         </View>
         <Text style={styles.patient}>
@@ -223,6 +228,26 @@ export default function TodayScreen() {
             </Pressable>
           ) : null}
         </View>
+        {notable ? (
+          <Pressable
+            style={styles.noteButton}
+            onPress={() =>
+              router.push({ pathname: "/visit-note", params: { visitId: item.id } })
+            }
+          >
+            <Text style={styles.noteButtonText}>
+              {t(item.visitNote ? "today.noteEdit" : "today.noteWrite")}
+            </Text>
+          </Pressable>
+        ) : null}
+        {item.visitNote ? (
+          // Vorschau statt nur eines Knopfes: die Fachkraft sieht beim Durchgehen
+          // ihrer Route, was sie beim letzten Besuch notiert hat, ohne den
+          // Bildschirm zu wechseln.
+          <Text style={styles.notePreview} numberOfLines={2}>
+            {item.visitNote}
+          </Text>
+        ) : null}
       </View>
     );
   };
@@ -379,8 +404,21 @@ const styles = StyleSheet.create({
   badgeCompleted: { backgroundColor: "#15803d" },
   badgeMissed: { backgroundColor: "#b91c1c" },
   badgeEmergency: { backgroundColor: "#b91c1c" },
+  // Vorfall: ambre, nicht rot. Rot ist hier schon der Notfall vergeben, und ein
+  // gemeldeter Vorfall ist eine Beobachtung, kein Alarm.
+  badgeIncident: { backgroundColor: "#b45309" },
   patient: { fontSize: 16, fontWeight: "600", marginTop: 2 },
   address: { fontSize: 13, color: "#555" },
+  noteButton: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#d4d4d8",
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: "center",
+  },
+  noteButtonText: { color: "#3f3f46", fontWeight: "600" },
+  notePreview: { fontSize: 13, color: "#52525b", fontStyle: "italic", marginTop: 6 },
   actions: { flexDirection: "row", gap: 8, marginTop: 10 },
   actionSecondary: {
     flex: 1,

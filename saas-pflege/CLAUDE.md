@@ -60,7 +60,8 @@ caregivers           id, organization_id, user_id, qualification,
 
 visits               id, organization_id, patient_id, caregiver_id (effectif),
                      assigned_caregiver_id (attitré), scheduled_at, status,
-                     is_emergency (bool), gps_arrival_at, gps_departure_at
+                     is_emergency (bool), gps_arrival_at, gps_departure_at,
+                     visit_note, has_incident (bool), visit_note_written_at
 
 vehicles             id, organization_id, leasing_km_limit, leasing_km_used,
                      leasing_end_date
@@ -83,6 +84,23 @@ translations         id, locale, key, value
 6. **Règle leasing** : les véhicules avec le moins de km utilisés prennent les trajets les plus longs.
 7. **Geocodage** : l'optimisation VRPTW est bloquée si `geocoding_status = invalid` pour un patient.
 8. **Billing** : suspension automatique du tenant si paiement Stripe échoue (après karenzzeit configurable).
+9. **Notes de visite** : la note appartient à la visite (pas de table dédiée). Seule la fachkraft qui a effectué la visite peut l'écrire, et seulement une fois l'arrivée pointée. Une note est obligatoire si l'incident est signalé. La réécriture est possible pendant 2 h après le pointage de départ, ensuite la note est figée. Création et modification tracées séparément dans l'audit log (CREATE vs UPDATE).
+
+---
+
+## Module : Notes de visite
+
+Documentation de soins rédigée par la fachkraft sur son mobile, consultée par la planification sur la fiche patient.
+
+| Aspect | Décision |
+|---|---|
+| Stockage | Colonnes sur `visits` : `visit_note`, `has_incident`, `visit_note_written_at`. Une note appartient à exactement une visite ; une table séparée n'ajouterait qu'une jointure. |
+| Écriture | `PUT /visits/:id/note`, rôle FACHKRAFT uniquement. Le service vérifie `caregiver.userId === ctx.userId` : qui n'était pas sur place n'écrit pas. |
+| Ouverture | Dès `gps_arrival_at` (et non après le départ) : la fachkraft écrit au chevet, et un pointage de départ oublié ne doit pas faire perdre l'observation. |
+| Fenêtre de modification | 2 h après `gps_departure_at` (`NOTE_EDIT_WINDOW_MS`). Elle ne court pas tant que la visite est en cours. Une **première** note reste écrivable sans limite : la fenêtre encadre la réécriture, pas l'écriture. |
+| Lecture | `GET /patients/:id/visit-notes`, rôles Koordinator et Struktur-Admin. Pas HR (aucune donnée patient). Seules les visites avec note remontent. |
+| Audit | Écriture : `visit_note`, action CREATE ou UPDATE selon qu'une note existait. Lecture : `patient_visit_notes`, action READ. Le web ne charge l'onglet qu'à son ouverture, pour que le journal reflète l'accès réel et non l'accès possible. |
+| Frontend | Mobile : écran `visit-note` depuis la carte de visite. Web : onglet « Verlauf » sur `/[locale]/patients/[id]`. |
 
 ---
 

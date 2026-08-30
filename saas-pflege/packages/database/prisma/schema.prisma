@@ -461,6 +461,19 @@ model Visit {
   gpsDepartureLat      Decimal?    @map("gps_departure_lat") @db.Decimal(9, 6)
   gpsDepartureLng      Decimal?    @map("gps_departure_lng") @db.Decimal(9, 6)
   gpsDepartureAccuracy Float?      @map("gps_departure_accuracy")
+  // Besuchsnotiz der Fachkraft. Bewusst AM BESUCH und nicht in einer eigenen
+  // Tabelle: eine Notiz gehört zu genau einem Besuch, hat keine eigene
+  // Geschichte und wird nie ohne ihn gelesen. Eine Tabelle mehr hiesse ein
+  // Join mehr auf jeder Tagesroute, ohne dass irgendetwas dadurch möglich
+  // würde.
+  visitNote            String?     @map("visit_note")
+  // "Besonderes aufgefallen". Ist die Marke gesetzt, ist die Notiz Pflicht –
+  // ein Vorfall ohne Beschreibung wäre für die Koordination wertlos.
+  hasIncident          Boolean     @default(false) @map("has_incident")
+  // Wann die Notiz zuletzt geschrieben wurde. Trägt die Zwei-Stunden-Frist:
+  // ohne diesen Zeitpunkt liesse sich eine Änderung nicht von der ersten
+  // Fassung unterscheiden.
+  visitNoteWrittenAt   DateTime?   @map("visit_note_written_at")
   createdAt            DateTime    @default(now()) @map("created_at")
   updatedAt            DateTime    @updatedAt @map("updated_at")
 
@@ -475,6 +488,10 @@ model Visit {
   @@index([organizationId, scheduledAt])
   @@index([patientId, scheduledAt])
   @@index([organizationId, status])
+  // Verlauf eines Patienten: nur Besuche MIT Notiz, nach Datum. Der Index auf
+  // [patientId, scheduledAt] deckt die Sortierung schon ab; dieser hier hält
+  // zusätzlich die Vorfälle beisammen, nach denen die Koordination sucht.
+  @@index([organizationId, hasIncident, scheduledAt])
   @@map("visits")
 }
 

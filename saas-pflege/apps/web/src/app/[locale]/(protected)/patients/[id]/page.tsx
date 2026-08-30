@@ -11,8 +11,12 @@ import {
 } from "@len-len/api-client";
 import { Link } from "@/i18n/navigation";
 import { PatientMap } from "@/components/patient-map";
+import { PatientVisitNotes } from "@/components/patient-visit-notes";
+import { useAuth } from "@/lib/auth/auth-context";
+import { canReadVisitNotes } from "@/lib/auth/permissions";
 
 type LoadState = "loading" | "ready" | "error";
+type Tab = "overview" | "notes";
 
 /** Anzahl der zuletzt angezeigten Besuche. */
 const VISIT_LIMIT = 20;
@@ -55,11 +59,14 @@ export default function PatientDetailPage() {
   const locale = useLocale();
   const params = useParams<{ id: string }>();
   const id = params.id;
+  const { user } = useAuth();
+  const mayReadNotes = canReadVisitNotes(user?.role);
 
   const [patient, setPatient] = useState<PatientDetail | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [visitsFailed, setVisitsFailed] = useState(false);
   const [state, setState] = useState<LoadState>("loading");
+  const [tab, setTab] = useState<Tab>("overview");
 
   useEffect(() => {
     let active = true;
@@ -150,6 +157,36 @@ export default function PatientDetailPage() {
         </div>
       ) : null}
 
+      {/* Der Reiter erscheint nur, wenn die Rolle den Endpunkt auch aufrufen
+          darf. Ein sichtbarer Reiter, der in 403 endet, ist schlechter als
+          keiner: er behauptet ein Recht, das nicht besteht. */}
+      {mayReadNotes ? (
+        <div className="mt-6 flex gap-1 border-b border-gray-200" role="tablist">
+          {(["overview", "notes"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition ${
+                tab === key
+                  ? "border-blue-600 text-blue-700"
+                  : "border-transparent text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              {t(`tabs.${key}`)}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {tab === "notes" ? (
+        <div className="mt-6">
+          <PatientVisitNotes patientId={patient.id} />
+        </div>
+      ) : (
+      <>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">{t("addressTitle")}</h2>
@@ -264,6 +301,8 @@ export default function PatientDetailPage() {
           </table>
         </div>
       </div>
+      </>
+      )}
     </section>
   );
 }

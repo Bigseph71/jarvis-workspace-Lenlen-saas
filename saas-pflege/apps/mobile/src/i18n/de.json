@@ -43,9 +43,12 @@
     "pendingSync_one": "{{count}} Pointage wartet auf Synchronisation (offline erfasst).",
     "pendingSync_other": "{{count}} Pointages warten auf Synchronisation (offline erfasst).",
     "emergency": "Notfall",
+    "incident": "Vorfall",
     "navigate": "Navigation",
     "checkIn": "Ankunft",
     "checkOut": "Abfahrt",
+    "noteWrite": "Notiz schreiben",
+    "noteEdit": "Notiz ändern",
     "status": {
       "PLANNED": "Geplant",
       "IN_PROGRESS": "Läuft",
@@ -56,6 +59,21 @@
     "noCaregiverProfile": "Ihrem Konto ist keine Fachkraft zugeordnet. Bitte wenden Sie sich an Ihre Koordination.",
     "trackingNoPermission": "Standortfreigabe fehlt – die Tour wird nicht aufgezeichnet. Bitte in den Systemeinstellungen erlauben.",
     "trackingUnavailable": "Standorterfassung derzeit nicht möglich (keine Verbindung). Der Besuch läuft normal weiter."
+  },
+  "visitNote": {
+    "title": "Besuchsnotiz",
+    "field": "Notiz",
+    "placeholder": "Was ist Ihnen beim Besuch aufgefallen?",
+    "incident": "Besonderes aufgefallen",
+    "incidentHint": "Setzen Sie den Haken, wenn die Koordination die Notiz gesondert sehen soll. Eine Beschreibung ist dann verpflichtend.",
+    "editWindow": "Eine bereits geschriebene Notiz können Sie bis zwei Stunden nach der Abfahrt ändern.",
+    "notStarted": "Die Notiz kann erst geschrieben werden, wenn Sie die Ankunft gebucht haben.",
+    "windowExpired": "Die Frist von zwei Stunden ist abgelaufen. Die Notiz steht fest und kann nicht mehr geändert werden.",
+    "incidentNeedsNote": "Bei „Besonderes aufgefallen“ ist eine Beschreibung verpflichtend.",
+    "emptyNote": "Die Notiz darf nicht leer sein.",
+    "notFound": "Dieser Besuch gehört nicht zu Ihrer heutigen Route.",
+    "save": "Notiz speichern",
+    "back": "Zurück zur Route"
   },
   "chat": {
     "title": "Chat",

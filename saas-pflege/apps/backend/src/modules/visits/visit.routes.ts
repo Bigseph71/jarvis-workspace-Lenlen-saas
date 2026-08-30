@@ -5,6 +5,7 @@ import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
 import { PLANNING_ROLES } from "../../lib/roles.js";
 import type { TenantContext } from "../../lib/context.js";
+import { paginationSchema } from "../../lib/pagination.js";
 import {
   createVisitSchema,
   createEmergencyVisitSchema,
@@ -14,6 +15,7 @@ import {
   missingWeekQuerySchema,
   myVisitsQuerySchema,
   pointageSchema,
+  writeVisitNoteSchema,
 } from "./visit.schemas.js";
 import {
   createVisit,
@@ -27,6 +29,8 @@ import {
   cancelVisit,
   patientsMissingWeeklyVisit,
   myVisitsForDay,
+  writeVisitNote,
+  patientVisitNotes,
 } from "./visit.service.js";
 
 const idParamSchema = z.object({ id: z.string().uuid() });
@@ -119,4 +123,38 @@ export async function visitRoutes(app: FastifyInstance): Promise<void> {
       return myVisitsForDay(ctxFrom(request), date ?? new Date());
     },
   );
+
+  /**
+   * Besuchsnotiz schreiben oder ändern.
+   *
+   * NUR die Fachkraft, und nur zu ihrem eigenen Besuch – anders als beim
+   * Pointage, das die Planung mitmachen darf. Eine Notiz ist eine Beobachtung
+   * am Patienten: wer nicht dort war, hat nichts zu schreiben. Die Zuordnung
+   * prüft der Service über caregiver.userId.
+   */
+  app.put(
+    "/visits/:id/note",
+    { preHandler: [requireRole(UserRole.FACHKRAFT)] },
+    async (request) => {
+      const { id } = idParamSchema.parse(request.params);
+      const input = writeVisitNoteSchema.parse(request.body);
+      return writeVisitNote(ctxFrom(request), id, input);
+    },
+  );
+
+  /**
+   * Verlauf eines Patienten (Web, Reiter „Verlauf“).
+   *
+   * Liegt hier und nicht in patient.routes, weil die Daten am Besuch hängen –
+   * dieselbe Aufteilung wie bei /patients/:id/geocode, das im Geocoding-Modul
+   * steht.
+   *
+   * `canPlan` ist genau die geforderte Menge: Koordinator und Struktur-Admin.
+   * HR bleibt aussen vor, wie bei allen Patientendaten.
+   */
+  app.get("/patients/:id/visit-notes", { preHandler: [canPlan] }, async (request) => {
+    const { id } = idParamSchema.parse(request.params);
+    const query = paginationSchema.parse(request.query);
+    return patientVisitNotes(ctxFrom(request), id, query);
+  });
 }

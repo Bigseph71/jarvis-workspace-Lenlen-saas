@@ -144,6 +144,24 @@
       "visitsEmpty": "No visits recorded yet.",
       "visitsError": "The visits could not be loaded.",
       "emergency": "Emergency",
+      "tabs": {
+        "overview": "Overview",
+        "notes": "History"
+      },
+      "notes": {
+        "loading": "Loading history …",
+        "error": "The history could not be loaded.",
+        "empty": "No visit note has been written for this patient yet.",
+        "count": "{count} notes",
+        "incident": "Incident",
+        "emergency": "Emergency",
+        "byCaregiver": "Carried out by {name}",
+        "noCaregiver": "Caregiver no longer assigned",
+        "writtenAt": "written on {date}",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {totalPages}"
+      },
       "dsgvo": {
         "restrictedTitle": "Erasure request – record restricted",
         "restrictedBody": "An erasure request was received on {date}. The retention period for care documentation is still running (§ 630f BGB): nothing has been deleted, the record is restricted and removed from planning, alerts and route optimisation.",

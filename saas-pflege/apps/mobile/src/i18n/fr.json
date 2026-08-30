@@ -43,9 +43,12 @@
     "pendingSync_one": "{{count}} pointage en attente de synchronisation (enregistré hors ligne).",
     "pendingSync_other": "{{count}} pointages en attente de synchronisation (enregistrés hors ligne).",
     "emergency": "Urgence",
+    "incident": "Incident",
     "navigate": "Navigation",
     "checkIn": "Arrivée",
     "checkOut": "Départ",
+    "noteWrite": "Rédiger une note",
+    "noteEdit": "Modifier la note",
     "status": {
       "PLANNED": "Planifiée",
       "IN_PROGRESS": "En cours",
@@ -56,6 +59,21 @@
     "noCaregiverProfile": "Aucun profil de soignant n'est rattaché à votre compte. Contactez votre coordination.",
     "trackingNoPermission": "Autorisation de localisation manquante : la tournée n'est pas enregistrée. Autorisez-la dans les réglages du système.",
     "trackingUnavailable": "Suivi de localisation indisponible (pas de connexion). La visite se poursuit normalement."
+  },
+  "visitNote": {
+    "title": "Note de visite",
+    "field": "Note",
+    "placeholder": "Qu'avez-vous observé pendant la visite ?",
+    "incident": "Quelque chose à signaler",
+    "incidentHint": "Cochez si la coordination doit voir la note à part. Une description devient alors obligatoire.",
+    "editWindow": "Une note déjà rédigée reste modifiable jusqu'à deux heures après le départ.",
+    "notStarted": "La note ne peut être rédigée qu'une fois votre arrivée pointée.",
+    "windowExpired": "Le délai de deux heures est écoulé. La note est figée et ne peut plus être modifiée.",
+    "incidentNeedsNote": "Une description est obligatoire lorsque « Quelque chose à signaler » est coché.",
+    "emptyNote": "La note ne peut pas être vide.",
+    "notFound": "Cette visite ne fait pas partie de votre tournée du jour.",
+    "save": "Enregistrer la note",
+    "back": "Retour à ma tournée"
   },
   "chat": {
     "title": "Chat",

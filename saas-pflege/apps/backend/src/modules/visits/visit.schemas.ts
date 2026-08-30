@@ -73,7 +73,21 @@ export const pointageSchema = z
   )
   .optional();
 
+/**
+ * Besuchsnotiz. Die inhaltliche Regel – Notiz Pflicht, sobald "Besonderes
+ * aufgefallen" gesetzt ist – steht NICHT hier, sondern in visit.rules
+ * (checkVisitNote): sie hängt am Zustand des Besuchs, den ein Schema nicht
+ * kennt. Zod prüft hier die Form, nicht die Zulässigkeit.
+ */
+export const writeVisitNoteSchema = z.object({
+  // Obergrenze grosszügig, aber vorhanden: ein Freitextfeld ohne Deckel ist
+  // eine Einladung, ganze Dokumente hineinzukopieren.
+  note: z.string().max(4000),
+  hasIncident: z.boolean().default(false),
+});
+
 export type CreateVisitInput = z.infer<typeof createVisitSchema>;
+export type WriteVisitNoteInput = z.infer<typeof writeVisitNoteSchema>;
 export type CreateEmergencyVisitInput = z.infer<typeof createEmergencyVisitSchema>;
 export type RescheduleVisitInput = z.infer<typeof rescheduleVisitSchema>;
 export type AssignCaregiverInput = z.infer<typeof assignCaregiverSchema>;
