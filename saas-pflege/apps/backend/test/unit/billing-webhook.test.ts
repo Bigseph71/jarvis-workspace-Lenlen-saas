@@ -264,20 +264,50 @@ describe("handleStripeEvent – Checkout abgeschlossen", () => {
       ),
     );
 
-    const [update] = callsTo("organization.updateMany");
-    expect(update.where).toMatchObject({ id: "org-1" });
-    expect(update.data).toMatchObject({
-      subscriptionStatus: "ACTIVE",
+    // Zwei Schreibvorgänge seit dem Testphasen-Fix: das ERGEBNIS des Checkouts
+    // gilt immer, der STATUS nur, wenn keine Testphase läuft.
+    const [result, status] = callsTo("organization.updateMany");
+
+    expect(result.where).toMatchObject({ id: "org-1" });
+    expect(result.data).toMatchObject({
       subscriptionPlan: "PRO",
       pastDueSince: null,
       stripeCustomerId: "cus_1",
       stripeSubscriptionId: "sub_1",
     });
-    expect((update.data as { planLimits: unknown }).planLimits).toMatchObject({
+    expect((result.data as { planLimits: unknown }).planLimits).toMatchObject({
       patients: 1000,
       caregivers: 100,
       vehicles: 30,
       ki: true,
+    });
+    // Der Status steht bewusst NICHT im ersten Schreibvorgang: er würde sonst
+    // eine laufende Testphase mitreissen.
+    expect(result.data).not.toHaveProperty("subscriptionStatus");
+
+    expect(status.data).toMatchObject({ subscriptionStatus: "ACTIVE" });
+    expect(status.where).toMatchObject({ id: "org-1" });
+  });
+
+  it("die Aktivierung durch den Checkout verschont eine laufende Testphase", async () => {
+    await handleStripeEvent(
+      event(
+        "checkout.session.completed",
+        { customer: "cus_1", metadata: { organizationId: "org-1", plan: "PRO" } },
+        "evt_1",
+      ),
+    );
+
+    const [, status] = callsTo("organization.updateMany");
+    // Die Bedingung MUSS im WHERE stehen und nicht im Anwendungscode: sonst
+    // könnte sich zwischen Lesen und Schreiben ein zweites Webhook-Event
+    // dazwischenschieben.
+    expect(status.where).toMatchObject({
+      OR: [
+        { subscriptionStatus: { not: "TRIAL" } },
+        { trialEndsAt: null },
+        { trialEndsAt: { lte: expect.any(Date) } },
+      ],
     });
   });
 
@@ -294,9 +324,9 @@ describe("handleStripeEvent – Checkout abgeschlossen", () => {
         "evt_1",
       ),
     );
-    const [update] = callsTo("organization.updateMany");
-    expect(update.data).toMatchObject({ subscriptionStatus: "ACTIVE" });
-    expect(update.data).not.toHaveProperty("subscriptionPlan");
+    const [result, status] = callsTo("organization.updateMany");
+    expect(result.data).not.toHaveProperty("subscriptionPlan");
+    expect(status.data).toMatchObject({ subscriptionStatus: "ACTIVE" });
   });
 });
 
