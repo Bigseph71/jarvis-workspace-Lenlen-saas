@@ -14,6 +14,61 @@ export interface HealthReport {
     database: CheckStatus;
     redis: CheckStatus;
   };
+  /**
+   * Dauer jeder Prüfung in Millisekunden.
+   *
+   * Warum das hier steht: von aussen war zu sehen, DASS /health rund eine
+   * Sekunde braucht, aber nicht WOFÜR. Beide Prüfungen laufen parallel und
+   * meldeten nur "up" – die Gesamtdauer ist das Maximum von zweien, und welche
+   * der beiden es ist, blieb offen. Ein `SELECT 1` und ein `PING` sollten
+   * zusammen unter 20 ms liegen; alles darüber ist die Antwort auf die Frage,
+   * warum jede API-Anfrage träge wirkt.
+   *
+   * Dieselbe Überlegung wie beim Commit-Hash weiter unten: eine Sonde, die man
+   * von aussen ohne Zugang zum Hoster ablesen kann, ist beim ersten Zwischenfall
+   * mehr wert als jede nachträgliche Rekonstruktion.
+   *
+   * `total` ist NICHT die Summe: die Prüfungen laufen nebeneinander. Liegt total
+   * deutlich über dem Maximum der beiden, kostet nicht die Abhängigkeit Zeit,
+   * sondern der Prozess selbst (Ereignisschleife blockiert, CPU gedrosselt).
+   */
+  timings: {
+    database: number;
+    redis: number;
+    total: number;
+  };
+}
+
+/**
+ * Ab wann eine Abhängigkeit als träge gilt.
+ *
+ * `SELECT 1` und `PING` sind je ein Rundlauf. Innerhalb desselben
+ * Rechenzentrums liegen sie im einstelligen Millisekundenbereich, über eine
+ * Region hinweg bei wenigen Dutzend. 250 ms sind also bereits eine Größenordnung
+ * daneben – niedrig genug, um das Problem zu zeigen, hoch genug, um bei einem
+ * normalen Ausschlag zu schweigen.
+ */
+export const SLOW_CHECK_MS = 250;
+
+/**
+ * Welche Prüfungen über der Schwelle liegen.
+ *
+ * Getrennt von der Messung, damit der Aufrufer daraus eine Logzeile machen kann:
+ * eine Trägheit, die nur beim manuellen Abruf von /health sichtbar wird, merkt
+ * niemand. Im Log fällt sie auf, auch wenn sie nur zeitweise auftritt.
+ */
+export function slowChecks(
+  timings: HealthReport["timings"],
+  thresholdMs: number = SLOW_CHECK_MS,
+): string[] {
+  return (["database", "redis"] as const).filter((name) => timings[name] > thresholdMs);
+}
+
+/** Misst die Dauer einer Prüfung, ohne ihr Ergebnis zu verändern. */
+async function timed<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }> {
+  const started = process.hrtime.bigint();
+  const value = await fn();
+  return { value, ms: Number(process.hrtime.bigint() - started) / 1e6 };
 }
 
 /**
@@ -81,13 +136,23 @@ async function checkRedis(): Promise<CheckStatus> {
  * `status` den passenden HTTP-Code (200 = ok, 503 = degraded).
  */
 export async function runHealthCheck(): Promise<HealthReport> {
-  const [database, redis] = await Promise.all([checkDatabase(), checkRedis()]);
-  const status = database === "up" && redis === "up" ? "ok" : "degraded";
+  const started = process.hrtime.bigint();
+  const [database, redis] = await Promise.all([timed(checkDatabase), timed(checkRedis)]);
+  const total = Number(process.hrtime.bigint() - started) / 1e6;
+
+  const status = database.value === "up" && redis.value === "up" ? "ok" : "degraded";
   return {
     status,
     service: "backend",
     version: shortCommit(env.GIT_COMMIT_SHA ?? env.RAILWAY_GIT_COMMIT_SHA),
     ts: new Date().toISOString(),
-    checks: { database, redis },
+    checks: { database: database.value, redis: redis.value },
+    // Auf ganze Millisekunden gerundet: Bruchteile suggerierten eine Genauigkeit,
+    // die eine Netzmessung nicht hat, und die Zahl soll im Browser lesbar sein.
+    timings: {
+      database: Math.round(database.ms),
+      redis: Math.round(redis.ms),
+      total: Math.round(total),
+    },
   };
 }
