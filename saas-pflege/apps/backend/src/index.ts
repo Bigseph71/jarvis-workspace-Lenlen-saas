@@ -12,7 +12,7 @@ import { ZodError } from "zod";
 import { Prisma } from "@len-len/database";
 import { env } from "./config/env.js";
 import { AppError } from "./lib/errors.js";
-import { runHealthCheck } from "./lib/health.js";
+import { runHealthCheck, slowChecks, SLOW_CHECK_MS } from "./lib/health.js";
 import { registerMetrics } from "./lib/metrics.js";
 import { createRateLimitRedis } from "./lib/rate-limit.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
@@ -129,6 +129,18 @@ app.setErrorHandler((error, request, reply) => {
 // zu sehen.
 app.get("/health", async (_request, reply) => {
   const report = await runHealthCheck();
+
+  // Trägheit sichtbar machen, auch ohne dass jemand /health abruft. Eine
+  // Abhängigkeit, die eine Sekunde für einen Rundlauf braucht, macht jede
+  // API-Anfrage träge; im Log fällt das auf, auch wenn es nur zeitweise auftritt.
+  const slow = slowChecks(report.timings);
+  if (slow.length > 0) {
+    app.log.warn(
+      { timings: report.timings, slow, thresholdMs: SLOW_CHECK_MS },
+      "Health-Check: Abhängigkeit antwortet träge",
+    );
+  }
+
   reply.status(report.status === "ok" ? 200 : 503);
   return report;
 });
