@@ -431,7 +431,7 @@ async function applyStatusByCustomer(
       // vorgeschaltete Abfrage: das spart einen Rundlauf und ist nebenbei
       // atomar – zwischen Lesen und Schreiben könnte sonst ein zweites
       // Webhook-Event dazwischenfahren.
-      ...(source === "payment" ? { NOT: RUNNING_TRIAL(now) } : {}),
+      ...(source === "payment" ? OVERWRITABLE_BY_PAYMENT(now) : {}),
     },
     // trialEndsAt wird hier NICHT angefasst: es folgt `trial_end` aus dem
     // Abo-Objekt und wird an der Stelle gesetzt, die dieses Feld kennt. Es
@@ -441,10 +441,23 @@ async function applyStatusByCustomer(
   });
 }
 
-/** Tenant mit laufender Testphase (Bedingung für den Schutz oben). */
-const RUNNING_TRIAL = (now: Date): Prisma.OrganizationWhereInput => ({
-  subscriptionStatus: SubscriptionStatus.TRIAL,
-  trialEndsAt: { gt: now },
+/**
+ * Tenants, die ein Zahlungs-Event überschreiben DARF: alle ausser denen mit
+ * laufender Testphase. Das Gegenstück zu `paymentEventMayOverwrite`.
+ *
+ * Bewusst als ODER-Kette und nicht als `NOT: { status, trialEndsAt: { gt } }`
+ * geschrieben. In SQL ergibt `TRIAL AND (NULL > now)` den Wert NULL, und
+ * `NOT NULL` ist wieder NULL – die Zeile fiele aus dem UPDATE heraus. Ein
+ * Tenant in TRIAL OHNE Frist wäre damit dauerhaft unveränderlich, also genau
+ * der Zustand, den check-trial.ts als Anomalie meldet. Positiv formuliert
+ * bleibt die Bedingung auch bei NULL wahrheitsfähig.
+ */
+const OVERWRITABLE_BY_PAYMENT = (now: Date): Prisma.OrganizationWhereInput => ({
+  OR: [
+    { subscriptionStatus: { not: SubscriptionStatus.TRIAL } },
+    { trialEndsAt: null },
+    { trialEndsAt: { lte: now } },
+  ],
 });
 
 /** Spiegelt eine Stripe-Rechnung in die lokale Historie (Anzeige unter /billing). */
@@ -511,13 +524,20 @@ async function processEvent(event: BillingEvent): Promise<void> {
     const customer = str(object.customer);
     const subscription = str(object.subscription);
 
+    // Zwei Schreibvorgänge, und die Trennung ist der Punkt.
+    //
+    // Was der Checkout ERGIBT – Plan, Grenzen, Stripe-IDs – gilt immer und muss
+    // auch während einer Testphase ankommen. Der STATUS dagegen ist hier nur
+    // eine Vermutung ("bezahlt, also aktiv"), und die ist falsch, sobald eine
+    // Testphase läuft: Stripe schliesst den Checkout auch dann ab, es wird nur
+    // noch nichts belastet.
+    //
     // updateMany statt update: ein gelöschter Tenant darf das Event nicht
     // werfen lassen, sonst wiederholte Stripe es tagelang gegen eine Zeile,
     // die es nicht mehr gibt.
     await prisma.organization.updateMany({
       where: { id: organizationId },
       data: {
-        subscriptionStatus: SubscriptionStatus.ACTIVE,
         // Frischer Checkout -> eine etwaige alte Karenzzeit ist gegenstandslos.
         pastDueSince: null,
         ...(plan
@@ -529,6 +549,15 @@ async function processEvent(event: BillingEvent): Promise<void> {
         ...(customer ? { stripeCustomerId: customer } : {}),
         ...(subscription ? { stripeSubscriptionId: subscription } : {}),
       },
+    });
+
+    // Der Status nur, wenn keine Testphase läuft. Beide Eintreffreihenfolgen
+    // gehen auf: kommt der Checkout VOR `subscription.created`, steht der
+    // Tenant noch auf SUSPENDED, wird hier ACTIVE und gleich darauf vom
+    // Abo-Event auf TRIAL gesetzt. Kommt er danach, greift der Schutz.
+    await prisma.organization.updateMany({
+      where: { id: organizationId, ...OVERWRITABLE_BY_PAYMENT(new Date()) },
+      data: { subscriptionStatus: SubscriptionStatus.ACTIVE },
     });
     return;
   }
