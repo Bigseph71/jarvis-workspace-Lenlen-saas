@@ -12,7 +12,12 @@ import type { TenantContext } from "../../lib/context.js";
 import { getBillingProvider, type BillingEvent } from "../../lib/billing/index.js";
 import { planForPrice } from "../../lib/billing/prices.js";
 import { PLAN_LIMITS, parsePlan, resolvePlanLimits, type PlanLimits } from "./plan.js";
-import { mapEventToStatus, mapInvoiceStatus, mapSubscriptionStatus } from "./events.js";
+import {
+  mapEventToStatus,
+  mapInvoiceStatus,
+  mapSubscriptionStatus,
+  type StatusSource,
+} from "./events.js";
 import { graceDaysRemaining, graceDeadline } from "./grace.js";
 import { trialDaysRemaining } from "./trial.js";
 import type { CheckoutInput, ListInvoicesInput, PortalInput } from "./billing.schemas.js";
@@ -403,6 +408,8 @@ function planFromSubscription(object: Record<string, unknown>): SubscriptionPlan
 async function applyStatusByCustomer(
   customerId: string,
   status: SubscriptionStatus,
+  source: StatusSource,
+  now: Date = new Date(),
 ): Promise<void> {
   if (status === SubscriptionStatus.PAST_DUE) {
     await prisma.organization.updateMany({
@@ -417,7 +424,15 @@ async function applyStatusByCustomer(
   }
 
   await prisma.organization.updateMany({
-    where: { stripeCustomerId: customerId },
+    where: {
+      stripeCustomerId: customerId,
+      // Eine laufende Testphase gegen Zahlungs-Events schützen (die 0-€-
+      // Rechnung zu Beginn des Abos). Als Bedingung im UPDATE und nicht als
+      // vorgeschaltete Abfrage: das spart einen Rundlauf und ist nebenbei
+      // atomar – zwischen Lesen und Schreiben könnte sonst ein zweites
+      // Webhook-Event dazwischenfahren.
+      ...(source === "payment" ? OVERWRITABLE_BY_PAYMENT(now) : {}),
+    },
     // trialEndsAt wird hier NICHT angefasst: es folgt `trial_end` aus dem
     // Abo-Objekt und wird an der Stelle gesetzt, die dieses Feld kennt. Es
     // hier zu leeren, hiesse den Wert je nach Eintreffreihenfolge der Events
@@ -425,6 +440,25 @@ async function applyStatusByCustomer(
     data: { subscriptionStatus: status, pastDueSince: null },
   });
 }
+
+/**
+ * Tenants, die ein Zahlungs-Event überschreiben DARF: alle ausser denen mit
+ * laufender Testphase. Das Gegenstück zu `paymentEventMayOverwrite`.
+ *
+ * Bewusst als ODER-Kette und nicht als `NOT: { status, trialEndsAt: { gt } }`
+ * geschrieben. In SQL ergibt `TRIAL AND (NULL > now)` den Wert NULL, und
+ * `NOT NULL` ist wieder NULL – die Zeile fiele aus dem UPDATE heraus. Ein
+ * Tenant in TRIAL OHNE Frist wäre damit dauerhaft unveränderlich, also genau
+ * der Zustand, den check-trial.ts als Anomalie meldet. Positiv formuliert
+ * bleibt die Bedingung auch bei NULL wahrheitsfähig.
+ */
+const OVERWRITABLE_BY_PAYMENT = (now: Date): Prisma.OrganizationWhereInput => ({
+  OR: [
+    { subscriptionStatus: { not: SubscriptionStatus.TRIAL } },
+    { trialEndsAt: null },
+    { trialEndsAt: { lte: now } },
+  ],
+});
 
 /** Spiegelt eine Stripe-Rechnung in die lokale Historie (Anzeige unter /billing). */
 async function recordInvoice(event: BillingEvent, object: Record<string, unknown>): Promise<void> {
@@ -490,13 +524,20 @@ async function processEvent(event: BillingEvent): Promise<void> {
     const customer = str(object.customer);
     const subscription = str(object.subscription);
 
+    // Zwei Schreibvorgänge, und die Trennung ist der Punkt.
+    //
+    // Was der Checkout ERGIBT – Plan, Grenzen, Stripe-IDs – gilt immer und muss
+    // auch während einer Testphase ankommen. Der STATUS dagegen ist hier nur
+    // eine Vermutung ("bezahlt, also aktiv"), und die ist falsch, sobald eine
+    // Testphase läuft: Stripe schliesst den Checkout auch dann ab, es wird nur
+    // noch nichts belastet.
+    //
     // updateMany statt update: ein gelöschter Tenant darf das Event nicht
     // werfen lassen, sonst wiederholte Stripe es tagelang gegen eine Zeile,
     // die es nicht mehr gibt.
     await prisma.organization.updateMany({
       where: { id: organizationId },
       data: {
-        subscriptionStatus: SubscriptionStatus.ACTIVE,
         // Frischer Checkout -> eine etwaige alte Karenzzeit ist gegenstandslos.
         pastDueSince: null,
         ...(plan
@@ -508,6 +549,15 @@ async function processEvent(event: BillingEvent): Promise<void> {
         ...(customer ? { stripeCustomerId: customer } : {}),
         ...(subscription ? { stripeSubscriptionId: subscription } : {}),
       },
+    });
+
+    // Der Status nur, wenn keine Testphase läuft. Beide Eintreffreihenfolgen
+    // gehen auf: kommt der Checkout VOR `subscription.created`, steht der
+    // Tenant noch auf SUSPENDED, wird hier ACTIVE und gleich darauf vom
+    // Abo-Event auf TRIAL gesetzt. Kommt er danach, greift der Schutz.
+    await prisma.organization.updateMany({
+      where: { id: organizationId, ...OVERWRITABLE_BY_PAYMENT(new Date()) },
+      data: { subscriptionStatus: SubscriptionStatus.ACTIVE },
     });
     return;
   }
@@ -539,7 +589,10 @@ async function processEvent(event: BillingEvent): Promise<void> {
       }
     }
 
-    await applyStatusByCustomer(customerId, subStatus);
+    // "subscription": der Zustand kommt aus dem Abo-Objekt selbst und gilt
+    // ohne Vorbehalt – hier darf ACTIVE eine Testphase beenden, denn genau das
+    // sagt Stripe dann aus.
+    await applyStatusByCustomer(customerId, subStatus, "subscription");
 
     // Plan nachziehen, falls er sich geändert hat. Deckt auch den Wechsel ab,
     // den ein Kunde selbst im Stripe-Kundenportal auslöst – dort läuft nichts
@@ -562,12 +615,18 @@ async function processEvent(event: BillingEvent): Promise<void> {
 
     // Ende der Testphase spiegeln. Die Frist führt Stripe; hier wird sie nur
     // abgelegt, damit die Abrechnungsseite ein Datum zeigen kann, ohne Stripe
-    // zu befragen. `trial_end` kommt in Unix-Sekunden und fehlt, sobald die
-    // Testphase vorbei ist – dann wird das Feld geleert.
+    // zu befragen.
+    //
+    // An den STATUS gebunden, nicht allein an `trial_end`: Stripe lässt das
+    // Feld nach dem Ende der Testphase am Abo stehen, es ist dort eine
+    // historische Angabe. Nur auf `trial_end` zu schauen hiess deshalb, das
+    // Datum ewig mitzuschleppen – ein Tenant stand auf ACTIVE und behielt eine
+    // Testphase, die im August abgelaufen war.
     const trialEnd = int(object.trial_end);
+    const stillTrialing = subStatus === SubscriptionStatus.TRIAL && trialEnd !== null;
     await prisma.organization.updateMany({
       where: { stripeCustomerId: customerId },
-      data: { trialEndsAt: trialEnd !== null ? new Date(trialEnd * 1000) : null },
+      data: { trialEndsAt: stillTrialing ? new Date(trialEnd * 1000) : null },
     });
 
     const subscriptionId = str(object.id);
@@ -588,5 +647,7 @@ async function processEvent(event: BillingEvent): Promise<void> {
   if (!status) return;
   const customerId = str(object.customer);
   if (!customerId) return;
-  await applyStatusByCustomer(customerId, status);
+  // "payment": Rechnung oder Checkout. Eine Aussage über eine ZAHLUNG, die eine
+  // laufende Testphase nicht beenden darf.
+  await applyStatusByCustomer(customerId, status, "payment");
 }
