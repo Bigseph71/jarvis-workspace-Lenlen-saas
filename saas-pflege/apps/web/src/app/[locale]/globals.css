@@ -1,3 +1,87 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /*
+   * Fliesstext bricht an sinnvollen Stellen um, Überschriften bleiben
+   * ausbalanciert. Der Handoff verlangt `text-wrap: pretty` an mehreren
+   * Stellen; hier einmal zentral, statt in jeder Komponente.
+   */
+  p {
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  /*
+   * Zeichnen der Linien (Routen, Graphen) beim Aufbau.
+   *
+   * `stroke-dasharray` und der Startwert des Offsets stehen im Markup, weil
+   * sie von der Länge des jeweiligen Pfades abhängen. Hier steht nur der
+   * Ablauf.
+   */
+  .ll-draw {
+    animation: ll-draw 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  /* Halo der Live-Position auf der Karte. Läuft dauerhaft. */
+  .ll-pulse {
+    animation: ll-pulse 2.6s ease-out infinite;
+    transform-origin: center;
+  }
+}
+
+@keyframes ll-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ll-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+/*
+ * Bewegungsreduktion (Handoff § Animations).
+ *
+ * Keine Abschwächung, sondern Abschaltung – und der ENDZUSTAND wird gezeigt.
+ * Eine Route, deren Zeichnung nur angehalten wird, bliebe unsichtbar: der Pfad
+ * steht dann auf `stroke-dashoffset` gleich seiner Länge, also vollständig
+ * abgeschnitten. Ohne die Offset-Rücksetzung wäre die Karte für genau die
+ * Nutzerinnen leer, die die Einstellung gesetzt haben.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .ll-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .ll-pulse {
+    animation: none;
+    opacity: 0.32;
+    transform: scale(1.6);
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

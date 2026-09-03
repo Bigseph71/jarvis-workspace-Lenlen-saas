@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import type { UserRole } from "@len-len/api-client";
 import { render, t } from "./helpers/render";
 
@@ -31,7 +31,12 @@ vi.mock("@/components/locale-switcher", () => ({ LocaleSwitcher: () => null }));
 import { AppShell } from "../src/components/app-shell";
 
 function renderAs(role: UserRole) {
-  useAuth.mockReturnValue({ user: { role }, logout: vi.fn() });
+  // Mit E-Mail: die Kopfzeile leitet daraus Name und Initialen ab. Ein Mock
+  // ohne sie bildete kein Konto ab, das es geben kann.
+  useAuth.mockReturnValue({
+    user: { role, email: "sabine.krueger@pflegedienst-nord.de" },
+    logout: vi.fn(),
+  });
   render(
     <AppShell>
       <p>Inhalt</p>
@@ -39,11 +44,24 @@ function renderAs(role: UserRole) {
   );
 }
 
-/** Sichtbare Beschriftungen der Leiste (ohne den Inhalt der Seite). */
+/**
+ * Sichtbare Beschriftungen der Leiste.
+ *
+ * Gezielt INNERHALB der Navigation gesucht und nicht im ganzen Dokument: seit
+ * der Überarbeitung ist auch die Wortmarke ein Link (sie führt zur Übersicht),
+ * und der Seiteninhalt bringt eigene mit. Beide gehören nicht zur Frage, welche
+ * Module eine Rolle angeboten bekommt.
+ */
 function navLabels(): string[] {
-  return screen
+  return within(screen.getByRole("navigation"))
     .getAllByRole("link")
-    .map((el) => el.textContent?.trim() ?? "")
+    .map((el) => {
+      // Ohne Zähler und ohne den Satz für die Sprachausgabe: gefragt ist der
+      // Name des Moduls, nicht sein Zustand.
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll("[data-nav-badge], .sr-only").forEach((node) => node.remove());
+      return clone.textContent?.trim() ?? "";
+    })
     .filter(Boolean);
 }
 
@@ -60,8 +78,18 @@ describe("Navigationsleiste je Rolle", () => {
     for (const key of ["dashboard", "patients", "caregivers", "visits", "absences"]) {
       expect(screen.queryByText(t(`nav.${key}`)), key).not.toBeInTheDocument();
     }
-    // Auch kein Aufklappmenü: es wäre leer.
-    expect(screen.queryByText(t("nav.more"))).not.toBeInTheDocument();
+  });
+
+  it("das Menü des Super-Admins enthält nur die Plattform", () => {
+    // Seit der Überarbeitung gibt es den Menüknopf auch für ihn: unterhalb von
+    // lg wandern die erstrangigen Punkte hinein, und die Plattform IST sein
+    // erstrangiger Punkt. Er darf dort nichts anderes finden.
+    renderAs("SUPER_ADMIN");
+
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(t("nav.more")) }));
+
+    const entries = screen.getAllByRole("menuitem").map((el) => el.textContent?.trim());
+    expect(entries).toEqual([t("nav.admin")]);
   });
 
   it("lässt die übrigen Rollen unverändert", () => {

@@ -48,12 +48,6 @@
       "toLogin": "Se connecter"
     }
   },
-  "dashboard": {
-    "title": "Tableau de bord",
-    "welcome": "Bienvenue, {email}",
-    "role": "Rôle",
-    "organization": "Organisation"
-  },
   "nav": {
     "dashboard": "Tableau de bord",
     "patients": "Patients",
@@ -69,7 +63,125 @@
     "dsgvoExport": "Droit d'accès",
     "dsgvoErasure": "Effacement",
     "clustering": "Secteurs",
-    "admin": "Plateforme"
+    "admin": "Plateforme",
+    "primary": "Navigation principale",
+    "openArbitrations": "{count} arbitrages ouverts"
+  },
+  "roles": {
+    "SUPER_ADMIN": "Administration plateforme",
+    "STRUKTUR_ADMIN": "Admin structure",
+    "KOORDINATOR": "Coordination",
+    "HR": "RH",
+    "FACHKRAFT": "Fachkraft"
+  },
+  "overview": {
+    "demo": {
+      "tag": "Démonstration",
+      "body": "Cet écran affiche des valeurs d'exemple. Les endpoints correspondants n'existent pas encore."
+    },
+    "greeting": "Bonjour.",
+    "greetingNamed": "Bonjour {name}.",
+    "subline": "Le service du matin suit le plan.",
+    "actions": {
+      "weeklyReport": "Rapport hebdomadaire",
+      "planTomorrow": "Planifier demain"
+    },
+    "kpi": {
+      "planningTime": {
+        "label": "Temps de planification",
+        "unit": " min",
+        "delta": "contre 4 h 20 avant"
+      },
+      "kilometers": {
+        "label": "Kilomètres du jour",
+        "unit": "",
+        "delta": "−18 % vs plan manuel"
+      },
+      "visits": {
+        "label": "Visites planifiées",
+        "unit": "",
+        "delta": "98,4 % couvertes"
+      },
+      "delays": {
+        "label": "Retards en cours",
+        "unit": "",
+        "delta": "2 rattrapables sans appel"
+      }
+    },
+    "tours": {
+      "title": "Tournées en cours",
+      "summary": "{tours} tournées · {km} km · rafraîchi il y a {seconds} s",
+      "shift": "Service",
+      "shifts": {
+        "morning": "Matin",
+        "afternoon": "Après-midi",
+        "night": "Nuit"
+      },
+      "meta": "{sector} · {visits} visites · {km} km",
+      "doneOf": "{done} / {total} faites",
+      "load": "charge {percent} %",
+      "notStarted": "non démarrée",
+      "state": {
+        "enRoute": "En route",
+        "overloaded": "Surchargée",
+        "notStarted": "En attente"
+      },
+      "openPlanning": "Ouvrir la planification"
+    },
+    "sectors": {
+      "west": "Ouest",
+      "north": "Nord",
+      "centre": "Centre",
+      "east": "Est",
+      "south": "Sud",
+      "southEast": "Sud-Est"
+    },
+    "arbitrations": {
+      "title": "Ce qui demande une décision",
+      "subtitle": "Le moteur ne tranche pas seul sur ces points",
+      "empty": "Tous les arbitrages sont tranchés.",
+      "qualification": {
+        "category": "Qualification",
+        "statement": "Mme Vogel exige une injection SC. Tomas est le seul qualifié sur le secteur Nord, et sa tournée est déjà à 94 %.",
+        "primary": "Déplacer 2 visites",
+        "secondary": "Garder tel quel"
+      },
+      "timeWindow": {
+        "category": "Fenêtre horaire",
+        "statement": "M. Schuster doit être vu avant 8 h 30. L'itinéraire optimal le place à 8 h 52.",
+        "primary": "Prioriser la fenêtre",
+        "secondary": "Prioriser les km"
+      }
+    },
+    "absences": {
+      "title": "Absences déclarées",
+      "subtitle": "Impact déjà répercuté sur les tournées",
+      "reasons": {
+        "sickLeave": "Arrêt maladie jusqu'au 29 août",
+        "approvedLeave": "Congé validé",
+        "training": "Formation mercredi après-midi"
+      },
+      "coverage": {
+        "reassigned": "{count} visites reprises",
+        "covered": "Couvert",
+        "toReplace": "{count} visites à replacer"
+      }
+    },
+    "qualifications": {
+      "title": "Couverture des qualifications",
+      "items": {
+        "basicCare": "Soins de base",
+        "technicalCare": "Soins techniques SGB V",
+        "drivingLicence": "Permis véhicule",
+        "arabic": "Langue arabe"
+      },
+      "status": {
+        "basicCare": "Couvert",
+        "technicalCare": "{count} manquant",
+        "drivingLicence": "Couvert",
+        "arabic": "{count} patients"
+      }
+    }
   },
   "patients": {
     "title": "Patients",

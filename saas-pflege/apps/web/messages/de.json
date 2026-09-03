@@ -48,12 +48,6 @@
       "toLogin": "Anmelden"
     }
   },
-  "dashboard": {
-    "title": "Übersicht",
-    "welcome": "Willkommen, {email}",
-    "role": "Rolle",
-    "organization": "Organisation"
-  },
   "nav": {
     "dashboard": "Übersicht",
     "patients": "Patienten",
@@ -69,7 +63,125 @@
     "dsgvoExport": "Auskunft",
     "dsgvoErasure": "Löschung",
     "clustering": "Gebiete",
-    "admin": "Plattform"
+    "admin": "Plattform",
+    "primary": "Hauptnavigation",
+    "openArbitrations": "{count} offene Arbitragen"
+  },
+  "roles": {
+    "SUPER_ADMIN": "Plattform-Administration",
+    "STRUKTUR_ADMIN": "Struktur-Admin",
+    "KOORDINATOR": "Koordination",
+    "HR": "Personal",
+    "FACHKRAFT": "Fachkraft"
+  },
+  "overview": {
+    "demo": {
+      "tag": "Beispiel",
+      "body": "Dieser Bildschirm zeigt Beispielwerte. Die zugehörigen Endpunkte gibt es noch nicht."
+    },
+    "greeting": "Guten Tag.",
+    "greetingNamed": "Guten Tag, {name}.",
+    "subline": "Der Frühdienst läuft nach Plan.",
+    "actions": {
+      "weeklyReport": "Wochenbericht",
+      "planTomorrow": "Morgen planen"
+    },
+    "kpi": {
+      "planningTime": {
+        "label": "Planungsdauer",
+        "unit": " Min.",
+        "delta": "statt zuvor 4 Std. 20"
+      },
+      "kilometers": {
+        "label": "Kilometer heute",
+        "unit": "",
+        "delta": "−18 % gegenüber manueller Planung"
+      },
+      "visits": {
+        "label": "Geplante Besuche",
+        "unit": "",
+        "delta": "98,4 % abgedeckt"
+      },
+      "delays": {
+        "label": "Laufende Verspätungen",
+        "unit": "",
+        "delta": "2 ohne Anruf aufholbar"
+      }
+    },
+    "tours": {
+      "title": "Laufende Touren",
+      "summary": "{tours} Touren · {km} km · vor {seconds} s aktualisiert",
+      "shift": "Dienst",
+      "shifts": {
+        "morning": "Früh",
+        "afternoon": "Spät",
+        "night": "Nacht"
+      },
+      "meta": "{sector} · {visits} Besuche · {km} km",
+      "doneOf": "{done} / {total} erledigt",
+      "load": "Auslastung {percent} %",
+      "notStarted": "nicht begonnen",
+      "state": {
+        "enRoute": "Unterwegs",
+        "overloaded": "Überlastet",
+        "notStarted": "Wartet"
+      },
+      "openPlanning": "Planung öffnen"
+    },
+    "sectors": {
+      "west": "West",
+      "north": "Nord",
+      "centre": "Mitte",
+      "east": "Ost",
+      "south": "Süd",
+      "southEast": "Südost"
+    },
+    "arbitrations": {
+      "title": "Was eine Entscheidung braucht",
+      "subtitle": "Diese Punkte entscheidet der Optimierer nicht allein",
+      "empty": "Alle Arbitragen sind entschieden.",
+      "qualification": {
+        "category": "Qualifikation",
+        "statement": "Frau Vogel benötigt eine SC-Injektion. Tomas ist der Einzige mit dieser Qualifikation im Gebiet Nord, und seine Tour steht bereits bei 94 %.",
+        "primary": "2 Besuche verschieben",
+        "secondary": "So belassen"
+      },
+      "timeWindow": {
+        "category": "Zeitfenster",
+        "statement": "Herr Schuster muss vor 8:30 Uhr gesehen werden. Die optimale Route setzt ihn auf 8:52 Uhr.",
+        "primary": "Zeitfenster bevorzugen",
+        "secondary": "Kilometer bevorzugen"
+      }
+    },
+    "absences": {
+      "title": "Gemeldete Abwesenheiten",
+      "subtitle": "Auswirkung bereits in den Touren berücksichtigt",
+      "reasons": {
+        "sickLeave": "Krankmeldung bis 29. August",
+        "approvedLeave": "Urlaub genehmigt",
+        "training": "Fortbildung Mittwochnachmittag"
+      },
+      "coverage": {
+        "reassigned": "{count} Besuche übernommen",
+        "covered": "Abgedeckt",
+        "toReplace": "{count} Besuche neu zu verteilen"
+      }
+    },
+    "qualifications": {
+      "title": "Abdeckung der Qualifikationen",
+      "items": {
+        "basicCare": "Grundpflege",
+        "technicalCare": "Behandlungspflege SGB V",
+        "drivingLicence": "Führerschein",
+        "arabic": "Arabisch"
+      },
+      "status": {
+        "basicCare": "Abgedeckt",
+        "technicalCare": "{count} fehlt",
+        "drivingLicence": "Abgedeckt",
+        "arabic": "{count} Patienten"
+      }
+    }
   },
   "patients": {
     "title": "Patienten",
