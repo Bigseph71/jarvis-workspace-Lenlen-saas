@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { UserRole } from "@len-len/api-client";
 import { Link, usePathname } from "@/i18n/navigation";
 import { LocaleSwitcher } from "@/components/locale-switcher";
@@ -9,6 +9,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { useAuth } from "@/lib/auth/auth-context";
 import { initialsFromEmail, displayNameFromEmail } from "@/lib/display-name";
 import { OPEN_ARBITRATIONS } from "@/lib/demo/planning-draft";
+import { GPS_STATUS } from "@/lib/demo/planung";
 
 // Navigationspunkte des angemeldeten Bereichs. `roles` beschränkt die Sichtbarkeit.
 //
@@ -39,9 +40,14 @@ const PRIMARY_ITEMS: NavItem[] = [
   { href: "/patients", key: "patients", roles: PLANNING },
   // Fachkräfte: HR braucht sie für das Vertragsmodul (caregiver.routes.ts: canRead).
   { href: "/caregivers", key: "caregivers", roles: PLANNING_AND_HR },
-  // Besuchsplanung (visit.routes.ts: canPlan). Die Fachkraft plant nicht, sie
-  // sieht ihre Tour in der mobilen App.
-  { href: "/visits", key: "visits", roles: PLANNING, badge: OPEN_ARBITRATIONS },
+  // Der Planungsarbeitsplatz (Karte, Gewinne, Arbitragen, Veröffentlichung).
+  //
+  // Bis zur Überarbeitung führte dieser Punkt auf /visits, die Wochenliste der
+  // Besuche. Das sind zwei verschiedene Dinge: die Liste ist die Pflege
+  // EINZELNER Termine (anlegen, absagen, umbesetzen), der Arbeitsplatz ist die
+  // Arbeit am ganzen Entwurf. Der Handoff führt genau einen Punkt "Planung" in
+  // der Leiste, und gemeint ist der Arbeitsplatz; die Liste rückt ins Menü.
+  { href: "/planung", key: "visits", roles: PLANNING, badge: OPEN_ARBITRATIONS },
   // Abwesenheiten: HR pflegt sie, die Koordination liest sie – die Planung
   // hängt davon ab.
   { href: "/absences", key: "absences", roles: PLANNING_AND_HR },
@@ -53,6 +59,10 @@ const PRIMARY_ITEMS: NavItem[] = [
  * jedem neuen Modul weiter (die Dienstpläne kommen noch).
  */
 const SECONDARY_ITEMS: NavItem[] = [
+  // Wochenliste der Besuche. Sie bleibt vollständig erreichbar – hier werden
+  // einzelne Termine angelegt, abgesagt und umbesetzt, was der
+  // Planungsarbeitsplatz nicht kann.
+  { href: "/visits", key: "visitList", roles: PLANNING },
   // Gebietsaufteilung: geht der Optimierung voraus, gehört also zur Planung
   // (clustering.routes.ts: canPlan). Kein Untermenüpunkt von /tracking – das
   // ist Echtzeit-Überwachung, etwas ganz anderes.
@@ -241,6 +251,26 @@ function MoreMenu({
   );
 }
 
+/**
+ * Zahl der Fachkräfte, deren Position gerade eingeht.
+ *
+ * Auf dem Planungsarbeitsplatz die wichtigste Randbedingung überhaupt: wer
+ * einen Entwurf umbaut, muss wissen, wie viele Touren bereits laufen. Ohne
+ * diese Angabe wäre nicht zu erkennen, ob man an einem Plan arbeitet oder in
+ * einen laufenden Betrieb eingreift.
+ */
+function GpsIndicator() {
+  const t = useTranslations("planning");
+  const format = useFormatter();
+
+  return (
+    <span className="hidden items-center gap-2 whitespace-nowrap rounded-full border border-border-default bg-inset px-[15px] py-[9px] text-label text-ink-secondary md:inline-flex">
+      <span aria-hidden="true" className="h-[7px] w-[7px] rounded-full bg-sage" />
+      {t("gps", { count: format.number(GPS_STATUS.onTour) })}
+    </span>
+  );
+}
+
 /** Namensblock rechts in der Kopfzeile. */
 function UserBlock({ email, role }: { email: string; role: UserRole }) {
   const tr = useTranslations("roles");
@@ -305,6 +335,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-3.5">
+            {/*
+              GPS-Anzeige, nur auf dem Planungsarbeitsplatz (Handoff § 2).
+              Der Handoff formuliert sie dort als ERSATZ für den
+              Sprachumschalter; das wäre allerdings ein Rückschritt – auf
+              genau diesem Bildschirm liesse sich die Sprache dann nicht mehr
+              wechseln, und § Overview hält ausdrücklich fest, dass der
+              Umschalter im Chrome erhalten bleibt. Also daneben, nicht statt.
+            */}
+            {pathname === "/planung" ? <GpsIndicator /> : null}
             <LocaleSwitcher />
             {user ? <UserBlock email={user.email} role={user.role} /> : null}
             <button

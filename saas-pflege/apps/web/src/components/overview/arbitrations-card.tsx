@@ -1,11 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ARBITRATIONS, type ArbitrationId } from "@/lib/demo/uebersicht";
-
-/** Dauer des Ausblendens (Handoff § Arbitrages). */
-const DISMISS_MS = 200;
+import { DISMISS_MS, type ArbitrationQueue } from "@/lib/arbitrations";
 
 const CATEGORY_TONE: Record<"clay" | "clayDeep", string> = {
   clay: "text-clay",
@@ -26,27 +22,17 @@ const DOT_TONE: Record<"clay" | "clayDeep", string> = {
  * Wer ihn zu "3 neue Hinweise" zusammenfasst, nimmt der Koordination genau die
  * Information, für die der Bildschirm gebaut ist.
  *
- * Die beiden Aktionen schliessen einander aus. Ein Klick blendet die Karte aus
- * und zählt die Pastille in der Kopfzeile herunter – heute nur in der
- * Oberfläche, weil es den Endpunkt noch nicht gibt (siehe lib/demo).
+ * Die Komponente hält keinen Zustand mehr: er liegt in `useArbitrationQueue`,
+ * weil auf der Planungsseite auch der Veröffentlichen-Knopf ihn braucht.
  */
-export function ArbitrationsCard({ withSubtitle = true }: { withSubtitle?: boolean }) {
+export function ArbitrationsCard({
+  queue,
+  withSubtitle = true,
+}: {
+  queue: ArbitrationQueue;
+  withSubtitle?: boolean;
+}) {
   const t = useTranslations("overview.arbitrations");
-  const [leaving, setLeaving] = useState<ArbitrationId | null>(null);
-  const [dismissed, setDismissed] = useState<ArbitrationId[]>([]);
-
-  const decide = useCallback((id: ArbitrationId) => {
-    setLeaving(id);
-    // Erst nach dem Ausblenden aus der Liste nehmen, sonst springt die Karte
-    // weg statt zu verschwinden. Unter `prefers-reduced-motion` läuft der
-    // Übergang praktisch mit Dauer 0 (globals.css), das Verhalten bleibt gleich.
-    window.setTimeout(() => {
-      setDismissed((prev) => [...prev, id]);
-      setLeaving(null);
-    }, DISMISS_MS);
-  }, []);
-
-  const open = ARBITRATIONS.filter((a) => !dismissed.includes(a.id));
 
   return (
     <section className="rounded-card border border-clay-wash-border bg-clay-wash p-6">
@@ -55,15 +41,15 @@ export function ArbitrationsCard({ withSubtitle = true }: { withSubtitle?: boole
       </h2>
       {withSubtitle ? <p className="mt-1 text-label text-ink-muted">{t("subtitle")}</p> : null}
 
-      {open.length === 0 ? (
+      {queue.open.length === 0 ? (
         <p className="mt-4 text-row text-ink-secondary">{t("empty")}</p>
       ) : (
         <ul className="mt-4 flex flex-col gap-2.5">
-          {open.map((item) => (
+          {queue.open.map((item) => (
             <li
               key={item.id}
               className={`overflow-hidden rounded-tile border border-clay-wash-border bg-app p-4 transition-all ease-out ${
-                leaving === item.id ? "max-h-0 border-0 p-0 opacity-0" : "max-h-96 opacity-100"
+                queue.leaving === item.id ? "max-h-0 border-0 p-0 opacity-0" : "max-h-96 opacity-100"
               }`}
               style={{ transitionDuration: `${DISMISS_MS}ms` }}
             >
@@ -88,14 +74,14 @@ export function ArbitrationsCard({ withSubtitle = true }: { withSubtitle?: boole
                     erlaubt – die Empfehlung ist eine Empfehlung, keine Vorgabe. */}
                 <button
                   type="button"
-                  onClick={() => decide(item.id)}
+                  onClick={() => queue.decide(item.id)}
                   className="rounded-full bg-clay px-3.5 py-[7px] text-meta font-semibold text-on-clay transition-colors duration-120 hover:bg-clay-hover"
                 >
                   {t(`${item.id}.primary`)}
                 </button>
                 <button
                   type="button"
-                  onClick={() => decide(item.id)}
+                  onClick={() => queue.decide(item.id)}
                   className="rounded-full border border-strong bg-inset px-3.5 py-[7px] text-meta font-medium text-ink-body transition-colors duration-120 hover:bg-muted"
                 >
                   {t(`${item.id}.secondary`)}
