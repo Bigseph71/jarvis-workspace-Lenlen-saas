@@ -5,7 +5,10 @@ import { useTranslations } from "next-intl";
 import type { UserRole } from "@len-len/api-client";
 import { Link, usePathname } from "@/i18n/navigation";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { BrandMark } from "@/components/brand-mark";
 import { useAuth } from "@/lib/auth/auth-context";
+import { initialsFromEmail, displayNameFromEmail } from "@/lib/display-name";
+import { OPEN_ARBITRATIONS } from "@/lib/demo/planning-draft";
 
 // Navigationspunkte des angemeldeten Bereichs. `roles` beschränkt die Sichtbarkeit.
 //
@@ -17,6 +20,8 @@ interface NavItem {
   href: string;
   key: string;
   roles?: readonly UserRole[];
+  /** Zahl auf der Pastille (offene Arbitragen). 0 = keine Pastille. */
+  badge?: number;
 }
 
 /** Rollen des jeweiligen Backend-Wächters, als benannte Konstanten. */
@@ -36,7 +41,7 @@ const PRIMARY_ITEMS: NavItem[] = [
   { href: "/caregivers", key: "caregivers", roles: PLANNING_AND_HR },
   // Besuchsplanung (visit.routes.ts: canPlan). Die Fachkraft plant nicht, sie
   // sieht ihre Tour in der mobilen App.
-  { href: "/visits", key: "visits", roles: PLANNING },
+  { href: "/visits", key: "visits", roles: PLANNING, badge: OPEN_ARBITRATIONS },
   // Abwesenheiten: HR pflegt sie, die Koordination liest sie – die Planung
   // hängt davon ab.
   { href: "/absences", key: "absences", roles: PLANNING_AND_HR },
@@ -48,9 +53,6 @@ const PRIMARY_ITEMS: NavItem[] = [
  * jedem neuen Modul weiter (die Dienstpläne kommen noch).
  */
 const SECONDARY_ITEMS: NavItem[] = [
-  // Chemin, libellé et titre de page disent enfin la même chose. L'ancien
-  // /planung désignait le tracking et se confondait avec « Planung », le
-  // libellé de /visits.
   // Gebietsaufteilung: geht der Optimierung voraus, gehört also zur Planung
   // (clustering.routes.ts: canPlan). Kein Untermenüpunkt von /tracking – das
   // ist Echtzeit-Überwachung, etwas ganz anderes.
@@ -77,13 +79,9 @@ function visibleFor(items: NavItem[], role: UserRole | undefined): NavItem[] {
  * Navigation je Rolle.
  *
  * Der Super-Admin bekommt AUSSCHLIESSLICH die Plattform-Verwaltung – und das
- * deckt sich seit dieser Änderung mit dem Backend: SUPER_ADMIN steht in keinem
- * Wächter eines Tenant-Moduls mehr, diese Endpunkte antworten ihm mit 403
- * (Datenminimierung, begründet in plugins/rbac.ts).
- *
- * Die Liste bietet also nichts an, was ohnehin abgewiesen würde. Eine
- * Tenant-Adresse, die von aussen kommt (Lesezeichen, Link in einer E-Mail),
- * fängt SuperAdminScope ab und führt nach /admin.
+ * deckt sich mit dem Backend: SUPER_ADMIN steht in keinem Wächter eines
+ * Tenant-Moduls, diese Endpunkte antworten ihm mit 403 (Datenminimierung,
+ * begründet in plugins/rbac.ts).
  */
 function navigationFor(role: UserRole | undefined): { primary: NavItem[]; secondary: NavItem[] } {
   if (role === "SUPER_ADMIN") {
@@ -92,20 +90,76 @@ function navigationFor(role: UserRole | undefined): { primary: NavItem[]; second
   return { primary: visibleFor(PRIMARY_ITEMS, role), secondary: visibleFor(SECONDARY_ITEMS, role) };
 }
 
-const linkClass = (active: boolean): string =>
-  `whitespace-nowrap rounded-md px-2 py-1.5 text-sm transition ${
-    active ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+/**
+ * Zahl der offenen Arbitragen auf dem Planungspunkt.
+ *
+ * Die Tönung dreht sich um, sobald der Punkt aktiv ist: auf der gefüllten
+ * `forest`-Pastille wäre die helle clay-Fassung nicht mehr zu lesen.
+ */
+function NavBadge({ count, active }: { count: number; active: boolean }) {
+  const t = useTranslations("nav");
+  return (
+    <>
+      {/*
+        Die Ziffer ist für das AUGE. Vorgelesen ergäbe "Planung 2" nichts –
+        zwei was? Deshalb trägt sie `aria-hidden`, und der Satz daneben steht
+        nur für die Sprachausgabe. `sr-only` blendet ihn optisch aus, ohne ihn
+        aus dem Barrierebaum zu nehmen (anders als `display: none`).
+      */}
+      <span
+        data-nav-badge
+        aria-hidden="true"
+        className={`ml-1.5 inline-flex items-center rounded-full px-[7px] py-0.5 text-3xs font-bold leading-none ${
+          active ? "bg-sand text-forest" : "bg-clay-wash text-clay-deep"
+        }`}
+      >
+        {count}
+      </span>
+      <span className="sr-only">{t("openArbitrations", { count })}</span>
+    </>
+  );
+}
+
+const navItemClass = (active: boolean): string =>
+  `flex items-center whitespace-nowrap rounded-full px-[15px] py-[9px] text-row transition-colors duration-120 ${
+    active
+      ? "bg-forest font-semibold text-page"
+      : "font-medium text-ink-secondary hover:bg-inset hover:text-ink-body"
   }`;
 
-/** Aufklappmenü der Zweitrangigen. */
-function MoreMenu({ items, pathname }: { items: NavItem[]; pathname: string }) {
+/**
+ * Aufklappmenü.
+ *
+ * Es trägt ZWEI Gruppen, und die zweite ist der Grund für den Aufbau:
+ *
+ *   `secondary` – immer im Menü (Werkzeuge, Verwaltung, Datenschutz).
+ *   `primary`   – nur UNTERHALB von lg, wo die Zeile sie nicht mehr
+ *                 nebeneinander trägt (Handoff § Responsive).
+ *
+ * Die Alternative wäre, die ganze Leiste zweimal zu rendern, einmal für breit
+ * und einmal für schmal, und je eine per CSS auszublenden. Das ergäbe zwei
+ * `<nav>`-Bereiche und zwei Menüknöpfe im Dokument – für einen Screenreader
+ * eine doppelte Navigation, denn er richtet sich nicht nach `display: none`
+ * aus einer Medienabfrage, die der Browser gar nicht auf ihn anwendet.
+ * Deshalb eine Leiste, ein Menü, und nur die EINTRÄGE schalten um.
+ */
+function MoreMenu({
+  primary,
+  secondary,
+  pathname,
+}: {
+  primary: NavItem[];
+  secondary: NavItem[];
+  pathname: string;
+}) {
   const tn = useTranslations("nav");
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
 
   // Enthält das Menü die aktuelle Seite? Dann wird der Auslöser hervorgehoben,
-  // sonst verlöre man beim Aufklappen die Ortsangabe.
-  const containsActive = items.some((item) => item.href === pathname);
+  // sonst verlöre man beim Aufklappen die Ortsangabe. Nur die zweitrangigen
+  // zählen: die erstrangigen sind oberhalb von lg als Pastille zu sehen.
+  const containsActive = secondary.some((item) => item.href === pathname);
 
   useEffect(() => {
     if (!open) return;
@@ -129,7 +183,23 @@ function MoreMenu({ items, pathname }: { items: NavItem[]; pathname: string }) {
     setOpen(false);
   }, [pathname]);
 
-  if (items.length === 0) return null;
+  if (primary.length === 0 && secondary.length === 0) return null;
+
+  const renderItem = (item: NavItem, extra = ""): ReactNode => {
+    const active = pathname === item.href;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        role="menuitem"
+        className={`block whitespace-nowrap px-4 py-2.5 text-row transition-colors duration-120 ${
+          active ? "bg-inset font-semibold text-ink-primary" : "font-medium text-ink-secondary hover:bg-surface"
+        } ${extra}`}
+      >
+        {tn(item.key)}
+      </Link>
+    );
+  };
 
   return (
     <div ref={container} className="relative">
@@ -138,7 +208,9 @@ function MoreMenu({ items, pathname }: { items: NavItem[]; pathname: string }) {
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`${linkClass(containsActive)} flex items-center gap-1`}
+        // Ohne zweitrangige Punkte hat der Knopf oberhalb von lg keinen Inhalt
+        // mehr: dort stehen die erstrangigen als Pastillen in der Zeile.
+        className={`${navItemClass(containsActive)} gap-1 ${secondary.length === 0 ? "lg:hidden" : ""}`}
       >
         {tn("more")}
         <svg
@@ -154,25 +226,42 @@ function MoreMenu({ items, pathname }: { items: NavItem[]; pathname: string }) {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-1 min-w-44 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 z-20 mt-2 min-w-48 rounded-card-inner border border-soft bg-app py-2 shadow-app"
         >
-          {items.map((item) => {
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                role="menuitem"
-                className={`block whitespace-nowrap px-3 py-2 text-sm transition ${
-                  active ? "bg-gray-100 font-medium text-gray-900" : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {tn(item.key)}
-              </Link>
-            );
-          })}
+          {/* Erstrangige nur im schmalen Fenster, mit Trennlinie darunter,
+              solange auch zweitrangige folgen. */}
+          {primary.map((item) => renderItem(item, "lg:hidden"))}
+          {primary.length > 0 && secondary.length > 0 ? (
+            <hr className="my-2 border-hairline lg:hidden" />
+          ) : null}
+          {secondary.map((item) => renderItem(item))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/** Namensblock rechts in der Kopfzeile. */
+function UserBlock({ email, role }: { email: string; role: UserRole }) {
+  const tr = useTranslations("roles");
+
+  return (
+    <div className="flex shrink-0 items-center gap-[11px] rounded-full border border-border-default bg-inset py-[5px] pl-[5px] pr-3.5">
+      <span
+        aria-hidden="true"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-forest text-micro font-semibold text-[#F1EEE5]"
+      >
+        {initialsFromEmail(email)}
+      </span>
+      <span className="hidden min-w-0 leading-tight sm:block">
+        <span className="block truncate text-label font-semibold">{displayNameFromEmail(email)}</span>
+        {/*
+          Die Rolle im Klartext, und NICHT mehr die Organisations-UUID: sie
+          stand vorher hier, sagte niemandem etwas und war die einzige Stelle,
+          an der eine interne Kennung in der Oberfläche auftauchte.
+        */}
+        <span className="block truncate text-3xs text-ink-muted">{tr(role)}</span>
+      </span>
     </div>
   );
 }
@@ -187,47 +276,49 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { primary, secondary } = navigationFor(user?.role);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/*
-        Kopfzeile auf EINER Zeile, in jeder Sprache. `whitespace-nowrap`
-        verhindert, dass ein Label in sich umbricht; die zweitrangigen Punkte
-        liegen im Menü, damit die Zeile beim nächsten Modul nicht wieder
-        überläuft.
+    <div className="min-h-screen bg-page px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1240px] overflow-hidden rounded-app border border-border-default bg-app shadow-app">
+        <header className="flex items-center gap-[30px] border-b border-neutral-divider px-8 py-[18px]">
+          <Link href="/dashboard" className="flex flex-none items-center gap-2.5">
+            <BrandMark size={22} />
+            <span className="font-serif text-[21px] font-normal leading-none text-ink-primary">
+              {tc("appName")}
+            </span>
+          </Link>
 
-        KEIN overflow-x-auto auf der Navigation: es würde das aufgeklappte
-        Menü abschneiden, das absolut darin positioniert ist. Der Platz kommt
-        stattdessen aus der Aufteilung primär/sekundär – gemessen belegt die
-        Leiste 479 von 763 px (Deutsch, Admin, breitester Fall).
-      */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
-          <div className="flex min-w-0 items-center gap-5">
-            <span className="whitespace-nowrap font-semibold text-gray-900">{tc("appName")}</span>
-            <nav className="flex min-w-0 items-center gap-0.5">
-              {primary.map((item) => (
-                <Link key={item.href} href={item.href} className={linkClass(pathname === item.href)}>
+          <nav aria-label={tn("primary")} className="flex min-w-0 items-center gap-[3px]">
+            {/* Oberhalb von lg als Pastillen, darunter im Menü (siehe MoreMenu). */}
+            {primary.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`hidden lg:flex ${navItemClass(active)}`}
+                >
                   {tn(item.key)}
+                  {item.badge ? <NavBadge count={item.badge} active={active} /> : null}
                 </Link>
-              ))}
-              <MoreMenu items={secondary} pathname={pathname} />
-            </nav>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {/* Auch im angemeldeten Bereich erreichbar: die Sprache war bisher
-                nur über das URL-Segment zu wechseln. */}
+              );
+            })}
+            <MoreMenu primary={primary} secondary={secondary} pathname={pathname} />
+          </nav>
+
+          <div className="ml-auto flex shrink-0 items-center gap-3.5">
             <LocaleSwitcher />
+            {user ? <UserBlock email={user.email} role={user.role} /> : null}
             <button
               type="button"
               onClick={() => void logout()}
-              className="whitespace-nowrap rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-100"
+              className="whitespace-nowrap rounded-full px-2 py-1.5 text-label font-medium text-ink-muted transition-colors duration-120 hover:text-ink-body"
             >
               {tc("logout")}
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="mx-auto max-w-5xl p-6">{children}</main>
+        <main className="px-8 pb-11 pt-9">{children}</main>
+      </div>
     </div>
   );
 }

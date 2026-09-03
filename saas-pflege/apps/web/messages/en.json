@@ -48,12 +48,6 @@
       "toLogin": "Sign in"
     }
   },
-  "dashboard": {
-    "title": "Overview",
-    "welcome": "Welcome, {email}",
-    "role": "Role",
-    "organization": "Organization"
-  },
   "nav": {
     "dashboard": "Overview",
     "patients": "Patients",
@@ -69,7 +63,125 @@
     "dsgvoExport": "Data access",
     "dsgvoErasure": "Erasure",
     "clustering": "Sectors",
-    "admin": "Platform"
+    "admin": "Platform",
+    "primary": "Main navigation",
+    "openArbitrations": "{count} open arbitrations"
+  },
+  "roles": {
+    "SUPER_ADMIN": "Platform administration",
+    "STRUKTUR_ADMIN": "Organisation admin",
+    "KOORDINATOR": "Coordination",
+    "HR": "HR",
+    "FACHKRAFT": "Fachkraft"
+  },
+  "overview": {
+    "demo": {
+      "tag": "Sample data",
+      "body": "This screen shows example values. The matching endpoints do not exist yet."
+    },
+    "greeting": "Hello.",
+    "greetingNamed": "Hello {name}.",
+    "subline": "The morning shift is running to plan.",
+    "actions": {
+      "weeklyReport": "Weekly report",
+      "planTomorrow": "Plan tomorrow"
+    },
+    "kpi": {
+      "planningTime": {
+        "label": "Planning time",
+        "unit": " min",
+        "delta": "vs 4 h 20 before"
+      },
+      "kilometers": {
+        "label": "Kilometres today",
+        "unit": "",
+        "delta": "−18% vs manual plan"
+      },
+      "visits": {
+        "label": "Visits planned",
+        "unit": "",
+        "delta": "98.4% covered"
+      },
+      "delays": {
+        "label": "Delays in progress",
+        "unit": "",
+        "delta": "2 recoverable without a call"
+      }
+    },
+    "tours": {
+      "title": "Tours in progress",
+      "summary": "{tours} tours · {km} km · refreshed {seconds} s ago",
+      "shift": "Shift",
+      "shifts": {
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "night": "Night"
+      },
+      "meta": "{sector} · {visits} visits · {km} km",
+      "doneOf": "{done} / {total} done",
+      "load": "load {percent}%",
+      "notStarted": "not started",
+      "state": {
+        "enRoute": "En route",
+        "overloaded": "Overloaded",
+        "notStarted": "Waiting"
+      },
+      "openPlanning": "Open planning"
+    },
+    "sectors": {
+      "west": "West",
+      "north": "North",
+      "centre": "Centre",
+      "east": "East",
+      "south": "South",
+      "southEast": "South-East"
+    },
+    "arbitrations": {
+      "title": "What needs a decision",
+      "subtitle": "The engine does not settle these on its own",
+      "empty": "All arbitrations are settled.",
+      "qualification": {
+        "category": "Qualification",
+        "statement": "Mrs Vogel requires an SC injection. Tomas is the only qualified caregiver in the North sector, and his tour is already at 94%.",
+        "primary": "Move 2 visits",
+        "secondary": "Leave as is"
+      },
+      "timeWindow": {
+        "category": "Time window",
+        "statement": "Mr Schuster must be seen before 8:30. The optimal route places him at 8:52.",
+        "primary": "Prioritise the window",
+        "secondary": "Prioritise kilometres"
+      }
+    },
+    "absences": {
+      "title": "Reported absences",
+      "subtitle": "Impact already reflected in the tours",
+      "reasons": {
+        "sickLeave": "Sick leave until 29 August",
+        "approvedLeave": "Leave approved",
+        "training": "Training Wednesday afternoon"
+      },
+      "coverage": {
+        "reassigned": "{count} visits reassigned",
+        "covered": "Covered",
+        "toReplace": "{count} visits to reassign"
+      }
+    },
+    "qualifications": {
+      "title": "Qualification coverage",
+      "items": {
+        "basicCare": "Basic care",
+        "technicalCare": "Technical care SGB V",
+        "drivingLicence": "Driving licence",
+        "arabic": "Arabic"
+      },
+      "status": {
+        "basicCare": "Covered",
+        "technicalCare": "{count} missing",
+        "drivingLicence": "Covered",
+        "arabic": "{count} patients"
+      }
+    }
   },
   "patients": {
     "title": "Patients",
