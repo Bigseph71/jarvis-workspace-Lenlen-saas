@@ -13,6 +13,10 @@ import { canAccessAdminPanel } from "@/lib/auth/permissions";
  * falschen Rolle eine Seite voller Fehlermeldungen. Die eigentliche Sperre
  * sitzt im Backend (requireSuperAdmin), und ohne sie brächte diese Datei
  * nichts – die Daten kämen über die API trotzdem.
+ *
+ * Die dunkle Kopfzeile liegt eine Ebene höher, in der AppShell: sie hängt an
+ * der ROLLE und gilt damit auch für die Fehlerseite unten. Ein 403 in hellem
+ * Chrome sähe aus wie eine Organisationsansicht.
  */
 const TABS = [
   { href: "/admin", key: "dashboard" },
@@ -26,18 +30,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, status } = useAuth();
 
   if (status === "loading") {
-    return <p className="text-sm text-gray-500">{t("loading")}</p>;
+    return <p className="text-row text-ink-muted">{t("loading")}</p>;
   }
 
   if (!canAccessAdminPanel(user?.role)) {
     return (
       <section data-testid="admin-forbidden" className="mx-auto max-w-lg py-16 text-center">
-        <p className="text-5xl font-bold text-gray-300">403</p>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">{t("forbidden.title")}</h1>
-        <p className="mt-2 text-sm text-gray-600">{t("forbidden.body")}</p>
+        <p className="font-serif text-[54px] font-light leading-none text-neutral-dot">403</p>
+        <h1 className="mt-4 font-serif text-[24px] font-normal text-ink-primary">
+          {t("forbidden.title")}
+        </h1>
+        <p className="mt-2 text-row text-ink-secondary">{t("forbidden.body")}</p>
         <Link
           href="/dashboard"
-          className="mt-6 inline-block rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
+          className="mt-6 inline-block rounded-full bg-clay px-5 py-3 text-row font-semibold text-on-clay shadow-primary transition-colors duration-120 hover:bg-clay-hover"
         >
           {t("forbidden.back")}
         </Link>
@@ -46,34 +52,48 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">{t("title")}</h1>
-        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
-          {t("scopeWarning")}
-        </span>
+    <section className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-label font-semibold uppercase tracking-[.14em] text-ink-faint">
+            {t("title")}
+          </p>
+          <h1 className="mt-2 font-serif text-[42px] font-light leading-[1.08] tracking-[-.02em] text-ink-primary">
+            {t("headline")}
+          </h1>
+          {/*
+            Der Satz ist kein Beiwerk: er sagt, WORÜBER dieser Bereich Auskunft
+            gibt und worüber nicht. Die Zusicherung "keine Patientendaten"
+            gehört sichtbar dorthin, wo jemand Kundendaten erwartet.
+          */}
+          <p className="mt-3 max-w-xl text-body text-ink-secondary">{t("scopeWarning")}</p>
+        </div>
+
+        <nav
+          aria-label={t("title")}
+          className="flex gap-1 rounded-full border border-strong bg-muted p-[5px]"
+        >
+          {TABS.map((tab) => {
+            const active = pathname === tab.href;
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                aria-current={active ? "page" : undefined}
+                className={`whitespace-nowrap rounded-full px-[18px] py-[9px] text-label-lg transition-colors duration-120 ${
+                  active
+                    ? "bg-app font-semibold text-ink-primary shadow-tab"
+                    : "font-medium text-ink-tertiary hover:text-ink-body"
+                }`}
+              >
+                {t(`tabs.${tab.key}`)}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
-      <nav className="mt-4 flex gap-1 border-b border-gray-200">
-        {TABS.map((tab) => {
-          const active = pathname === tab.href;
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`-mb-px border-b-2 px-4 py-2 text-sm transition ${
-                active
-                  ? "border-gray-900 font-medium text-gray-900"
-                  : "border-transparent text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              {t(`tabs.${tab.key}`)}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="mt-6">{children}</div>
+      {children}
     </section>
   );
 }
