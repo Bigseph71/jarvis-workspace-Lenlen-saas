@@ -296,6 +296,50 @@ function UserBlock({ email, role }: { email: string; role: UserRole }) {
   );
 }
 
+/**
+ * Kopfzeile der Plattform-Verwaltung.
+ *
+ * Dunkel, und das ist kein Geschmack, sondern ein GELÄNDER. Unter /admin
+ * stehen Abrechnungsdaten über alle Kunden hinweg; eine Organisationsansicht
+ * zeigt Patientendaten eines einzigen Kunden. Die beiden zu verwechseln wäre
+ * teuer, und der Unterschied darf nicht davon abhängen, ob jemand die Adresse
+ * liest. Zwei Sekunden Blick auf die Farbe genügen.
+ *
+ * Ohne Navigationspunkte: der Super-Admin hat genau einen Bereich, und
+ * innerhalb davon führt die Reiterleiste der Seite. Ein Menü mit einem
+ * einzigen Eintrag wäre Zierde.
+ */
+function PlatformHeader({ onLogout }: { onLogout: () => void }) {
+  const tc = useTranslations("common");
+  const tn = useTranslations("nav");
+
+  return (
+    <header className="flex flex-wrap items-center gap-5 bg-forest px-8 py-[18px]">
+      <span className="flex flex-none items-center gap-2.5">
+        <BrandMark size={22} variant="dark" />
+        <span className="font-serif text-[21px] font-normal leading-none text-on-forest-primary">
+          {tc("appName")}
+        </span>
+      </span>
+
+      <span className="rounded-full bg-sand px-[13px] py-1.5 text-pill font-bold uppercase tracking-[.14em] text-forest-deep">
+        {tn("admin")}
+      </span>
+
+      <div className="ml-auto flex shrink-0 items-center gap-3.5">
+        <LocaleSwitcher variant="dark" />
+        <button
+          type="button"
+          onClick={onLogout}
+          className="whitespace-nowrap rounded-full px-2 py-1.5 text-label font-medium text-on-forest-secondary transition-colors duration-120 hover:text-on-forest-primary"
+        >
+          {tc("logout")}
+        </button>
+      </div>
+    </header>
+  );
+}
+
 /** Rahmen für angemeldete Seiten: Kopfzeile mit Navigation + Abmelden. */
 export function AppShell({ children }: { children: ReactNode }) {
   const tc = useTranslations("common");
@@ -304,6 +348,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   const { primary, secondary } = navigationFor(user?.role);
+  // An der ROLLE festgemacht und nicht am Pfad: der Super-Admin kommt
+  // ohnehin nirgendwo anders hin (SuperAdminScope leitet zurück), und eine
+  // Rolle lässt sich nicht durch eine falsch geratene Adresse umgehen.
+  const platform = user?.role === "SUPER_ADMIN";
+
+  if (platform) {
+    return (
+      <div className="min-h-screen bg-page px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto min-h-[900px] max-w-[1240px] overflow-hidden rounded-app border border-border-default bg-app shadow-app">
+          <PlatformHeader onLogout={() => void logout()} />
+          <main className="px-8 pb-12 pt-9">{children}</main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-page px-4 py-6 sm:px-6 lg:px-8">

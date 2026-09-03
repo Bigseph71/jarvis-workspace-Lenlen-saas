@@ -958,7 +958,7 @@
   },
   "admin": {
     "title": "Platform administration",
-    "scopeWarning": "All organizations",
+    "scopeWarning": "Billing per active Fachkraft. No patient data reaches this level.",
     "loading": "Loading …",
     "tabs": {
       "dashboard": "Overview",
@@ -986,11 +986,8 @@
       "mrrUnavailable": "Stripe unreachable — no figure (not €0).",
       "new7": "New (7 days)",
       "new30": "New (30 days)",
-      "byStatus": "By status",
-      "trialsEnding": "{count} trials end within 48 hours",
-      "noTrials": "No trial ends in the next 48 hours.",
-      "paymentFailures": "{count} payments outstanding",
-      "noPaymentFailures": "No outstanding payments."
+      "orgsHint": "{active} active, {trial} in trial",
+      "noSignups": "No sign-ups"
     },
     "organizations": {
       "loading": "Loading …",
@@ -1088,6 +1085,36 @@
       "previous": "Previous",
       "next": "Next",
       "pageOf": "Page {page} of {totalPages}"
+    },
+    "headline": "Billing and health of every customer.",
+    "byStatusTitle": "By status",
+    "revenue": {
+      "title": "Recurring revenue",
+      "subtitle": "Last 6 months · billed seats",
+      "unavailable": "Amount unavailable",
+      "trend": "+{percent}% over 30 days",
+      "chartAlt": "Recurring revenue over the last six months, trending up.",
+      "historyDemo": "Six-month curve: sample values, the API does not expose history yet. The amount above is real."
+    },
+    "table": {
+      "title": "Organisations",
+      "openList": "See the full list",
+      "organisation": "Organisation",
+      "country": "Country",
+      "seats": "Seats",
+      "plan": "Plan",
+      "status": "Status",
+      "empty": "No organisations.",
+      "openAuditLog": "Open the audit log"
+    },
+    "alerts": {
+      "noTrialsTitle": "No trial ends within 48 hours",
+      "trialsTitle": "{count} trials ending soon",
+      "nextTrial": "Next deadline: {name}, on {date}.",
+      "noTrialsAtAll": "No trial in progress.",
+      "noPaymentsTitle": "No payment outstanding",
+      "noPaymentsBody": "No failed direct debit across the active organisations.",
+      "paymentsTitle": "{count} payments outstanding"
     }
   }
 }

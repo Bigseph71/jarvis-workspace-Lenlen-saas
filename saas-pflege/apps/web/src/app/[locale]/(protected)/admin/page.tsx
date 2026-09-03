@@ -1,162 +1,149 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { formatDateTime } from "@/lib/datetime";
-import { adminDashboard, type AdminDashboard } from "@len-len/api-client";
+import { useFormatter, useTranslations } from "next-intl";
+import {
+  adminDashboard,
+  adminListOrganizations,
+  type AdminDashboard,
+  type AdminOrganizationRow,
+} from "@len-len/api-client";
+import { PlatformKpi } from "@/components/platform/platform-kpi";
+import { StatusBreakdown } from "@/components/platform/status-breakdown";
+import { RevenueCard } from "@/components/platform/revenue-card";
+import { OrganizationsTable } from "@/components/platform/organizations-table";
+import { AlertCards } from "@/components/platform/alert-cards";
 
 type LoadState = "loading" | "ready" | "error";
 
-const STATUS_ORDER = ["ACTIVE", "TRIAL", "PAST_DUE", "SUSPENDED", "CANCELED"] as const;
-
-const STATUS_STYLES: Record<string, string> = {
-  ACTIVE: "bg-green-100 text-green-800",
-  TRIAL: "bg-blue-100 text-blue-800",
-  PAST_DUE: "bg-amber-100 text-amber-800",
-  SUSPENDED: "bg-red-100 text-red-800",
-  CANCELED: "bg-gray-100 text-gray-600",
-};
-
-function formatMoney(cents: number, currency: string, locale: string): string {
-  return new Intl.NumberFormat(locale, { style: "currency", currency: currency.toUpperCase() }).format(
-    cents / 100,
-  );
+/** Nächste endende Testphase, aus den echten Tenants berechnet. */
+function nextTrial(rows: AdminOrganizationRow[]): { name: string; endsAt: string } | null {
+  const upcoming = rows
+    .filter((row): row is AdminOrganizationRow & { trialEndsAt: string } => row.trialEndsAt !== null)
+    .sort((a, b) => a.trialEndsAt.localeCompare(b.trialEndsAt));
+  const first = upcoming[0];
+  return first ? { name: first.name, endsAt: first.trialEndsAt } : null;
 }
 
-export default function AdminDashboardPage() {
-  const t = useTranslations("admin.dashboard");
-  const ts = useTranslations("admin.status");
-  const locale = useLocale();
+/**
+ * Plattform-Verwaltung, Übersicht.
+ *
+ * Bis auf die Umsatzkurve steht hier ALLES auf echten Daten: Kennzahlen,
+ * Aufschlüsselung, Umsatz, Wachstum, Warnungen und die Organisationsliste
+ * kommen aus dem Backend. Der Bildschirm trägt deshalb auch keinen
+ * Beispiel-Hinweis über der Seite, sondern nur einen an der Kurve.
+ *
+ * Zwei Abfragen statt einer: die Kennzahlen und die Liste sind getrennte
+ * Endpunkte. Sie laufen NEBENEINANDER, nicht nacheinander – bei der Latenz
+ * dieser Datenbank wäre die Reihenfolge sonst direkt zu sehen.
+ */
+export default function PlatformOverviewPage() {
+  const t = useTranslations("admin");
+  const format = useFormatter();
 
   const [data, setData] = useState<AdminDashboard | null>(null);
+  const [organizations, setOrganizations] = useState<AdminOrganizationRow[]>([]);
+  const [trials, setTrials] = useState<AdminOrganizationRow[]>([]);
   const [state, setState] = useState<LoadState>("loading");
 
   useEffect(() => {
     let active = true;
-    adminDashboard()
-      .then((res) => {
+
+    Promise.all([
+      adminDashboard(),
+      adminListOrganizations({ pageSize: 5 }),
+      // Nur die Testphasen, für die nächste Fälligkeit im Leerzustand der
+      // Warnkarte. Wenige Zeilen, eigene Abfrage statt einer Sortierung, die
+      // der Endpunkt nicht anbietet.
+      adminListOrganizations({ status: "TRIAL", pageSize: 50 }),
+    ])
+      .then(([dashboard, list, trialList]) => {
         if (!active) return;
-        setData(res);
+        setData(dashboard);
+        setOrganizations(list.data);
+        setTrials(trialList.data);
         setState("ready");
       })
       .catch(() => {
         if (active) setState("error");
       });
+
     return () => {
       active = false;
     };
   }, []);
 
-  if (state === "loading") return <p className="text-sm text-gray-500">{t("loading")}</p>;
-  if (state === "error" || !data) return <p className="text-sm text-red-600">{t("error")}</p>;
+  if (state === "loading") return <p className="text-row text-ink-muted">{t("dashboard.loading")}</p>;
+  if (state === "error" || !data) {
+    return <p className="text-row text-clay-deep">{t("dashboard.error")}</p>;
+  }
 
-  const { organizations, revenue, growth, alerts } = data;
+  const { organizations: orgs, revenue, growth, alerts } = data;
 
   return (
-    <div className="space-y-6">
-      {/* Chiffres-clés */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-gray-500">{t("totalOrgs")}</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{organizations.total}</p>
-        </div>
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <PlatformKpi
+          label={t("dashboard.totalOrgs")}
+          value={format.number(orgs.total)}
+          hint={t("dashboard.orgsHint", {
+            active: format.number(orgs.byStatus.ACTIVE ?? 0),
+            trial: format.number(orgs.byStatus.TRIAL ?? 0),
+          })}
+        />
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-gray-500">{t("mrr")}</p>
-          {revenue.available ? (
-            <>
-              <p className="mt-1 text-2xl font-bold text-gray-900">
+        <PlatformKpi
+          label={t("dashboard.mrr")}
+          value={
+            revenue.available ? (
+              <>
                 {revenue.truncated ? "≥ " : ""}
-                {formatMoney(revenue.amountCents, revenue.currency, locale)}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                {t("mrrSubscriptions", { count: revenue.subscriptions })}
-              </p>
-            </>
-          ) : (
-            // Kein "0 €": ein nicht erreichbarer Anbieter ist kein Umsatz von
-            // null, und die Unterscheidung entscheidet, ob jemand nachsieht.
-            <p className="mt-1 text-sm text-amber-700">{t("mrrUnavailable")}</p>
-          )}
-        </div>
+                {format.number(revenue.amountCents / 100, {
+                  style: "currency",
+                  currency: revenue.currency.toUpperCase(),
+                  maximumFractionDigits: 0,
+                })}
+              </>
+            ) : (
+              // Kein "0 €": ein nicht erreichbarer Anbieter ist kein Umsatz von
+              // null, und die Unterscheidung entscheidet, ob jemand nachsieht.
+              <span className="text-body text-clay-deep">{t("dashboard.mrrUnavailable")}</span>
+            )
+          }
+          hint={
+            revenue.available
+              ? t("dashboard.mrrSubscriptions", { count: format.number(revenue.subscriptions) })
+              : undefined
+          }
+          tone="positive"
+        />
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-gray-500">{t("new7")}</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{growth.last7Days}</p>
-        </div>
+        <PlatformKpi
+          label={t("dashboard.new7")}
+          value={format.number(growth.last7Days)}
+          hint={growth.last7Days === 0 ? t("dashboard.noSignups") : undefined}
+        />
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-gray-500">{t("new30")}</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{growth.last30Days}</p>
-        </div>
+        <PlatformKpi
+          label={t("dashboard.new30")}
+          value={format.number(growth.last30Days)}
+          tone="positive"
+        />
       </div>
 
-      {/* Répartition par statut */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <p className="text-sm font-medium text-gray-900">{t("byStatus")}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {STATUS_ORDER.map((status) => (
-            <Link
-              key={status}
-              href={`/admin/organizations?status=${status}`}
-              data-testid={`status-${status}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition hover:opacity-80 ${STATUS_STYLES[status]}`}
-            >
-              {ts(status)} · {organizations.byStatus[status] ?? 0}
-            </Link>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <StatusBreakdown byStatus={orgs.byStatus} total={orgs.total} />
+        <RevenueCard
+          amountCents={revenue.amountCents}
+          currency={revenue.currency}
+          available={revenue.available}
+          truncated={revenue.truncated}
+        />
       </div>
 
-      {/* Alertes */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div
-          data-testid="alert-trials"
-          className="rounded-lg border border-blue-200 bg-blue-50 p-4"
-        >
-          <p className="text-sm font-medium text-blue-900">
-            {t("trialsEnding", { count: alerts.trialsEndingSoon.length })}
-          </p>
-          {alerts.trialsEndingSoon.length === 0 ? (
-            <p className="mt-2 text-sm text-blue-800">{t("noTrials")}</p>
-          ) : (
-            <ul className="mt-2 space-y-1 text-sm text-blue-900">
-              {alerts.trialsEndingSoon.map((org) => (
-                <li key={org.id}>
-                  <Link href={`/admin/organizations/${org.id}`} className="underline-offset-2 hover:underline">
-                    {org.name}
-                  </Link>
-                  {org.trialEndsAt ? ` · ${formatDateTime(org.trialEndsAt, locale)}` : ""}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      <OrganizationsTable rows={organizations} />
 
-        <div
-          data-testid="alert-payments"
-          className="rounded-lg border border-red-200 bg-red-50 p-4"
-        >
-          <p className="text-sm font-medium text-red-900">
-            {t("paymentFailures", { count: alerts.paymentFailures.length })}
-          </p>
-          {alerts.paymentFailures.length === 0 ? (
-            <p className="mt-2 text-sm text-red-800">{t("noPaymentFailures")}</p>
-          ) : (
-            <ul className="mt-2 space-y-1 text-sm text-red-900">
-              {alerts.paymentFailures.map((org) => (
-                <li key={org.id}>
-                  <Link href={`/admin/organizations/${org.id}`} className="underline-offset-2 hover:underline">
-                    {org.name}
-                  </Link>
-                  {org.pastDueSince ? ` · ${formatDateTime(org.pastDueSince, locale)}` : ""}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+      <AlertCards alerts={alerts} nextTrialEnd={nextTrial(trials)} />
     </div>
   );
 }

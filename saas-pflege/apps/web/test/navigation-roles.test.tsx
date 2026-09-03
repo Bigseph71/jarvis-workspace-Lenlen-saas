@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fireEvent, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import type { UserRole } from "@len-len/api-client";
 import { render, t } from "./helpers/render";
 
@@ -66,10 +66,15 @@ function navLabels(): string[] {
 }
 
 describe("Navigationsleiste je Rolle", () => {
-  it("zeigt dem Super-Admin nur die Plattform-Verwaltung", () => {
+  it("gibt dem Super-Admin die Plattform-Kopfzeile statt einer Tenant-Navigation", () => {
+    // Seit der Überarbeitung bekommt diese Rolle ein eigenes Chrome: dunkle
+    // Kopfzeile, Plattform-Marke, KEINE Modulleiste. Innerhalb des Bereichs
+    // führt die Reiterleiste der Seite (Übersicht / Organisationen /
+    // Audit-Log); eine Leiste mit einem einzigen Punkt wäre Zierde.
     renderAs("SUPER_ADMIN");
 
-    expect(navLabels()).toEqual([t("nav.admin")]);
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(screen.getByText(t("nav.admin"))).toBeInTheDocument();
   });
 
   it("blendet dem Super-Admin die Tenant-Module aus", () => {
@@ -78,18 +83,6 @@ describe("Navigationsleiste je Rolle", () => {
     for (const key of ["dashboard", "patients", "caregivers", "visits", "absences"]) {
       expect(screen.queryByText(t(`nav.${key}`)), key).not.toBeInTheDocument();
     }
-  });
-
-  it("das Menü des Super-Admins enthält nur die Plattform", () => {
-    // Seit der Überarbeitung gibt es den Menüknopf auch für ihn: unterhalb von
-    // lg wandern die erstrangigen Punkte hinein, und die Plattform IST sein
-    // erstrangiger Punkt. Er darf dort nichts anderes finden.
-    renderAs("SUPER_ADMIN");
-
-    fireEvent.click(screen.getByRole("button", { name: new RegExp(t("nav.more")) }));
-
-    const entries = screen.getAllByRole("menuitem").map((el) => el.textContent?.trim());
-    expect(entries).toEqual([t("nav.admin")]);
   });
 
   it("lässt die übrigen Rollen unverändert", () => {

@@ -958,7 +958,7 @@
   },
   "admin": {
     "title": "Plattform-Verwaltung",
-    "scopeWarning": "Alle Organisationen",
+    "scopeWarning": "Abrechnung je aktiver Fachkraft. Auf dieser Ebene erscheinen keine Patientendaten.",
     "loading": "Wird geladen …",
     "tabs": {
       "dashboard": "Übersicht",
@@ -986,11 +986,8 @@
       "mrrUnavailable": "Stripe nicht erreichbar – kein Wert (nicht 0 €).",
       "new7": "Neu (7 Tage)",
       "new30": "Neu (30 Tage)",
-      "byStatus": "Nach Status",
-      "trialsEnding": "{count} Testphasen enden in 48 Stunden",
-      "noTrials": "Keine Testphase endet in den nächsten 48 Stunden.",
-      "paymentFailures": "{count} Zahlungen offen",
-      "noPaymentFailures": "Keine offenen Zahlungen."
+      "orgsHint": "{active} aktiv, {trial} in der Testphase",
+      "noSignups": "Keine Anmeldung"
     },
     "organizations": {
       "loading": "Wird geladen …",
@@ -1088,6 +1085,36 @@
       "previous": "Zurück",
       "next": "Weiter",
       "pageOf": "Seite {page} von {totalPages}"
+    },
+    "headline": "Abrechnung und Zustand aller Kunden.",
+    "byStatusTitle": "Nach Status",
+    "revenue": {
+      "title": "Wiederkehrender Umsatz",
+      "subtitle": "Letzte 6 Monate · abgerechnete Plätze",
+      "unavailable": "Betrag nicht verfügbar",
+      "trend": "+{percent} % in 30 Tagen",
+      "chartAlt": "Verlauf des wiederkehrenden Umsatzes über die letzten sechs Monate, steigend.",
+      "historyDemo": "Kurve der sechs Monate: Beispielwerte, den Verlauf liefert die API noch nicht. Der Betrag darüber ist echt."
+    },
+    "table": {
+      "title": "Organisationen",
+      "openList": "Vollständige Liste",
+      "organisation": "Organisation",
+      "country": "Land",
+      "seats": "Plätze",
+      "plan": "Plan",
+      "status": "Status",
+      "empty": "Keine Organisationen.",
+      "openAuditLog": "Audit-Log öffnen"
+    },
+    "alerts": {
+      "noTrialsTitle": "Keine Testphase endet in den nächsten 48 Stunden",
+      "trialsTitle": "{count} Testphasen enden bald",
+      "nextTrial": "Nächste Fälligkeit: {name}, am {date}.",
+      "noTrialsAtAll": "Keine laufende Testphase.",
+      "noPaymentsTitle": "Keine offene Zahlung",
+      "noPaymentsBody": "Keine fehlgeschlagene Abbuchung bei den aktiven Organisationen.",
+      "paymentsTitle": "{count} offene Zahlungen"
     }
   }
 }
