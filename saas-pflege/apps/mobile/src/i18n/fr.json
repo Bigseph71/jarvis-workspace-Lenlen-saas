@@ -58,7 +58,32 @@
     },
     "noCaregiverProfile": "Aucun profil de soignant n'est rattaché à votre compte. Contactez votre coordination.",
     "trackingNoPermission": "Autorisation de localisation manquante : la tournée n'est pas enregistrée. Autorisez-la dans les réglages du système.",
-    "trackingUnavailable": "Suivi de localisation indisponible (pas de connexion). La visite se poursuit normalement."
+    "trackingUnavailable": "Suivi de localisation indisponible (pas de connexion). La visite se poursuit normalement.",
+    "remaining": "{{count}} visites restantes · fin prévue {{end}}",
+    "nextVisit": "Prochaine visite",
+    "openVisit": "Ouvrir la visite",
+    "upNext": "Suite de la tournée",
+    "tabTour": "Tournée"
+  },
+  "visit": {
+    "title": "Visite en cours",
+    "arrivedAt": "Arrivée {{time}}",
+    "position": "Visite {{index}} sur {{total}}",
+    "scheduled": "Horaire prévu",
+    "drift": "Écart au plan",
+    "driftValue": "{{minutes}} min",
+    "documentation": "Documentation",
+    "noNote": "Aucune note pour cette visite.",
+    "tasks": "Actes à documenter",
+    "demoTag": "Exemple",
+    "tasksDemo": "Contenu d'exemple, volontairement non cochable : la liste d'actes n'existe pas encore dans le système. Les cases ne seraient enregistrées nulle part.",
+    "taskItems": {
+      "hygiene": "Toilette complète au lit",
+      "dressing": "Réfection du pansement",
+      "bloodPressure": "Prise de tension",
+      "prescriptions": "Remise des ordonnances"
+    },
+    "close": "Clôturer la visite"
   },
   "visitNote": {
     "title": "Note de visite",

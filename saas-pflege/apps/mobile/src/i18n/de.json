@@ -58,7 +58,32 @@
     },
     "noCaregiverProfile": "Ihrem Konto ist keine Fachkraft zugeordnet. Bitte wenden Sie sich an Ihre Koordination.",
     "trackingNoPermission": "Standortfreigabe fehlt – die Tour wird nicht aufgezeichnet. Bitte in den Systemeinstellungen erlauben.",
-    "trackingUnavailable": "Standorterfassung derzeit nicht möglich (keine Verbindung). Der Besuch läuft normal weiter."
+    "trackingUnavailable": "Standorterfassung derzeit nicht möglich (keine Verbindung). Der Besuch läuft normal weiter.",
+    "remaining": "{{count}} Besuche offen · Ende geplant {{end}}",
+    "nextVisit": "Nächster Besuch",
+    "openVisit": "Besuch öffnen",
+    "upNext": "Weiter auf der Tour",
+    "tabTour": "Tour"
+  },
+  "visit": {
+    "title": "Laufender Besuch",
+    "arrivedAt": "Ankunft {{time}}",
+    "position": "Besuch {{index}} von {{total}}",
+    "scheduled": "Termin",
+    "drift": "Abweichung",
+    "driftValue": "{{minutes}} Min.",
+    "documentation": "Dokumentation",
+    "noNote": "Noch keine Notiz zu diesem Besuch.",
+    "tasks": "Zu dokumentierende Leistungen",
+    "demoTag": "Beispiel",
+    "tasksDemo": "Beispielinhalt, bewusst nicht bedienbar: eine Leistungsliste am Besuch gibt es im System noch nicht. Häkchen würden nirgends gespeichert.",
+    "taskItems": {
+      "hygiene": "Ganzkörperpflege im Bett",
+      "dressing": "Verbandwechsel",
+      "bloodPressure": "Blutdruck messen",
+      "prescriptions": "Rezepte übergeben"
+    },
+    "close": "Besuch abschliessen"
   },
   "visitNote": {
     "title": "Besuchsnotiz",

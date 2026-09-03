@@ -58,7 +58,32 @@
     },
     "noCaregiverProfile": "No caregiver profile is linked to your account. Please contact your coordination.",
     "trackingNoPermission": "Location permission missing – the route is not being recorded. Please allow it in your system settings.",
-    "trackingUnavailable": "Location tracking currently unavailable (no connection). The visit continues normally."
+    "trackingUnavailable": "Location tracking currently unavailable (no connection). The visit continues normally.",
+    "remaining": "{{count}} visits left · expected end {{end}}",
+    "nextVisit": "Next visit",
+    "openVisit": "Open the visit",
+    "upNext": "Rest of the tour",
+    "tabTour": "Tour"
+  },
+  "visit": {
+    "title": "Visit in progress",
+    "arrivedAt": "Arrived {{time}}",
+    "position": "Visit {{index}} of {{total}}",
+    "scheduled": "Scheduled",
+    "drift": "Drift",
+    "driftValue": "{{minutes}} min",
+    "documentation": "Documentation",
+    "noNote": "No note for this visit yet.",
+    "tasks": "Care tasks to document",
+    "demoTag": "Sample",
+    "tasksDemo": "Sample content, deliberately not tickable: the system has no care-task list on a visit yet. Ticks would be saved nowhere.",
+    "taskItems": {
+      "hygiene": "Full bed bath",
+      "dressing": "Dressing change",
+      "bloodPressure": "Blood pressure check",
+      "prescriptions": "Hand over prescriptions"
+    },
+    "close": "Close the visit"
   },
   "visitNote": {
     "title": "Visit note",
