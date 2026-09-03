@@ -65,7 +65,8 @@
     "clustering": "Gebiete",
     "admin": "Plattform",
     "primary": "Hauptnavigation",
-    "openArbitrations": "{count} offene Arbitragen"
+    "openArbitrations": "{count} offene Arbitragen",
+    "visitList": "Besuche"
   },
   "roles": {
     "SUPER_ADMIN": "Plattform-Administration",
@@ -181,6 +182,83 @@
         "drivingLicence": "Abgedeckt",
         "arabic": "{count} Patienten"
       }
+    }
+  },
+  "planning": {
+    "draft": "Entwurf v{version}",
+    "headline": "{tours} Touren in {minutes} Min. berechnet.",
+    "remaining": "{count} Arbitragen offen.",
+    "compare": "Mit v{version} vergleichen",
+    "gps": "GPS · {count} unterwegs",
+    "map": {
+      "alt": "Schematische Karte des Gebiets {sector}: drei überlagerte Touren und die Live-Position.",
+      "sectorTitle": "Gebiet {sector}",
+      "subtitle": "{tours} überlagerte Touren · {patients} geokodierte Patienten",
+      "layers": "Kartenebene",
+      "layer": {
+        "routes": "Touren",
+        "density": "Dichte",
+        "delays": "Verspätungen"
+      },
+      "panel": {
+        "identity": "Tour {number} · {caregiver}",
+        "enRoute": "Unterwegs",
+        "visits": "Besuche",
+        "visitsValue": "{done} / {total}",
+        "drift": "Abweichung",
+        "driftValue": "+{minutes} Min.",
+        "remaining": "Rest",
+        "remainingValue": "{km} km",
+        "end": "Ende geplant"
+      }
+    },
+    "gains": {
+      "title": "Was die Optimierung gebracht hat",
+      "subtitle": "Entwurf v3 gegenüber manueller Planung",
+      "items": {
+        "kilometers": {
+          "label": "Vermiedene Kilometer",
+          "value": "47 km"
+        },
+        "travelTime": {
+          "label": "Fahrzeit",
+          "value": "−1 Std. 12"
+        },
+        "windows": {
+          "label": "Eingehaltene Zeitfenster",
+          "value": "98,4 %"
+        },
+        "balanced": {
+          "label": "Ausgeglichene Touren",
+          "value": "9 / 11"
+        }
+      }
+    },
+    "rules": {
+      "title": "Angewandte Regeln",
+      "subtitle": "Änderbar in den Einstellungen der Struktur",
+      "items": {
+        "continuity": "Kontinuität Fachkraft-Patient",
+        "legalBreak": "Gesetzliche Pause 30 Min.",
+        "maxTravel": "Max. 45 Min. Fahrzeit gesamt",
+        "qualification": "Qualifikation verpflichtend",
+        "timeWindows": "Strikte Zeitfenster",
+        "preferredSector": "Bevorzugtes Gebiet"
+      }
+    },
+    "publish": {
+      "action": "An die Fachkräfte veröffentlichen",
+      "blocked": "Veröffentlichung gesperrt: eine Qualifikations-Arbitrage ist offen. Eine fehlende Qualifikation ist ein regulatorisches Risiko.",
+      "confirmTitle": "Entwurf veröffentlichen?",
+      "confirmBody": "Die betroffenen Fachkräfte erhalten ihre Tour sofort auf dem Telefon.",
+      "summary": {
+        "tours": "Touren",
+        "visits": "Besuche",
+        "kilometers": "Kilometer",
+        "notified": "Benachrichtigte Fachkräfte"
+      },
+      "cancel": "Abbrechen",
+      "confirm": "Veröffentlichen"
     }
   },
   "patients": {

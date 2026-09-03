@@ -10,6 +10,7 @@ import { ToursCard } from "@/components/overview/tours-card";
 import { ArbitrationsCard } from "@/components/overview/arbitrations-card";
 import { AbsencesCard } from "@/components/overview/absences-card";
 import { QualificationsCard } from "@/components/overview/qualifications-card";
+import { useArbitrationQueue } from "@/lib/arbitrations";
 import { KPIS, ORGANISATION_NAME, OVERVIEW_DATE } from "@/lib/demo/uebersicht";
 
 /**
@@ -31,6 +32,7 @@ export default function OverviewPage() {
   const t = useTranslations("overview");
   const format = useFormatter();
   const { user } = useAuth();
+  const arbitrations = useArbitrationQueue();
 
   if (!user) return null;
 
@@ -86,7 +88,7 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1.35fr_1fr]">
         <ToursCard />
         <div className="flex flex-col gap-4">
-          <ArbitrationsCard />
+          <ArbitrationsCard queue={arbitrations} />
           <AbsencesCard />
           <QualificationsCard />
         </div>

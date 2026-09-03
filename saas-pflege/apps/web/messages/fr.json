@@ -65,7 +65,8 @@
     "clustering": "Secteurs",
     "admin": "Plateforme",
     "primary": "Navigation principale",
-    "openArbitrations": "{count} arbitrages ouverts"
+    "openArbitrations": "{count} arbitrages ouverts",
+    "visitList": "Visites"
   },
   "roles": {
     "SUPER_ADMIN": "Administration plateforme",
@@ -181,6 +182,83 @@
         "drivingLicence": "Couvert",
         "arabic": "{count} patients"
       }
+    }
+  },
+  "planning": {
+    "draft": "brouillon v{version}",
+    "headline": "{tours} tournées calculées en {minutes} min.",
+    "remaining": "{count} arbitrages restants.",
+    "compare": "Comparer à la v{version}",
+    "gps": "GPS · {count} en tournée",
+    "map": {
+      "alt": "Carte schématique du secteur {sector} : trois itinéraires superposés et la position en direct.",
+      "sectorTitle": "Secteur {sector}",
+      "subtitle": "{tours} tournées superposées · {patients} patients géolocalisés",
+      "layers": "Couche de la carte",
+      "layer": {
+        "routes": "Itinéraires",
+        "density": "Densité",
+        "delays": "Retards"
+      },
+      "panel": {
+        "identity": "Tournée {number} · {caregiver}",
+        "enRoute": "En route",
+        "visits": "Visites",
+        "visitsValue": "{done} / {total}",
+        "drift": "Écart",
+        "driftValue": "+{minutes} min",
+        "remaining": "Restant",
+        "remainingValue": "{km} km",
+        "end": "Fin prévue"
+      }
+    },
+    "gains": {
+      "title": "Ce que l'optimisation a gagné",
+      "subtitle": "Brouillon v3 contre planification manuelle",
+      "items": {
+        "kilometers": {
+          "label": "Kilomètres évités",
+          "value": "47 km"
+        },
+        "travelTime": {
+          "label": "Temps de trajet",
+          "value": "−1 h 12"
+        },
+        "windows": {
+          "label": "Fenêtres respectées",
+          "value": "98,4 %"
+        },
+        "balanced": {
+          "label": "Tournées équilibrées",
+          "value": "9 / 11"
+        }
+      }
+    },
+    "rules": {
+      "title": "Règles appliquées",
+      "subtitle": "Modifiables dans les réglages de la structure",
+      "items": {
+        "continuity": "Continuité soignant-patient",
+        "legalBreak": "Pause légale 30 min",
+        "maxTravel": "Max 45 min de trajet cumulé",
+        "qualification": "Qualification obligatoire",
+        "timeWindows": "Fenêtres horaires strictes",
+        "preferredSector": "Secteur préféré"
+      }
+    },
+    "publish": {
+      "action": "Publier aux Fachkräfte",
+      "blocked": "Publication bloquée : un arbitrage de qualification reste ouvert. Une qualification manquante est un risque réglementaire.",
+      "confirmTitle": "Publier le brouillon ?",
+      "confirmBody": "Les Fachkräfte concernées reçoivent leur tournée immédiatement sur leur téléphone.",
+      "summary": {
+        "tours": "Tournées",
+        "visits": "Visites",
+        "kilometers": "Kilomètres",
+        "notified": "Fachkräfte notifiées"
+      },
+      "cancel": "Annuler",
+      "confirm": "Publier"
     }
   },
   "patients": {

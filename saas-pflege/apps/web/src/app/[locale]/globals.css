@@ -31,9 +31,18 @@
     animation: ll-draw 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
-  /* Halo der Live-Position auf der Karte. Läuft dauerhaft. */
+  /*
+   * Halo der Live-Position auf der Karte. Läuft dauerhaft.
+   *
+   * `transform-box: fill-box` ist hier nicht optional: ohne diese Angabe
+   * bezieht ein SVG-Element `transform-origin: center` auf das
+   * KOORDINATENSYSTEM des gesamten SVG, nicht auf sich selbst. Der Halo
+   * skalierte dann aus der Bildmitte heraus und wanderte quer über die Karte,
+   * statt um seinen Punkt zu pulsieren.
+   */
   .ll-pulse {
     animation: ll-pulse 2.6s ease-out infinite;
+    transform-box: fill-box;
     transform-origin: center;
   }
 }

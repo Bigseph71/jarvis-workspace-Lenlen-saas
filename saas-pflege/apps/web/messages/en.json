@@ -65,7 +65,8 @@
     "clustering": "Sectors",
     "admin": "Platform",
     "primary": "Main navigation",
-    "openArbitrations": "{count} open arbitrations"
+    "openArbitrations": "{count} open arbitrations",
+    "visitList": "Visits"
   },
   "roles": {
     "SUPER_ADMIN": "Platform administration",
@@ -181,6 +182,83 @@
         "drivingLicence": "Covered",
         "arabic": "{count} patients"
       }
+    }
+  },
+  "planning": {
+    "draft": "draft v{version}",
+    "headline": "{tours} tours computed in {minutes} min.",
+    "remaining": "{count} arbitrations left.",
+    "compare": "Compare with v{version}",
+    "gps": "GPS · {count} on tour",
+    "map": {
+      "alt": "Schematic map of the {sector} sector: three overlaid tours and the live position.",
+      "sectorTitle": "{sector} sector",
+      "subtitle": "{tours} overlaid tours · {patients} geocoded patients",
+      "layers": "Map layer",
+      "layer": {
+        "routes": "Routes",
+        "density": "Density",
+        "delays": "Delays"
+      },
+      "panel": {
+        "identity": "Tour {number} · {caregiver}",
+        "enRoute": "En route",
+        "visits": "Visits",
+        "visitsValue": "{done} / {total}",
+        "drift": "Drift",
+        "driftValue": "+{minutes} min",
+        "remaining": "Remaining",
+        "remainingValue": "{km} km",
+        "end": "Expected end"
+      }
+    },
+    "gains": {
+      "title": "What the optimisation gained",
+      "subtitle": "Draft v3 against manual planning",
+      "items": {
+        "kilometers": {
+          "label": "Kilometres avoided",
+          "value": "47 km"
+        },
+        "travelTime": {
+          "label": "Travel time",
+          "value": "−1 h 12"
+        },
+        "windows": {
+          "label": "Windows respected",
+          "value": "98.4%"
+        },
+        "balanced": {
+          "label": "Balanced tours",
+          "value": "9 / 11"
+        }
+      }
+    },
+    "rules": {
+      "title": "Rules applied",
+      "subtitle": "Editable in the organisation settings",
+      "items": {
+        "continuity": "Caregiver-patient continuity",
+        "legalBreak": "Statutory 30 min break",
+        "maxTravel": "Max 45 min total travel",
+        "qualification": "Qualification required",
+        "timeWindows": "Strict time windows",
+        "preferredSector": "Preferred sector"
+      }
+    },
+    "publish": {
+      "action": "Publish to the Fachkräfte",
+      "blocked": "Publication blocked: a qualification arbitration is still open. A missing qualification is a regulatory risk.",
+      "confirmTitle": "Publish the draft?",
+      "confirmBody": "The Fachkräfte concerned receive their tour on their phone immediately.",
+      "summary": {
+        "tours": "Tours",
+        "visits": "Visits",
+        "kilometers": "Kilometres",
+        "notified": "Fachkräfte notified"
+      },
+      "cancel": "Cancel",
+      "confirm": "Publish"
     }
   },
   "patients": {
