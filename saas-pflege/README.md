@@ -10,7 +10,7 @@ saas-pflege/
 ├── apps/
 │   ├── backend/        # API Node.js (Fastify) + Prisma + Auth + BullMQ producer
 │   ├── web/            # Frontend Next.js (App Router) + next-intl (DE/EN/FR)
-│   ├── vrptw-worker/   # Worker BullMQ d'optimisation de tournées (VRPTW)
+│   ├── mobile/         # Application Fachkraft (Expo / React Native)
 │   └── ki-service/     # Microservice Python/FastAPI (3 modèles ML)
 ├── packages/
 │   ├── database/       # Schéma Prisma + client partagé + RLS + seed
@@ -30,12 +30,17 @@ saas-pflege/
 
 ```bash
 cp .env.example .env          # adapter les secrets
-docker compose up -d          # postgres, redis, backend, web, worker, ki
+docker compose up -d          # postgres, redis, backend, web, ki
 ```
 
-Services exposés : web `:3000`, backend `:4000`. `postgres`, `redis`, `vrptw-worker`
-et `ki-service` restent sur le réseau interne (pas d'accès Internet direct, conforme
-à la règle d'isolation réseau du CLAUDE.md).
+Services exposés : web `:3000`, backend `:4000`. `postgres`, `redis` et `ki-service`
+restent sur le réseau interne (pas d'accès Internet direct, conforme à la règle
+d'isolation réseau du CLAUDE.md).
+
+L'optimisation VRPTW n'a **pas** de service à elle : elle tourne dans le backend
+(`modules/vrptw/vrptw.worker.ts`), alimentée par la même file BullMQ. Le jour où
+elle devra être isolée, c'est un déplacement, pas une réécriture — le contrat
+est la file, pas le code appelant.
 
 ## Démarrage dev (sans Docker pour les apps)
 
