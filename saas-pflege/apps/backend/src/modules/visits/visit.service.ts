@@ -25,6 +25,7 @@ import type {
   ListVisitsQuery,
   PointageInput,
   WriteVisitNoteInput,
+  MyHistoryQuery,
 } from "./visit.schemas.js";
 
 // Status, die eine Wochenbelegung "verbrauchen" (CANCELED/MISSED zählen nicht).
@@ -447,6 +448,71 @@ export async function myVisitsForDay(ctx: TenantContext, date: Date): Promise<un
       include: MY_DAY_INCLUDE,
     });
     return { date: start, count: visits.length, visits };
+  });
+}
+
+/**
+ * Verlauf der eingeloggten Fachkraft: ihre ERLEDIGTEN Besuche, neueste zuerst.
+ *
+ * Nur `COMPLETED`. Ein abgesagter oder verpasster Besuch hat nicht
+ * stattgefunden, und ein geplanter steht noch aus – beides gehört in die
+ * Tagesansicht, nicht in einen Rückblick. Wer nachlesen will, was sie getan
+ * hat, will keine Liste dessen sehen, was sie nicht getan hat.
+ *
+ * `caregiverId` und nicht `assignedCaregiverId`: gefragt ist, wer GEFAHREN ist.
+ * Eine Vertretung hat den Besuch gemacht und findet ihn hier; die vertretene
+ * Stamm-Fachkraft war nicht dort und findet ihn nicht.
+ *
+ * Absteigend, anders als die Tagesroute: die ist ein Fahrplan und läuft
+ * vorwärts, das hier ist ein Gedächtnis und fängt beim Letzten an.
+ *
+ * KEIN Lese-Eintrag im Audit-Log, wie bei /visits/mine: die Fachkraft liest
+ * ihre eigenen Einsätze. Ein Protokolleintrag je Seitenabruf würde das Journal
+ * mit dem Normalfall füllen und die Zugriffe verdecken, um die es geht – die
+ * auf fremde Patientenakten.
+ */
+export async function myVisitHistory(
+  ctx: TenantContext,
+  { page, limit }: MyHistoryQuery,
+): Promise<Paginated<unknown>> {
+  const pagination: Pagination = { page, pageSize: limit };
+
+  return withTenant(ctx.organizationId, async (tx) => {
+    const caregiver = await tx.caregiver.findFirst({
+      where: { userId: ctx.userId, organizationId: ctx.organizationId },
+      select: { id: true },
+    });
+    if (!caregiver) throw new ForbiddenError("Kein Fachkraft-Profil mit deinem Konto verknüpft");
+
+    const where: Prisma.VisitWhereInput = {
+      organizationId: ctx.organizationId,
+      caregiverId: caregiver.id,
+      status: VisitStatus.COMPLETED,
+    };
+
+    const [data, total] = await Promise.all([
+      tx.visit.findMany({
+        where,
+        orderBy: { scheduledAt: "desc" },
+        select: {
+          id: true,
+          scheduledAt: true,
+          status: true,
+          isEmergency: true,
+          hasIncident: true,
+          // Ankunft UND Abfahrt: die App zeigt die Ankunftszeit an und rechnet
+          // aus beiden die Dauer. Ohne die Abfahrt bliebe sie leer, obwohl der
+          // Besuch abgeschlossen ist.
+          gpsArrivalAt: true,
+          gpsDepartureAt: true,
+          patient: { select: { id: true, firstName: true, lastName: true } },
+        },
+        ...toSkipTake(pagination),
+      }),
+      tx.visit.count({ where }),
+    ]);
+
+    return paginated(data, total, pagination);
   });
 }
 
