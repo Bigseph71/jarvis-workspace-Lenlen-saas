@@ -1,13 +1,18 @@
 import { useTranslations } from "next-intl";
 
 /**
- * Hinweis, dass die Zahlen dieser Oberfläche noch Beispielwerte sind.
+ * Hinweis, WELCHE Teile dieses Bildschirms noch Beispielwerte zeigen.
  *
- * Notwendig, weil die Werte GLAUBWÜRDIG sind: Namen von Fachkräften, Gebiete,
- * Kilometer. Auf einem Bildschirm sind sie von echten Daten nicht zu
- * unterscheiden, und eine Koordination, die danach disponiert, richtet Schaden
- * an. Der Streifen verschwindet mit der Anbindung an echte Endpunkte – er ist
- * kein Dauerzustand, sondern die ehrliche Kennzeichnung eines Zwischenstands.
+ * Der Streifen sagte bis hierher, der ganze Bildschirm sei ein Beispiel. Das
+ * stimmt nicht mehr: Besuche, Verspätungen, Kilometer, Touren, Abwesenheiten
+ * und Qualifikationen kommen jetzt aus der Datenbank. Zwei Stellen tun es
+ * nicht, und für die bleibt der Hinweis – enger gefasst, damit er weiter
+ * gelesen wird. Ein Streifen, der pauschal alles verdächtigt, wird nach einer
+ * Woche übersehen, und dann trägt er nichts mehr.
+ *
+ * Er verschwindet, sobald die beiden letzten Karten eine Quelle haben. Beide
+ * brauchen dafür kein Feld, sondern einen Vorgang, den es im Backend nicht
+ * gibt: eine gemessene Planungsdauer und einen Entwurf mit Arbitragen.
  */
 export function DemoNotice() {
   const t = useTranslations("overview.demo");

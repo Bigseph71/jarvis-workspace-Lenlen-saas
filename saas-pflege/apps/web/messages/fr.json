@@ -77,15 +77,13 @@
   },
   "overview": {
     "demo": {
-      "tag": "Démonstration",
-      "body": "Cet écran affiche des valeurs d'exemple. Les endpoints correspondants n'existent pas encore."
+      "tag": "Exemple",
+      "body": "Deux indicateurs de cet ecran sont encore des valeurs d'exemple et portent une marque : la duree de planification et les arbitrages. Tout le reste vient de vos donnees."
     },
     "greeting": "Bonjour.",
     "greetingNamed": "Bonjour {name}.",
-    "subline": "Le service du matin suit le plan.",
     "actions": {
-      "weeklyReport": "Rapport hebdomadaire",
-      "planTomorrow": "Planifier demain"
+      "weeklyReport": "Rapport hebdomadaire"
     },
     "kpi": {
       "planningTime": {
@@ -93,49 +91,40 @@
         "unit": " min",
         "delta": "contre 4 h 20 avant"
       },
-      "kilometers": {
-        "label": "Kilomètres du jour",
-        "unit": "",
-        "delta": "−18 % vs plan manuel"
-      },
+      "unavailable": "Indisponible",
       "visits": {
-        "label": "Visites planifiées",
-        "unit": "",
-        "delta": "98,4 % couvertes"
+        "label": "Visites aujourd'hui",
+        "hint": "{done} effectuees, {open} en cours"
       },
       "delays": {
-        "label": "Retards en cours",
-        "unit": "",
-        "delta": "2 rattrapables sans appel"
+        "label": "Retards",
+        "hint": "a partir de {minutes} min apres l'heure prevue"
+      },
+      "kilometers": {
+        "label": "Kilometres aujourd'hui",
+        "hint": "sur {tours} tournees"
       }
     },
     "tours": {
-      "title": "Tournées en cours",
-      "summary": "{tours} tournées · {km} km · rafraîchi il y a {seconds} s",
-      "shift": "Service",
-      "shifts": {
-        "morning": "Matin",
-        "afternoon": "Après-midi",
-        "night": "Nuit"
-      },
-      "meta": "{sector} · {visits} visites · {km} km",
-      "doneOf": "{done} / {total} faites",
-      "load": "charge {percent} %",
-      "notStarted": "non démarrée",
+      "title": "Tournees du jour",
+      "summary": "{tours} tournees · {km} km",
+      "meta": "{visits} visites · {km} km",
       "state": {
         "enRoute": "En route",
         "overloaded": "Surchargée",
-        "notStarted": "En attente"
+        "notStarted": "En attente",
+        "optimized": "Optimisee",
+        "notOptimized": "Non optimisee"
       },
-      "openPlanning": "Ouvrir la planification"
-    },
-    "sectors": {
-      "west": "Ouest",
-      "north": "Nord",
-      "centre": "Centre",
-      "east": "Est",
-      "south": "Sud",
-      "southEast": "Sud-Est"
+      "openPlanning": "Ouvrir les visites",
+      "summaryPending": "Chargement …",
+      "loading": "Chargement des tournees …",
+      "unavailable": "Les tournees ne peuvent pas etre chargees.",
+      "empty": "Aucune tournee pour aujourd'hui. Les tournees naissent de l'optimisation d'un secteur.",
+      "noKm": "pas de km",
+      "noScore": "non evaluee",
+      "score": "Score {score}",
+      "unassigned": "Aucun soignant affecte"
     },
     "arbitrations": {
       "title": "Ce qui demande une décision",
@@ -155,33 +144,53 @@
       }
     },
     "absences": {
-      "title": "Absences déclarées",
-      "subtitle": "Impact déjà répercuté sur les tournées",
-      "reasons": {
-        "sickLeave": "Arrêt maladie jusqu'au 29 août",
-        "approvedLeave": "Congé validé",
-        "training": "Formation mercredi après-midi"
+      "title": "Absences du jour",
+      "subtitle": "Absences en cours qui affectent aujourd'hui",
+      "loading": "Chargement …",
+      "unavailable": "Les absences ne peuvent pas etre chargees.",
+      "empty": "Personne n'est absent aujourd'hui.",
+      "unknownCaregiver": "Soignant inconnu",
+      "until": "jusqu'au {date}",
+      "types": {
+        "VACATION": "Conges",
+        "SICK": "Arret maladie",
+        "TRAINING": "Formation",
+        "PARENTAL": "Conge parental",
+        "UNPAID": "Sans solde",
+        "OTHER": "Autre"
       },
-      "coverage": {
-        "reassigned": "{count} visites reprises",
-        "covered": "Couvert",
-        "toReplace": "{count} visites à replacer"
+      "status": {
+        "REQUESTED": "Demandee",
+        "APPROVED": "Approuvee",
+        "REJECTED": "Refusee",
+        "CANCELED": "Annulee"
       }
     },
     "qualifications": {
-      "title": "Couverture des qualifications",
+      "title": "Qualifications de l'equipe",
       "items": {
         "basicCare": "Soins de base",
         "technicalCare": "Soins techniques SGB V",
         "drivingLicence": "Permis véhicule",
-        "arabic": "Langue arabe"
+        "arabic": "Langue arabe",
+        "PFLEGEFACHKRAFT": "Infirmier diplome",
+        "PFLEGEHILFSKRAFT": "Aide-soignant",
+        "BETREUUNGSKRAFT": "Auxiliaire de vie",
+        "AUSZUBILDENDE": "Apprenti"
       },
-      "status": {
-        "basicCare": "Couvert",
-        "technicalCare": "{count} manquant",
-        "drivingLicence": "Couvert",
-        "arabic": "{count} patients"
-      }
+      "subtitle": "{count} soignants actifs",
+      "loading": "Chargement …",
+      "unavailable": "Les soignants ne peuvent pas etre charges.",
+      "empty": "Aucun soignant actif enregistre.",
+      "share": "{count} · {percent} %"
+    },
+    "sectors": {
+      "west": "Ouest",
+      "north": "Nord",
+      "centre": "Centre",
+      "east": "Est",
+      "south": "Sud",
+      "southEast": "Sud-Est"
     }
   },
   "planning": {

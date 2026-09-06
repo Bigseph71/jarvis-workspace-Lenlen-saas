@@ -25,6 +25,13 @@ const DOT_TONE: Record<"clay" | "clayDeep", string> = {
  * Die Komponente hält keinen Zustand mehr: er liegt in `useArbitrationQueue`,
  * weil auf der Planungsseite auch der Veröffentlichen-Knopf ihn braucht.
  */
+/*
+ * NOCH BEISPIELWERTE. Als einzige Karte dieses Bildschirms hat sie keine
+ * Quelle: "Arbitrage" ist kein Begriff des Datenmodells. Es fehlt nicht ein
+ * Feld, sondern der Vorgang dahinter - ein Planungsentwurf, in dem der
+ * Optimierer offene Punkte hinterlässt. Deshalb traegt sie eine sichtbare
+ * Marke (siehe `demo` unten) und nicht nur einen Kommentar.
+ */
 export function ArbitrationsCard({
   queue,
   withSubtitle = true,
@@ -33,12 +40,23 @@ export function ArbitrationsCard({
   withSubtitle?: boolean;
 }) {
   const t = useTranslations("overview.arbitrations");
+  const tDemo = useTranslations("overview.demo");
 
   return (
     <section className="rounded-card border border-clay-wash-border bg-clay-wash p-6">
-      <h2 className="font-serif text-[22px] font-normal leading-tight text-ink-primary">
-        {t("title")}
-      </h2>
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="font-serif text-[22px] font-normal leading-tight text-ink-primary">
+          {t("title")}
+        </h2>
+        {/*
+          Sichtbare Marke, nicht nur ein Kommentar im Quelltext: die genannten
+          Namen und Zahlen sind erfunden, und auf einem Bildschirm ist ihnen das
+          nicht anzusehen.
+        */}
+        <span className="flex-none rounded-full border border-clay-wash-border bg-app px-2 py-0.5 text-3xs font-bold uppercase tracking-[.1em] text-clay-deep">
+          {tDemo("tag")}
+        </span>
+      </div>
       {withSubtitle ? <p className="mt-1 text-label text-ink-muted">{t("subtitle")}</p> : null}
 
       {queue.open.length === 0 ? (
