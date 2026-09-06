@@ -3,7 +3,7 @@
 #
 # Netz-Topologie:
 #   - "edge"     : von außen erreichbar (web, backend)
-#   - "internal" : NUR intern (postgres, redis, vrptw-worker, ki-service)
+#   - "internal" : NUR intern (postgres, redis, ki-service)
 #     -> interne Microservices haben keinen direkten Internetzugang.
 
 name: len-len
@@ -63,24 +63,6 @@ services:
         condition: service_healthy
     networks:
       - edge
-      - internal
-
-  vrptw-worker:
-    build:
-      context: .
-      dockerfile: apps/vrptw-worker/Dockerfile
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lenlen}:${POSTGRES_PASSWORD:-change_me_in_prod}@postgres:5432/${POSTGRES_DB:-lenlen}?schema=public
-      REDIS_URL: redis://redis:6379
-      NODE_ENV: ${NODE_ENV:-development}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
       - internal
 
   ki-service:

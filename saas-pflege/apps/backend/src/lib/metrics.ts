@@ -9,7 +9,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 export const registry = new Registry();
 
 // Alle Zeitreihen tragen den Service-Namen – im Grafana-Dashboard lassen sich
-// so mehrere Dienste (backend, vrptw-worker, ...) sauber auseinanderhalten.
+// so mehrere Dienste (backend, ki-service, ...) sauber auseinanderhalten.
 registry.setDefaultLabels({ service: "backend" });
 
 /** Anzahl abgeschlossener HTTP-Anfragen, aufgeschlüsselt nach Route/Methode/Status. */
