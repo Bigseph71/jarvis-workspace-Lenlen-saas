@@ -158,7 +158,12 @@ describe.skipIf(!runDbTests)("Verlauf der Fachkraft (DB)", () => {
     // Ein erledigter Besuch von Jonas: er gehört in SEINEN Verlauf, nicht in Maras.
     foreignId = await makeVisit("Fremd", fk2.caregiverId, new Date("2026-08-24T09:00:00.000Z"));
     await prisma.visit.update({ where: { id: foreignId }, data: { status: "COMPLETED" } });
-  });
+    // 30 s statt der 10 s Vorgabe. Ein Verlauf braucht MEHRERE Besuche, um
+    // Sortierung und Blättern zu zeigen: der Aufbau legt sechs Patienten und
+    // sechs Besuche an, jeder in einer eigenen Transaktion, dazu drei Konten
+    // mit Argon2id-Hashing. Das ist mehr als bei den übrigen
+    // Integrationstests und überschritt die Vorgabe in der CI.
+  }, 30_000);
 
   afterAll(async () => {
     if (!prisma) return;
