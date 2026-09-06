@@ -40,17 +40,19 @@ const PRIMARY_ITEMS: NavItem[] = [
   { href: "/patients", key: "patients", roles: PLANNING },
   // Fachkräfte: HR braucht sie für das Vertragsmodul (caregiver.routes.ts: canRead).
   { href: "/caregivers", key: "caregivers", roles: PLANNING_AND_HR },
-  // Der Planungsarbeitsplatz (Karte, Gewinne, Arbitragen, Veröffentlichung).
+  // Wochenliste der Besuche (nav.visitList = "Besuche").
   //
-  // Bis zur Überarbeitung führte dieser Punkt auf /visits, die Wochenliste der
-  // Besuche. Das sind zwei verschiedene Dinge: die Liste ist die Pflege
-  // EINZELNER Termine (anlegen, absagen, umbesetzen), der Arbeitsplatz ist die
-  // Arbeit am ganzen Entwurf. Der Handoff führt genau einen Punkt "Planung" in
-  // der Leiste, und gemeint ist der Arbeitsplatz; die Liste rückt ins Menü.
+  // Steht VOR der Planung, und beides steht in der Leiste. Der Handoff hatte
+  // die Liste ins Menü geschoben, weil dort nur ein Punkt "Planung" vorgesehen
+  // war; in der täglichen Arbeit ist sie aber der meistbenutzte Bildschirm
+  // überhaupt – hier werden einzelne Termine angelegt, abgesagt und umbesetzt.
+  // Ein Punkt, den man mehrmals pro Stunde braucht, gehört nicht hinter ein
+  // Aufklappmenü.
+  { href: "/visits", key: "visitList", roles: PLANNING },
+  // Der Planungsarbeitsplatz (Karte, Gewinne, Arbitragen, Veröffentlichung):
+  // die Arbeit am ganzen Entwurf, nicht am einzelnen Termin. Danach, weil man
+  // ihn seltener, dafür länger benutzt.
   { href: "/planung", key: "visits", roles: PLANNING, badge: OPEN_ARBITRATIONS },
-  // Abwesenheiten: HR pflegt sie, die Koordination liest sie – die Planung
-  // hängt davon ab.
-  { href: "/absences", key: "absences", roles: PLANNING_AND_HR },
 ];
 
 /**
@@ -59,10 +61,11 @@ const PRIMARY_ITEMS: NavItem[] = [
  * jedem neuen Modul weiter (die Dienstpläne kommen noch).
  */
 const SECONDARY_ITEMS: NavItem[] = [
-  // Wochenliste der Besuche. Sie bleibt vollständig erreichbar – hier werden
-  // einzelne Termine angelegt, abgesagt und umbesetzt, was der
-  // Planungsarbeitsplatz nicht kann.
-  { href: "/visits", key: "visitList", roles: PLANNING },
+  // Abwesenheiten: HR pflegt sie, die Koordination liest sie. Sie bleiben
+  // vollständig erreichbar, nur eben aus dem Menü – anders als die Besuchsliste
+  // werden sie nicht im Tagesbetrieb angefasst, sondern wenn ein Urlaubsantrag
+  // oder eine Krankmeldung eintrifft.
+  { href: "/absences", key: "absences", roles: PLANNING_AND_HR },
   // Gebietsaufteilung: geht der Optimierung voraus, gehört also zur Planung
   // (clustering.routes.ts: canPlan). Kein Untermenüpunkt von /tracking – das
   // ist Echtzeit-Überwachung, etwas ganz anderes.

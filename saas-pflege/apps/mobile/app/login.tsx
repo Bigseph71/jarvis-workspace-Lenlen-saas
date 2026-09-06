@@ -4,11 +4,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import Svg, { Circle, Path } from "react-native-svg";
 import { Redirect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as Application from "expo-application";
@@ -29,6 +31,7 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,64 +62,140 @@ export default function LoginScreen() {
   };
 
   return (
+    /*
+      Tastatur und Formular.
+
+      Vorher deckte die Tastatur auf Android das Passwortfeld zu: die Karte
+      steht senkrecht zentriert, das Feld liegt in ihrer unteren Hälfte, und
+      geschoben wurde nichts. Man tippte ins Blinde.
+
+      Zwei Bausteine zusammen:
+
+        - KeyboardAvoidingView mit `behavior` je Plattform. Auf Android "height"
+          statt gar nichts: der Bildschirm hat KEINE eigene Kopfzeile
+          (headerShown: false), der Versatz ist also null, und ohne Angabe
+          schiebt Android überhaupt nicht – genau der gemeldete Fehler.
+        - ScrollView darin. Sie ist die Rückfallebene für den Fall, dass Karte
+          und Tastatur zusammen höher sind als der Bildschirm (kleines Gerät,
+          grosse Systemschrift): dann bleibt das Feld erreichbar, statt aus dem
+          Bild zu wandern. `keyboardShouldPersistTaps="handled"` sorgt dafür,
+          dass der Anmeldeknopf beim ERSTEN Tippen auslöst und nicht erst die
+          Tastatur schliesst.
+    */
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.card}>
-        <Text style={styles.appName}>{t("common.appName")}</Text>
-        <Text style={styles.title}>{t("auth.login.title")}</Text>
-        <Text style={styles.subtitle}>{t("auth.login.subtitle")}</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        <View style={styles.card}>
+          <Text style={styles.appName}>{t("common.appName")}</Text>
+          <Text style={styles.title}>{t("auth.login.title")}</Text>
+          <Text style={styles.subtitle}>{t("auth.login.subtitle")}</Text>
 
-        <Text style={styles.label}>{t("auth.login.email")}</Text>
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholder={t("auth.login.emailPlaceholder")}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          editable={!submitting}
-        />
+          <Text style={styles.label}>{t("auth.login.email")}</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder={t("auth.login.emailPlaceholder")}
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            editable={!submitting}
+          />
 
-        <Text style={styles.label}>{t("auth.login.password")}</Text>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoComplete="password"
-          editable={!submitting}
-          onSubmitEditing={onSubmit}
-        />
+          <Text style={styles.label}>{t("auth.login.password")}</Text>
+          {/*
+            Auge zum Aufdecken. Ein Passwort mit zwölf Zeichen, Ziffer und
+            Grossbuchstabe (siehe changePassword.rules) vertippt sich auf einer
+            Telefontastatur zuverlässig, und die Rückmeldung darauf ist
+            "Ungültige Anmeldedaten" – nicht zu unterscheiden von einem falschen
+            Konto. Der Knopf liegt IM Feld, damit er die Reihenfolge der
+            Beschriftungen nicht bricht.
+          */}
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.input, styles.passwordInput]}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!passwordVisible}
+              autoCapitalize="none"
+              autoComplete="password"
+              editable={!submitting}
+              onSubmitEditing={onSubmit}
+            />
+            <Pressable
+              style={styles.eye}
+              onPress={() => setPasswordVisible((visible) => !visible)}
+              accessibilityRole="button"
+              accessibilityLabel={t(
+                passwordVisible ? "auth.login.hidePassword" : "auth.login.showPassword",
+              )}
+              accessibilityState={{ selected: passwordVisible }}
+              hitSlop={8}
+            >
+              <EyeIcon crossed={passwordVisible} />
+            </Pressable>
+          </View>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Pressable
-          style={[styles.button, !canSubmit && styles.buttonDisabled]}
-          onPress={onSubmit}
-          disabled={!canSubmit}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>{t("auth.login.submit")}</Text>
-          )}
-        </Pressable>
-      </View>
+          <Pressable
+            style={[styles.button, !canSubmit && styles.buttonDisabled]}
+            onPress={onSubmit}
+            disabled={!canSubmit}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>{t("auth.login.submit")}</Text>
+            )}
+          </Pressable>
+        </View>
 
-      {/* Sichtbar ohne Anmeldung – genau der Fall, in dem jemand anruft, weil
-          er sich NICHT anmelden kann. */}
-      {appVersion ? (
-        <Text style={styles.version}>{t("common.version", { version: appVersion })}</Text>
-      ) : null}
+        {/* Sichtbar ohne Anmeldung – genau der Fall, in dem jemand anruft, weil
+            er sich NICHT anmelden kann. */}
+        {appVersion ? (
+          <Text style={styles.version}>{t("common.version", { version: appVersion })}</Text>
+        ) : null}
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
+/**
+ * Auge, durchgestrichen sobald das Passwort SICHTBAR ist.
+ *
+ * Der Strich zeigt, was das Antippen bewirkt (verbergen), nicht den aktuellen
+ * Zustand – dieselbe Lesart wie in Browsern und Bankanwendungen. Die
+ * Sprachausgabe bekommt die Bedeutung ohnehin über accessibilityLabel.
+ */
+function EyeIcon({ crossed }: { crossed: boolean }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z"
+        stroke="#52525b"
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx={12} cy={12} r={3} stroke="#52525b" strokeWidth={1.7} />
+      {crossed ? (
+        <Path d="M4 20 20 4" stroke="#52525b" strokeWidth={1.7} strokeLinecap="round" />
+      ) : null}
+    </Svg>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", backgroundColor: "#f4f4f5", padding: 20 },
+  container: { flex: 1, backgroundColor: "#f4f4f5" },
+  // Zentriert, solange der Inhalt passt; darueber hinaus wird gescrollt.
+  scrollContent: { flexGrow: 1, justifyContent: "center", padding: 20 },
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -139,6 +218,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 15,
     backgroundColor: "#fff",
+  },
+  passwordRow: { justifyContent: "center" },
+  // Platz rechts fuer das Auge, damit der Text nicht darunter laeuft.
+  passwordInput: { paddingRight: 48 },
+  eye: {
+    position: "absolute",
+    right: 4,
+    height: 40,
+    width: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   error: { color: "#b91c1c", fontSize: 13, marginTop: 8 },
   button: {

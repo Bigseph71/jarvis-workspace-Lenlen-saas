@@ -5,7 +5,10 @@
     "retry": "Réessayer",
     "logout": "Se déconnecter",
     "errorGeneric": "Une erreur est survenue. Veuillez réessayer.",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "cancel": "Annuler",
+    "logoutConfirmTitle": "Se déconnecter ?",
+    "logoutConfirmMessage": "Vous serez déconnecté et devrez vous reconnecter. Le suivi de position en cours prend fin."
   },
   "auth": {
     "login": {
@@ -18,7 +21,9 @@
       "submitting": "Connexion en cours …",
       "invalidCredentials": "Identifiants invalides.",
       "fachkraftOnly": "Cette application est réservée aux soignants. Veuillez utiliser l'application web.",
-      "networkError": "Serveur injoignable. Vérifiez votre connexion (sur un appareil, EXPO_PUBLIC_API_URL doit pointer vers l'IP LAN de votre ordinateur)."
+      "networkError": "Serveur injoignable. Vérifiez votre connexion (sur un appareil, EXPO_PUBLIC_API_URL doit pointer vers l'IP LAN de votre ordinateur).",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe"
     },
     "changePassword": {
       "title": "Changer le mot de passe",
@@ -105,6 +110,16 @@
     "placeholder": "Message à la coordination …",
     "send": "Envoyer",
     "empty": "Pas encore de messages. Écrivez à la coordination."
+  },
+  "history": {
+    "title": "Historique",
+    "overline": "Visites effectuées",
+    "empty": "Aucune visite effectuée pour l'instant.",
+    "arrivedAt": "Arrivée {{time}}",
+    "arrivalUnknown": "Arrivée non enregistrée",
+    "durationHours": "{{hours}} h {{minutes}} min",
+    "durationMinutes": "{{minutes}} min",
+    "durationUnknown": "—"
   },
   "tracking": {
     "active": "Localisation en direct active",

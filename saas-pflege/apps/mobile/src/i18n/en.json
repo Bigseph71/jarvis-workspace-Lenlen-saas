@@ -5,7 +5,10 @@
     "retry": "Try again",
     "logout": "Log out",
     "errorGeneric": "Something went wrong. Please try again.",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "cancel": "Cancel",
+    "logoutConfirmTitle": "Log out?",
+    "logoutConfirmMessage": "You will be logged out and will have to sign in again. Any running location tracking ends with it."
   },
   "auth": {
     "login": {
@@ -18,7 +21,9 @@
       "submitting": "Signing in …",
       "invalidCredentials": "Invalid credentials.",
       "fachkraftOnly": "This app is for caregivers only. Please use the web application.",
-      "networkError": "Server unreachable. Check your connection (on a device, EXPO_PUBLIC_API_URL must point to your computer's LAN IP)."
+      "networkError": "Server unreachable. Check your connection (on a device, EXPO_PUBLIC_API_URL must point to your computer's LAN IP).",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
     },
     "changePassword": {
       "title": "Change password",
@@ -105,6 +110,16 @@
     "placeholder": "Message to the coordination team …",
     "send": "Send",
     "empty": "No messages yet. Write to the coordination team."
+  },
+  "history": {
+    "title": "History",
+    "overline": "Completed visits",
+    "empty": "No completed visits yet.",
+    "arrivedAt": "Arrived {{time}}",
+    "arrivalUnknown": "Arrival not recorded",
+    "durationHours": "{{hours}} h {{minutes}} min",
+    "durationMinutes": "{{minutes}} min",
+    "durationUnknown": "—"
   },
   "tracking": {
     "active": "Live location active",

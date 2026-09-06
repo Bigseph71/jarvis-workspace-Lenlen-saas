@@ -5,7 +5,10 @@
     "retry": "Erneut versuchen",
     "logout": "Abmelden",
     "errorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "cancel": "Abbrechen",
+    "logoutConfirmTitle": "Abmelden?",
+    "logoutConfirmMessage": "Sie werden abgemeldet und müssen sich neu anmelden. Eine laufende Standorterfassung endet damit."
   },
   "auth": {
     "login": {
@@ -18,7 +21,9 @@
       "submitting": "Wird angemeldet …",
       "invalidCredentials": "Ungültige Anmeldedaten.",
       "fachkraftOnly": "Diese App ist nur für Fachkräfte. Bitte nutzen Sie die Web-Anwendung.",
-      "networkError": "Server nicht erreichbar. Prüfen Sie Ihre Verbindung (auf dem Gerät muss EXPO_PUBLIC_API_URL auf die LAN-IP des Rechners zeigen)."
+      "networkError": "Server nicht erreichbar. Prüfen Sie Ihre Verbindung (auf dem Gerät muss EXPO_PUBLIC_API_URL auf die LAN-IP des Rechners zeigen).",
+      "showPassword": "Passwort anzeigen",
+      "hidePassword": "Passwort verbergen"
     },
     "changePassword": {
       "title": "Passwort ändern",
@@ -105,6 +110,16 @@
     "placeholder": "Nachricht an die Koordination …",
     "send": "Senden",
     "empty": "Noch keine Nachrichten. Schreiben Sie der Koordination."
+  },
+  "history": {
+    "title": "Verlauf",
+    "overline": "Erledigte Besuche",
+    "empty": "Noch keine erledigten Besuche.",
+    "arrivedAt": "Ankunft {{time}}",
+    "arrivalUnknown": "Ankunft nicht erfasst",
+    "durationHours": "{{hours}} Std. {{minutes}} Min.",
+    "durationMinutes": "{{minutes}} Min.",
+    "durationUnknown": "—"
   },
   "tracking": {
     "active": "Live-Standort aktiv",

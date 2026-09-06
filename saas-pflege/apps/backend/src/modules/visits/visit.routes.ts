@@ -14,6 +14,7 @@ import {
   listVisitsQuerySchema,
   missingWeekQuerySchema,
   myVisitsQuerySchema,
+  myHistoryQuerySchema,
   pointageSchema,
   writeVisitNoteSchema,
 } from "./visit.schemas.js";
@@ -29,6 +30,7 @@ import {
   cancelVisit,
   patientsMissingWeeklyVisit,
   myVisitsForDay,
+  myVisitHistory,
   writeVisitNote,
   patientVisitNotes,
   openIncidents,
@@ -145,6 +147,23 @@ export async function visitRoutes(app: FastifyInstance): Promise<void> {
     async (request) => {
       const { date } = myVisitsQuerySchema.parse(request.query);
       return myVisitsForDay(ctxFrom(request), date ?? new Date());
+    },
+  );
+
+  /**
+   * Verlauf der eingeloggten Fachkraft (Mobile, Reiter „Verlauf“).
+   *
+   * Dieselbe Wächter-Menge wie /visits/mine: NUR die Fachkraft, und der Service
+   * schneidet zusätzlich auf ihr eigenes Fachkraft-Profil zu. Der Pfad ist
+   * statisch und steht damit im Router vor /visits/:id – eine Anfrage auf
+   * "my-history" wird nie als UUID gelesen.
+   */
+  app.get(
+    "/visits/my-history",
+    { preHandler: [requireRole(UserRole.FACHKRAFT)] },
+    async (request) => {
+      const query = myHistoryQuerySchema.parse(request.query);
+      return myVisitHistory(ctxFrom(request), query);
     },
   );
 

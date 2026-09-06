@@ -50,6 +50,19 @@ export const myVisitsQuerySchema = z.object({
   date: z.coerce.date().optional(),
 });
 
+/**
+ * Verlauf der eigenen Besuche (Mobile, Reiter „Verlauf“).
+ *
+ * `limit` und nicht `pageSize` wie im Rest des Backends: die mobile App
+ * blättert eine unendliche Liste, kein Tabellengitter mit wählbarer
+ * Seitengrösse. Die ANTWORT bleibt trotzdem die Hausform (`Paginated`, also
+ * mit `pageSize`), damit der geteilte API-Client nicht zwei Formen kennen muss.
+ */
+export const myHistoryQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 // Pointage (Mobile): Position optional (Web sendet keine), recordedAt für
 // Offline-Nachreichung (max. 24h alt, nie in der Zukunft).
 export const pointageSchema = z
@@ -93,3 +106,4 @@ export type RescheduleVisitInput = z.infer<typeof rescheduleVisitSchema>;
 export type AssignCaregiverInput = z.infer<typeof assignCaregiverSchema>;
 export type ListVisitsQuery = z.infer<typeof listVisitsQuerySchema>;
 export type PointageInput = z.infer<typeof pointageSchema>;
+export type MyHistoryQuery = z.infer<typeof myHistoryQuerySchema>;

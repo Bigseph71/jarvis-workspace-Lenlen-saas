@@ -106,3 +106,19 @@ export const radius = {
  * dieses Telefon mit Handschuhen im Treppenhaus.
  */
 export const MIN_TOUCH_HEIGHT = 44;
+
+/**
+ * Höhe eines Reiters der unteren Leiste.
+ *
+ * Deutlich über MIN_TOUCH_HEIGHT, und das hat einen konkreten Anlass: auf
+ * Geräten mit Android-Gestensteuerung (gemeldet auf einem Redmi Note 13 Pro+)
+ * beansprucht der Wischbalken des Systems die unteren Bildpunkte des
+ * Bildschirms. Berührungen dort gehen an das System, nicht an die App – ein
+ * 44 Punkte hoher Reiter, der bündig am unteren Rand sitzt, verliert dadurch
+ * seine untere Hälfte und lässt sich schlicht nicht treffen.
+ *
+ * Die Höhe allein genügt nicht; die Leiste muss zusätzlich um
+ * useSafeAreaInsets().bottom nach oben gerückt werden (siehe components/
+ * tab-bar.tsx). Beides zusammen hält die Trefferfläche frei.
+ */
+export const MIN_TAB_HEIGHT = 64;

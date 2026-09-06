@@ -142,6 +142,41 @@ export async function myVisits(date?: string): Promise<MyDayResult> {
   return apiFetch<MyDayResult>(`/visits/mine${qs}`);
 }
 
+// ── Verlauf der Fachkraft (Mobile) ───────────────────────────────────────
+
+/**
+ * Ein erledigter Besuch im Verlauf. Bewusst schmaler als `MyVisit`: der
+ * Rückblick zeigt Datum, Patient, Ankunft und Dauer – keine Adresse und keine
+ * Koordinaten, weil von hier aus nicht navigiert wird.
+ */
+export interface MyHistoryVisit {
+  id: string;
+  scheduledAt: string;
+  status: VisitStatus;
+  isEmergency: boolean;
+  hasIncident: boolean;
+  gpsArrivalAt: string | null;
+  gpsDepartureAt: string | null;
+  patient: PersonRef;
+}
+
+/**
+ * Erledigte Besuche der eingeloggten Fachkraft, neueste zuerst
+ * (GET /visits/my-history).
+ *
+ * Der Endpunkt nimmt `limit`, nicht `pageSize` – die Antwort ist trotzdem die
+ * Hausform `Paginated`.
+ */
+export async function myVisitHistory(
+  params: { page?: number; limit?: number } = {},
+): Promise<Paginated<MyHistoryVisit>> {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  if (params.limit) query.set("limit", String(params.limit));
+  const qs = query.toString();
+  return apiFetch<Paginated<MyHistoryVisit>>(`/visits/my-history${qs ? `?${qs}` : ""}`);
+}
+
 /** Position beim Pointage; recordedAt (ISO) für Offline-Nachreichung. */
 export interface PointagePayload {
   latitude?: number;

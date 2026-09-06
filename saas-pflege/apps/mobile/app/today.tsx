@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Linking,
   Platform,
@@ -10,7 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { Link, Redirect, useFocusEffect, useRouter } from "expo-router";
+import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   ApiError,
@@ -26,6 +27,7 @@ import { color, font, radius, MIN_TOUCH_HEIGHT } from "@/lib/theme";
 import { initialsFrom } from "@/lib/initials";
 import { currentVisit, remainingCount } from "@/lib/tour";
 import { MiniMap } from "@/components/mini-map";
+import { TabBar } from "@/components/tab-bar";
 
 type Day = "today" | "tomorrow";
 
@@ -157,6 +159,28 @@ export default function TodayScreen() {
     setRefreshing(false);
   }, [load]);
 
+  /**
+   * Abmelden mit Rückfrage.
+   *
+   * Vorher meldete ein Tippen auf das Namenszeichen oben rechts SOFORT ab, ohne
+   * Warnung und ohne Weg zurück. Das Zeichen sieht aus wie ein Profil, sitzt an
+   * der Stelle, an der in anderen Apps ein Profil sitzt, und liegt genau dort,
+   * wo der Daumen beim Halten des Telefons ohnehin aufliegt. Wer im Treppenhaus
+   * danebengreift, steht mit einem Anmeldebildschirm da – mitten in der Tour,
+   * ohne Netz womöglich, und die laufende Standorterfassung endet mit.
+   *
+   * Alert.alert und kein eigener Bildschirm: die Rückfrage ist eine
+   * Systemsache, sie erscheint sofort und lässt sich mit der Zurück-Taste des
+   * Telefons wegdrücken. Der abbrechende Knopf steht zuerst und ist der
+   * `cancel`-Knopf; das Abmelden trägt `destructive`, was iOS rot einfärbt.
+   */
+  const confirmLogout = useCallback((): void => {
+    Alert.alert(t("common.logoutConfirmTitle"), t("common.logoutConfirmMessage"), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("common.logout"), style: "destructive", onPress: () => void logout() },
+    ]);
+  }, [t, logout]);
+
   const onPointage = useCallback(
     async (visit: MyVisit) => {
       setBusyVisitId(visit.id);
@@ -231,7 +255,15 @@ export default function TodayScreen() {
                 </Text>
                 <Text style={styles.title}>{t("today.title")}</Text>
               </View>
-              <Pressable onPress={() => void logout()}>
+              <Pressable
+                onPress={confirmLogout}
+                accessibilityRole="button"
+                accessibilityLabel={t("common.logout")}
+                // Grössere Trefferfläche als das Zeichen selbst, ohne das
+                // Layout zu verschieben: 38 Punkte sind für einen Knopf am
+                // Rand knapp (siehe MIN_TOUCH_HEIGHT).
+                hitSlop={8}
+              >
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>{initialsFrom(user.email)}</Text>
                 </View>
@@ -340,25 +372,16 @@ export default function TodayScreen() {
       />
 
       {/*
-        Zwei Reiter, nicht vier. Der Entwurf zeigt zusätzlich "Carte" und
-        "Temps"; beide gibt es nicht, weder als Bildschirm noch als Endpunkt.
-        Ein Reiter, der nirgendwohin führt, ist in einer Pflege-App schlechter
-        als eine kürzere Leiste: er kostet im Treppenhaus einen Fehlgriff.
+        Drei Reiter: Tour, Chat, Verlauf. Der Entwurf zeigt zusätzlich "Carte"
+        und "Temps"; beide gibt es nicht, weder als Bildschirm noch als
+        Endpunkt. Ein Reiter, der nirgendwohin führt, ist in einer Pflege-App
+        schlechter als eine kürzere Leiste: er kostet im Treppenhaus einen
+        Fehlgriff.
+
+        Die Leiste selbst liegt in components/tab-bar.tsx – dort steht auch,
+        warum sie einen Sicherheitsabstand nach unten braucht.
       */}
-      <View style={styles.tabBar}>
-        <View style={styles.tab}>
-          <View style={[styles.tabMark, styles.tabMarkActive]} />
-          <Text style={[styles.tabLabel, styles.tabLabelActive]}>{t("today.tabTour")}</Text>
-        </View>
-        <Link href="/chat" asChild>
-          <Pressable style={styles.tab}>
-            <View style={styles.tabMark}>
-              {unread > 0 ? <View style={styles.tabDot} /> : null}
-            </View>
-            <Text style={styles.tabLabel}>{t("chat.title")}</Text>
-          </Pressable>
-        </Link>
-      </View>
+      <TabBar active="tour" unread={unread} />
     </View>
   );
 }
@@ -519,31 +542,6 @@ const styles = StyleSheet.create({
     marginTop: 32,
     fontFamily: font.sans,
   },
-
-  tabBar: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    borderTopWidth: 1,
-    borderTopColor: color.neutralTrack,
-    paddingHorizontal: 22,
-    paddingTop: 14,
-    paddingBottom: 20,
-    backgroundColor: color.app,
-  },
-  tab: { alignItems: "center", gap: 6, minHeight: MIN_TOUCH_HEIGHT, minWidth: 64 },
-  tabMark: {
-    width: 22,
-    height: 22,
-    borderRadius: 8,
-    borderWidth: 1.6,
-    borderColor: color.inkFaint,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabMarkActive: { borderColor: color.clay, backgroundColor: color.clayWash },
-  tabDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.clay },
-  tabLabel: { fontFamily: font.sansSemi, fontSize: 10.5, color: color.inkFaint },
-  tabLabelActive: { color: color.clay },
 
   disabled: { opacity: 0.5 },
 });
