@@ -6,9 +6,24 @@ import { PLANNING_ROLES } from "../../lib/roles.js";
 import type { TenantContext } from "../../lib/context.js";
 import { AppError } from "../../lib/errors.js";
 import { enqueueVrptw } from "../../lib/queue.js";
-import { getRoute } from "./vrptw.service.js";
+import { getRoute, listRoutesForDay } from "./vrptw.service.js";
 
 const idParamSchema = z.object({ id: z.string().uuid() });
+
+/**
+ * Tagesliste der Touren. `date` ohne Angabe: heute.
+ *
+ * Eine eigene Obergrenze von 500 statt der hausueblichen 100: die Uebersicht
+ * will die Touren EINES Tages, und ein Traeger im Enterprise-Plan hat bis zu
+ * 500 Fachkraefte. Eine Liste, die bei 100 abschneidet, waere fuer ihn eine
+ * falsche Tageslage -- und die Kennzahlen daneben stammen ohnehin aus einer
+ * Aggregation ueber den ganzen Tag.
+ */
+const routeDayQuerySchema = z.object({
+  date: z.coerce.date().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(500).default(100),
+});
 
 // Planung/Optimierung: Koordinator (Admins als Obermenge).
 // Dieselbe Liste wie der WebSocket-Stream (lib/roles.ts).
@@ -45,6 +60,26 @@ export async function vrptwRoutes(app: FastifyInstance): Promise<void> {
       request.log.warn({ err }, "[vrptw] enqueue fehlgeschlagen");
       throw new AppError(503, "Optimierung derzeit nicht verfügbar (Queue nicht erreichbar).", "QueueUnavailable");
     }
+  });
+
+  /**
+   * Touren eines Tages.
+   *
+   * Vor diesem Endpunkt liess sich eine Tour nur abrufen, wenn man ihre
+   * Kennung bereits kannte – eine Tagesuebersicht war damit unmoeglich, und
+   * genau deshalb zeigte der Startbildschirm erfundene Touren.
+   *
+   * Steht VOR /routes/:id in dieser Datei, was fuer Fastify keine Rolle
+   * spielt (statisch schlaegt Parameter), fuer den Leser aber schon: erst die
+   * Liste, dann das Einzelstueck.
+   */
+  app.get("/routes", { preHandler: [canOptimize] }, async (request) => {
+    const query = routeDayQuerySchema.parse(request.query);
+    return listRoutesForDay(ctxFrom(request), {
+      date: query.date ?? new Date(),
+      page: query.page,
+      pageSize: query.pageSize,
+    });
   });
 
   // Aktueller Tour-Status (Polling des Optimierungsergebnisses).

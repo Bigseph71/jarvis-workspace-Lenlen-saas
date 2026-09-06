@@ -222,3 +222,104 @@ async function persistResult(
   const { visitIds: _drop, ...result } = r;
   return result;
 }
+
+// ── Tagesliste der Touren (Übersicht) ──────────────────────────────────────
+
+export interface RouteRow {
+  id: string;
+  date: string;
+  caregiver: { id: string; firstName: string; lastName: string } | null;
+  vehicleId: string | null;
+  optimized: boolean;
+  vrptwScore: number | null;
+  totalKm: number | null;
+  visitCount: number;
+}
+
+export interface RouteDay {
+  date: string;
+  /**
+   * Kennzahlen über den GANZEN Tag, nicht über die gerade gelieferte Seite.
+   *
+   * Der Grund ist die Übersicht: sie zeigt eine Tageskilometer-Zahl. Würde sie
+   * über die erste Seite summieren, stünde dort eine Zahl, die mit der
+   * Seitengrösse wächst – und niemand sähe es ihr an.
+   */
+  totals: { routes: number; optimized: number; totalKm: number };
+  data: RouteRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+/**
+ * Touren eines Tages.
+ *
+ * Bis hierher gab es nur `GET /routes/:id`: wer eine Tour sehen wollte, musste
+ * ihre Kennung schon kennen. Eine Tagesübersicht war damit unmöglich, und
+ * genau deshalb zeigte der Startbildschirm erfundene Touren.
+ *
+ * `date` ist ein `@db.Date`, also ein Kalendertag ohne Uhrzeit; verglichen wird
+ * deshalb mit `dayWindow` (UTC-Mitternacht) und nicht mit `dayRange`, das für
+ * Zeitstempel gedacht ist. Die beiden zu verwechseln verschiebt das Ergebnis
+ * um einen Tag, sobald Deutschland in der Sommerzeit steht.
+ */
+export async function listRoutesForDay(
+  ctx: TenantContext,
+  { date, page, pageSize }: { date: Date; page: number; pageSize: number },
+): Promise<RouteDay> {
+  return withTenant(ctx.organizationId, async (tx) => {
+    const { start, end } = dayWindow(date);
+    const where = { organizationId: ctx.organizationId, date: { gte: start, lt: end } };
+
+    const [rows, total, aggregate, optimized] = await Promise.all([
+      tx.route.findMany({
+        where,
+        // Nach Fachkraft sortiert und nicht nach Anlage: die Liste wird
+        // gelesen, um eine bestimmte Tour zu finden.
+        orderBy: [{ caregiver: { lastName: "asc" } }, { id: "asc" }],
+        select: {
+          id: true,
+          date: true,
+          vehicleId: true,
+          optimized: true,
+          vrptwScore: true,
+          totalKm: true,
+          caregiver: { select: { id: true, firstName: true, lastName: true } },
+          _count: { select: { visits: true } },
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      tx.route.count({ where }),
+      tx.route.aggregate({ where, _sum: { totalKm: true } }),
+      tx.route.count({ where: { ...where, optimized: true } }),
+    ]);
+
+    return {
+      date: start.toISOString().slice(0, 10),
+      totals: {
+        routes: total,
+        optimized,
+        // Auf 100 Meter gerundet. Als Zahl und nicht als Zeichenkette, wie
+        // schon bei getRoute: eine Kennzahl wird gerechnet, nicht gespeichert.
+        totalKm: Math.round(Number(aggregate._sum.totalKm ?? 0) * 10) / 10,
+      },
+      data: rows.map((row) => ({
+        id: row.id,
+        date: row.date.toISOString().slice(0, 10),
+        caregiver: row.caregiver,
+        vehicleId: row.vehicleId,
+        optimized: row.optimized,
+        vrptwScore: row.vrptwScore === null ? null : Number(row.vrptwScore),
+        totalKm: row.totalKm === null ? null : Number(row.totalKm),
+        visitCount: row._count.visits,
+      })),
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  });
+}

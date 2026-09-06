@@ -15,6 +15,7 @@ import {
   missingWeekQuerySchema,
   myVisitsQuerySchema,
   myHistoryQuerySchema,
+  daySummaryQuerySchema,
   pointageSchema,
   writeVisitNoteSchema,
 } from "./visit.schemas.js";
@@ -29,6 +30,7 @@ import {
   checkOut,
   cancelVisit,
   patientsMissingWeeklyVisit,
+  dailyVisitSummary,
   myVisitsForDay,
   myVisitHistory,
   writeVisitNote,
@@ -110,6 +112,18 @@ export async function visitRoutes(app: FastifyInstance): Promise<void> {
     const { id } = idParamSchema.parse(request.params);
     const pointage = pointageSchema.parse(request.body ?? undefined);
     return checkOut(ctxFrom(request), id, ownership(request), pointage);
+  });
+
+  /**
+   * Kennzahlen des Tages für die Übersicht.
+   *
+   * Liegt unter /visits/alerts nicht richtig – es ist keine Warnung, sondern
+   * eine Bilanz. Deshalb ein eigener Pfad, mit derselben Rollenmenge wie die
+   * Besuchsliste: die Zahlen fassen Patientendaten zusammen, HR bleibt aussen.
+   */
+  app.get("/visits/daily-summary", { preHandler: [canPlan] }, async (request) => {
+    const { date } = daySummaryQuerySchema.parse(request.query);
+    return dailyVisitSummary(ctxFrom(request), date ?? new Date());
   });
 
   // Regel métier 3: Wochen-Alerte für fehlende Besuche.

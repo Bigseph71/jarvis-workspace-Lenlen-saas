@@ -17,6 +17,14 @@ export interface Visit {
   status: VisitStatus;
   isEmergency: boolean;
   emergencyReason: string | null;
+  /**
+   * Pointage GPS. Das Backend liefert diese Felder seit jeher mit (die Liste
+   * arbeitet mit `include`, also allen Spalten) – nur dieser Typ verschwieg
+   * sie, weshalb niemand sie benutzen konnte. Aus ihnen ergibt sich die
+   * Abweichung zwischen Termin und tatsächlicher Ankunft.
+   */
+  gpsArrivalAt: string | null;
+  gpsDepartureAt: string | null;
   patient: PersonRef;
   caregiver: (PersonRef & { userId: string | null }) | null;
   assignedCaregiver: PersonRef | null;
@@ -290,4 +298,32 @@ export interface IncidentAck {
  */
 export async function acknowledgeIncident(visitId: string): Promise<IncidentAck> {
   return apiFetch<IncidentAck>(`/visits/${visitId}/incident-ack`, { method: "POST" });
+}
+
+// ── Kennzahlen eines Tages (Übersicht) ────────────────────────────────────
+
+export interface VisitDaySummary {
+  date: string;
+  /** Ohne Stornierte: ein abgesagter Besuch findet nicht statt. */
+  total: number;
+  planned: number;
+  inProgress: number;
+  completed: number;
+  missed: number;
+  canceled: number;
+  emergencies: number;
+  /** Ankunft mehr als `delayThresholdMinutes` nach dem Termin. */
+  delayed: number;
+  delayThresholdMinutes: number;
+}
+
+/**
+ * Kennzahlen eines Tages (GET /visits/daily-summary). Ohne `date`: heute.
+ *
+ * Zahlen statt Zeilen: ein grosser Träger hat mehrere hundert Besuche am Tag,
+ * und sie nur zum Zählen in den Browser zu laden wäre Verkehr für nichts.
+ */
+export async function visitDaySummary(date?: string): Promise<VisitDaySummary> {
+  const qs = date ? `?date=${encodeURIComponent(date)}` : "";
+  return apiFetch<VisitDaySummary>(`/visits/daily-summary${qs}`);
 }
