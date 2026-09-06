@@ -1,140 +1,114 @@
 "use client";
 
-import { useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
+import type { RouteDay, RouteRow } from "@len-len/api-client";
 import { Link } from "@/i18n/navigation";
 import { ContentCard } from "@/components/ui/content-card";
-import { StatusPill, type PillTone } from "@/components/ui/status-pill";
+import { StatusPill } from "@/components/ui/status-pill";
 import { initialsFromName } from "@/lib/display-name";
-import { TOURS, TOUR_SUMMARY, type TourFixture, type TourState } from "@/lib/demo/uebersicht";
 
-const SHIFTS = ["morning", "afternoon", "night"] as const;
-type Shift = (typeof SHIFTS)[number];
+/**
+ * "Laufende Touren" – die breite Spalte der Übersicht.
+ *
+ * Angebunden an GET /routes. Was der Entwurf zusätzlich zeigte, steht nicht
+ * mehr hier, und zwar weil es keine Quelle dafür gibt:
+ *
+ *   Gebiet ("West", "Nord")   eine Tour trägt kein Gebiet; die Gebietseinteilung
+ *                             ist ein eigener Vorgang ohne Persistenz (Gebiete)
+ *   Fortschritt "3 / 9"       die Tagesliste liefert die ZAHL der Besuche, nicht
+ *                             ihre Zustände; dafür bräuchte es je Tour eine
+ *                             zweite Abfrage
+ *   Dienstumschalter          kein Endpunkt liefert Touren nach Dienst
+ *
+ * Statt sie mit erfundenen Werten zu füllen, zeigt die Karte, was eine Tour
+ * wirklich hat: wer sie fährt, wie viele Besuche, wie viele Kilometer, und ob
+ * sie optimiert wurde. Der Balken trägt jetzt den VRPTW-Score – die einzige
+ * Verhältniszahl, die eine Tour tatsächlich mitbringt.
+ */
 
-/** Avatar-, Balken- und Pastillenfarbe folgen demselben Zustand. */
-const AVATAR: Record<TourState, string> = {
-  enRoute: "bg-sage-wash text-sage-deep",
-  overloaded: "bg-clay-wash text-clay-deep",
-  notStarted: "bg-neutral-pill text-ink-tertiary",
-};
-
-const BAR: Record<TourState, string> = {
-  enRoute: "bg-sage",
-  overloaded: "bg-clay",
-  notStarted: "bg-neutral-dot",
-};
-
-const PILL: Record<TourState, PillTone> = {
-  enRoute: "positive",
-  overloaded: "attention",
-  notStarted: "neutral",
-};
-
-/** Füllstand des Balkens: Fortschritt, oder Auslastung bei Überlast. */
-function fillPercent(tour: TourFixture): number {
-  if (tour.state === "overloaded") return tour.load ?? 0;
-  if (tour.state === "notStarted") return 0;
-  return Math.round(((tour.done ?? 0) / tour.visits) * 100);
-}
-
-function TourRow({ tour }: { tour: TourFixture }) {
+function TourRow({ route }: { route: RouteRow }) {
   const t = useTranslations("overview.tours");
-  const ts = useTranslations("overview.sectors");
   const format = useFormatter();
 
-  const percent = fillPercent(tour);
-  const progressLabel =
-    tour.state === "overloaded"
-      ? t("load", { percent: format.number(tour.load ?? 0) })
-      : tour.state === "notStarted"
-        ? t("notStarted")
-        : t("doneOf", {
-            done: format.number(tour.done ?? 0),
-            total: format.number(tour.visits),
-          });
+  const name = route.caregiver
+    ? `${route.caregiver.firstName} ${route.caregiver.lastName}`
+    : t("unassigned");
 
   return (
     <li className="flex items-center gap-4 border-b border-hairline px-0.5 py-4 transition-colors duration-120 hover:bg-surface">
       <span
         aria-hidden="true"
-        className={`flex h-[34px] w-[34px] flex-none items-center justify-center rounded-avatar text-micro font-bold ${AVATAR[tour.state]}`}
+        className={`flex h-[34px] w-[34px] flex-none items-center justify-center rounded-avatar text-micro font-bold ${
+          route.optimized ? "bg-sage-wash text-sage-deep" : "bg-neutral-pill text-ink-tertiary"
+        }`}
       >
-        {initialsFromName(tour.name)}
+        {route.caregiver ? initialsFromName(name) : "—"}
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-row font-semibold text-ink-primary">{tour.name}</span>
+        <span className="block truncate text-row font-semibold text-ink-primary">{name}</span>
         <span className="block truncate text-meta text-ink-muted">
           {t("meta", {
-            sector: ts(tour.sector),
-            visits: format.number(tour.visits),
-            km: format.number(tour.kilometers),
+            visits: format.number(route.visitCount),
+            km: route.totalKm === null ? t("noKm") : format.number(route.totalKm),
           })}
         </span>
       </span>
 
+      {/*
+        Der Balken zeigt den VRPTW-Score, nicht einen Fortschritt: 100 heisst,
+        die optimierte Reihenfolge ist so gut wie die geplante gemeint war.
+        Ohne Optimierung gibt es keinen Score und deshalb keinen Balken – ein
+        leerer Balken sähe aus wie "0 %".
+      */}
       <span className="w-24 flex-none">
-        <span
-          role="progressbar"
-          aria-valuenow={percent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={progressLabel}
-          className="block h-[5px] w-full overflow-hidden rounded-full bg-neutral-track"
-        >
-          <span className={`block h-full rounded-full ${BAR[tour.state]}`} style={{ width: `${percent}%` }} />
-        </span>
-        <span className="mt-1.5 block text-micro text-ink-faint">{progressLabel}</span>
+        {route.vrptwScore === null ? (
+          <span className="block text-micro text-ink-faint">{t("noScore")}</span>
+        ) : (
+          <>
+            <span
+              role="progressbar"
+              aria-valuenow={route.vrptwScore}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={t("score", { score: format.number(route.vrptwScore) })}
+              className="block h-[5px] w-full overflow-hidden rounded-full bg-neutral-track"
+            >
+              <span
+                className="block h-full rounded-full bg-sage"
+                style={{ width: `${Math.min(100, Math.max(0, route.vrptwScore))}%` }}
+              />
+            </span>
+            <span className="mt-1.5 block text-micro text-ink-faint">
+              {t("score", { score: format.number(route.vrptwScore) })}
+            </span>
+          </>
+        )}
       </span>
 
-      <StatusPill tone={PILL[tour.state]}>{t(`state.${tour.state}`)}</StatusPill>
+      <StatusPill tone={route.optimized ? "positive" : "neutral"}>
+        {t(route.optimized ? "state.optimized" : "state.notOptimized")}
+      </StatusPill>
     </li>
   );
 }
 
-/**
- * "Tournées en cours" – die breite Spalte der Übersicht.
- *
- * Der Schichtumschalter ist heute reine Oberfläche: es gibt keinen Endpunkt,
- * der Touren nach Schicht liefert. Er steht trotzdem hier, weil er zum
- * Bildaufbau des Handoffs gehört und weil sein Zustand später genau der
- * Filterparameter ist.
- */
-export function ToursCard() {
+export function ToursCard({ routes, pending }: { routes: RouteDay | null; pending: boolean }) {
   const t = useTranslations("overview.tours");
   const format = useFormatter();
-  const [shift, setShift] = useState<Shift>("morning");
+
+  const subtitle = routes
+    ? t("summary", {
+        tours: format.number(routes.totals.routes),
+        km: format.number(routes.totals.totalKm),
+      })
+    : t("summaryPending");
 
   return (
     <ContentCard
       title={t("title")}
-      subtitle={t("summary", {
-        tours: format.number(TOUR_SUMMARY.tours),
-        km: format.number(TOUR_SUMMARY.kilometers),
-        seconds: format.number(TOUR_SUMMARY.refreshedSecondsAgo),
-      })}
+      subtitle={subtitle}
       className="pb-3"
-      action={
-        <div role="tablist" aria-label={t("shift")} className="flex gap-1.5 rounded-full bg-inset p-1">
-          {SHIFTS.map((value) => {
-            const active = value === shift;
-            return (
-              <button
-                key={value}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setShift(value)}
-                className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-meta transition-colors duration-120 ${
-                  active ? "bg-app font-semibold text-ink-primary shadow-pill" : "text-ink-tertiary"
-                }`}
-              >
-                {t(`shifts.${value}`)}
-              </button>
-            );
-          })}
-        </div>
-      }
       footer={
         <Link
           href="/visits"
@@ -144,11 +118,24 @@ export function ToursCard() {
         </Link>
       }
     >
-      <ul className="mt-1">
-        {TOURS.map((tour) => (
-          <TourRow key={tour.id} tour={tour} />
-        ))}
-      </ul>
+      {pending ? (
+        <p className="py-8 text-center text-meta text-ink-faint">{t("loading")}</p>
+      ) : routes === null ? (
+        <p className="py-8 text-center text-meta text-ink-muted">{t("unavailable")}</p>
+      ) : routes.data.length === 0 ? (
+        /*
+          Der wahrscheinlichste Fall im laufenden Betrieb, und deshalb keine
+          blosse Leerzeile: Touren entstehen aus der Optimierung, und wer den
+          Bildschirm zum ersten Mal öffnet, soll erfahren, wo.
+        */
+        <p className="py-8 text-center text-meta text-ink-muted">{t("empty")}</p>
+      ) : (
+        <ul className="mt-1">
+          {routes.data.map((route) => (
+            <TourRow key={route.id} route={route} />
+          ))}
+        </ul>
+      )}
     </ContentCard>
   );
 }

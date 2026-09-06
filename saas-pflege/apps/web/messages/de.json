@@ -78,14 +78,12 @@
   "overview": {
     "demo": {
       "tag": "Beispiel",
-      "body": "Dieser Bildschirm zeigt Beispielwerte. Die zugehörigen Endpunkte gibt es noch nicht."
+      "body": "Zwei Angaben auf diesem Bildschirm sind noch Beispielwerte und tragen eine Marke: die Planungsdauer und die Arbitragen. Alles andere kommt aus Ihren Daten."
     },
     "greeting": "Guten Tag.",
     "greetingNamed": "Guten Tag, {name}.",
-    "subline": "Der Frühdienst läuft nach Plan.",
     "actions": {
-      "weeklyReport": "Wochenbericht",
-      "planTomorrow": "Morgen planen"
+      "weeklyReport": "Wochenbericht"
     },
     "kpi": {
       "planningTime": {
@@ -93,49 +91,40 @@
         "unit": " Min.",
         "delta": "statt zuvor 4 Std. 20"
       },
-      "kilometers": {
-        "label": "Kilometer heute",
-        "unit": "",
-        "delta": "−18 % gegenüber manueller Planung"
-      },
+      "unavailable": "Nicht verfuegbar",
       "visits": {
-        "label": "Geplante Besuche",
-        "unit": "",
-        "delta": "98,4 % abgedeckt"
+        "label": "Besuche heute",
+        "hint": "{done} erledigt, {open} offen"
       },
       "delays": {
-        "label": "Laufende Verspätungen",
-        "unit": "",
-        "delta": "2 ohne Anruf aufholbar"
+        "label": "Verspaetungen",
+        "hint": "ab {minutes} Min. nach Termin"
+      },
+      "kilometers": {
+        "label": "Kilometer heute",
+        "hint": "ueber {tours} Touren"
       }
     },
     "tours": {
-      "title": "Laufende Touren",
-      "summary": "{tours} Touren · {km} km · vor {seconds} s aktualisiert",
-      "shift": "Dienst",
-      "shifts": {
-        "morning": "Früh",
-        "afternoon": "Spät",
-        "night": "Nacht"
-      },
-      "meta": "{sector} · {visits} Besuche · {km} km",
-      "doneOf": "{done} / {total} erledigt",
-      "load": "Auslastung {percent} %",
-      "notStarted": "nicht begonnen",
+      "title": "Touren heute",
+      "summary": "{tours} Touren · {km} km",
+      "meta": "{visits} Besuche · {km} km",
       "state": {
         "enRoute": "Unterwegs",
         "overloaded": "Überlastet",
-        "notStarted": "Wartet"
+        "notStarted": "Wartet",
+        "optimized": "Optimiert",
+        "notOptimized": "Nicht optimiert"
       },
-      "openPlanning": "Planung öffnen"
-    },
-    "sectors": {
-      "west": "West",
-      "north": "Nord",
-      "centre": "Mitte",
-      "east": "Ost",
-      "south": "Süd",
-      "southEast": "Südost"
+      "openPlanning": "Besuche oeffnen",
+      "summaryPending": "Wird geladen …",
+      "loading": "Touren werden geladen …",
+      "unavailable": "Touren koennen nicht geladen werden.",
+      "empty": "Fuer heute sind keine Touren angelegt. Touren entstehen aus der Optimierung eines Gebiets.",
+      "noKm": "keine km",
+      "noScore": "nicht bewertet",
+      "score": "Score {score}",
+      "unassigned": "Keine Fachkraft zugewiesen"
     },
     "arbitrations": {
       "title": "Was eine Entscheidung braucht",
@@ -155,33 +144,53 @@
       }
     },
     "absences": {
-      "title": "Gemeldete Abwesenheiten",
-      "subtitle": "Auswirkung bereits in den Touren berücksichtigt",
-      "reasons": {
-        "sickLeave": "Krankmeldung bis 29. August",
-        "approvedLeave": "Urlaub genehmigt",
-        "training": "Fortbildung Mittwochnachmittag"
+      "title": "Abwesenheiten heute",
+      "subtitle": "Laufende Abwesenheiten, die heute wirken",
+      "loading": "Wird geladen …",
+      "unavailable": "Abwesenheiten koennen nicht geladen werden.",
+      "empty": "Heute ist niemand abwesend.",
+      "unknownCaregiver": "Unbekannte Fachkraft",
+      "until": "bis {date}",
+      "types": {
+        "VACATION": "Urlaub",
+        "SICK": "Krank",
+        "TRAINING": "Fortbildung",
+        "PARENTAL": "Elternzeit",
+        "UNPAID": "Unbezahlt",
+        "OTHER": "Sonstiges"
       },
-      "coverage": {
-        "reassigned": "{count} Besuche übernommen",
-        "covered": "Abgedeckt",
-        "toReplace": "{count} Besuche neu zu verteilen"
+      "status": {
+        "REQUESTED": "Beantragt",
+        "APPROVED": "Genehmigt",
+        "REJECTED": "Abgelehnt",
+        "CANCELED": "Storniert"
       }
     },
     "qualifications": {
-      "title": "Abdeckung der Qualifikationen",
+      "title": "Qualifikationen im Team",
       "items": {
         "basicCare": "Grundpflege",
         "technicalCare": "Behandlungspflege SGB V",
         "drivingLicence": "Führerschein",
-        "arabic": "Arabisch"
+        "arabic": "Arabisch",
+        "PFLEGEFACHKRAFT": "Pflegefachkraft",
+        "PFLEGEHILFSKRAFT": "Pflegehilfskraft",
+        "BETREUUNGSKRAFT": "Betreuungskraft",
+        "AUSZUBILDENDE": "Auszubildende"
       },
-      "status": {
-        "basicCare": "Abgedeckt",
-        "technicalCare": "{count} fehlt",
-        "drivingLicence": "Abgedeckt",
-        "arabic": "{count} Patienten"
-      }
+      "subtitle": "{count} aktive Fachkraefte",
+      "loading": "Wird geladen …",
+      "unavailable": "Fachkraefte koennen nicht geladen werden.",
+      "empty": "Keine aktive Fachkraft hinterlegt.",
+      "share": "{count} · {percent} %"
+    },
+    "sectors": {
+      "west": "West",
+      "north": "Nord",
+      "centre": "Mitte",
+      "east": "Ost",
+      "south": "Süd",
+      "southEast": "Südost"
     }
   },
   "planning": {

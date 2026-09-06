@@ -77,15 +77,13 @@
   },
   "overview": {
     "demo": {
-      "tag": "Sample data",
-      "body": "This screen shows example values. The matching endpoints do not exist yet."
+      "tag": "Example",
+      "body": "Two figures on this screen are still example values and carry a badge: planning time and arbitrations. Everything else comes from your data."
     },
     "greeting": "Hello.",
     "greetingNamed": "Hello {name}.",
-    "subline": "The morning shift is running to plan.",
     "actions": {
-      "weeklyReport": "Weekly report",
-      "planTomorrow": "Plan tomorrow"
+      "weeklyReport": "Weekly report"
     },
     "kpi": {
       "planningTime": {
@@ -93,49 +91,40 @@
         "unit": " min",
         "delta": "vs 4 h 20 before"
       },
-      "kilometers": {
-        "label": "Kilometres today",
-        "unit": "",
-        "delta": "−18% vs manual plan"
-      },
+      "unavailable": "Unavailable",
       "visits": {
-        "label": "Visits planned",
-        "unit": "",
-        "delta": "98.4% covered"
+        "label": "Visits today",
+        "hint": "{done} done, {open} open"
       },
       "delays": {
-        "label": "Delays in progress",
-        "unit": "",
-        "delta": "2 recoverable without a call"
+        "label": "Delays",
+        "hint": "from {minutes} min after the appointment"
+      },
+      "kilometers": {
+        "label": "Kilometres today",
+        "hint": "across {tours} tours"
       }
     },
     "tours": {
-      "title": "Tours in progress",
-      "summary": "{tours} tours · {km} km · refreshed {seconds} s ago",
-      "shift": "Shift",
-      "shifts": {
-        "morning": "Morning",
-        "afternoon": "Afternoon",
-        "night": "Night"
-      },
-      "meta": "{sector} · {visits} visits · {km} km",
-      "doneOf": "{done} / {total} done",
-      "load": "load {percent}%",
-      "notStarted": "not started",
+      "title": "Tours today",
+      "summary": "{tours} tours · {km} km",
+      "meta": "{visits} visits · {km} km",
       "state": {
         "enRoute": "En route",
         "overloaded": "Overloaded",
-        "notStarted": "Waiting"
+        "notStarted": "Waiting",
+        "optimized": "Optimised",
+        "notOptimized": "Not optimised"
       },
-      "openPlanning": "Open planning"
-    },
-    "sectors": {
-      "west": "West",
-      "north": "North",
-      "centre": "Centre",
-      "east": "East",
-      "south": "South",
-      "southEast": "South-East"
+      "openPlanning": "Open visits",
+      "summaryPending": "Loading …",
+      "loading": "Loading tours …",
+      "unavailable": "Tours cannot be loaded.",
+      "empty": "No tours exist for today. Tours are created by optimising a sector.",
+      "noKm": "no km",
+      "noScore": "not scored",
+      "score": "Score {score}",
+      "unassigned": "No caregiver assigned"
     },
     "arbitrations": {
       "title": "What needs a decision",
@@ -155,33 +144,53 @@
       }
     },
     "absences": {
-      "title": "Reported absences",
-      "subtitle": "Impact already reflected in the tours",
-      "reasons": {
-        "sickLeave": "Sick leave until 29 August",
-        "approvedLeave": "Leave approved",
-        "training": "Training Wednesday afternoon"
+      "title": "Absences today",
+      "subtitle": "Ongoing absences affecting today",
+      "loading": "Loading …",
+      "unavailable": "Absences cannot be loaded.",
+      "empty": "Nobody is absent today.",
+      "unknownCaregiver": "Unknown caregiver",
+      "until": "until {date}",
+      "types": {
+        "VACATION": "Holiday",
+        "SICK": "Sick leave",
+        "TRAINING": "Training",
+        "PARENTAL": "Parental leave",
+        "UNPAID": "Unpaid",
+        "OTHER": "Other"
       },
-      "coverage": {
-        "reassigned": "{count} visits reassigned",
-        "covered": "Covered",
-        "toReplace": "{count} visits to reassign"
+      "status": {
+        "REQUESTED": "Requested",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "CANCELED": "Cancelled"
       }
     },
     "qualifications": {
-      "title": "Qualification coverage",
+      "title": "Team qualifications",
       "items": {
         "basicCare": "Basic care",
         "technicalCare": "Technical care SGB V",
         "drivingLicence": "Driving licence",
-        "arabic": "Arabic"
+        "arabic": "Arabic",
+        "PFLEGEFACHKRAFT": "Registered nurse",
+        "PFLEGEHILFSKRAFT": "Care assistant",
+        "BETREUUNGSKRAFT": "Support worker",
+        "AUSZUBILDENDE": "Trainee"
       },
-      "status": {
-        "basicCare": "Covered",
-        "technicalCare": "{count} missing",
-        "drivingLicence": "Covered",
-        "arabic": "{count} patients"
-      }
+      "subtitle": "{count} active caregivers",
+      "loading": "Loading …",
+      "unavailable": "Caregivers cannot be loaded.",
+      "empty": "No active caregiver on file.",
+      "share": "{count} · {percent} %"
+    },
+    "sectors": {
+      "west": "West",
+      "north": "North",
+      "centre": "Centre",
+      "east": "East",
+      "south": "South",
+      "southEast": "South-East"
     }
   },
   "planning": {
