@@ -38,10 +38,26 @@ ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
 RUN pnpm --filter @len-len/web build
 
+
 # ── Runtime-Stage (Next.js standalone) ───────────────────────────────────
 FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+
+# Ausgelieferter Commit, gelesen von GET /health.
+#
+# Anders als NEXT_PUBLIC_* liest diesen Wert der Route-Handler zur LAUFZEIT -
+# er muss also nicht in den Next-Build, sondern nur ins Image. Warum trotzdem
+# hier und nicht erst beim Start gesetzt: gebaut wird ein bestimmter Stand, und
+# genau der soll antworten. Eine beim Start gesetzte Variable koennte einen
+# anderen Commit nennen als den, der im Image steckt - eine falsche
+# Versionsangabe ist schlimmer als gar keine.
+#
+# ARG ohne Vorgabewert: fehlt das --build-arg, bleibt die Variable leer und
+# /health antwortet "unknown" (siehe lib/version.ts). Der Build scheitert
+# deswegen nicht - eine fehlende Versionsangabe haelt kein Deployment auf.
+ARG RAILWAY_GIT_COMMIT_SHA
+ENV RAILWAY_GIT_COMMIT_SHA=$RAILWAY_GIT_COMMIT_SHA
 
 # Ohne eigenen Benutzer liefe der Prozess als root.
 RUN groupadd --system --gid 1001 nodejs \

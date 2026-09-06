@@ -10,8 +10,10 @@ import { registerMetrics, bearerToken, tokenMatches, registry } from "../../src/
  * Code nahm Netzisolation an – die gilt für docker-compose, nicht für einen
  * Dienst mit öffentlicher Domain.
  *
- * Zugesichert wird deshalb der Vorgabezustand: ohne Token existiert die Route
- * nicht. Und wenn es sie gibt, verlangt sie das Token.
+ * Zugesichert wird deshalb der Vorgabezustand: ohne Token gibt der Endpunkt
+ * NICHTS heraus. Die Route selbst existiert immer und antwortet dann mit 401 –
+ * ein 404 war von "Dienst weg" oder "alte Fassung" nicht zu unterscheiden und
+ * hat in der Produktion eine stillstehende Überwachung monatelang verdeckt.
  */
 
 const TOKEN = "s3hr-langes-scrape-token-fuer-den-test";
@@ -54,13 +56,42 @@ describe("tokenMatches", () => {
 });
 
 describe("/metrics", () => {
-  it("existiert ohne Token gar nicht", async () => {
-    // Der Kern: kein Token, keine Route. Nicht "offen, aber leer".
+  it("antwortet ohne konfiguriertes Token mit 401, nicht mit 404", async () => {
+    // Der Kern: verschlossen, aber auffindbar. Ein 404 hiesse von aussen
+    // "gibt es hier nicht" – und genau das hat verdeckt, dass in der
+    // Produktion gar nichts gemessen wurde.
     const app = await appWith(undefined);
     const res = await app.inject({ method: "GET", url: "/metrics" });
 
-    expect(res.statusCode).toBe(404);
+    expect(res.statusCode).toBe(401);
     await app.close();
+  });
+
+  it("gibt ohne konfiguriertes Token auch mit Token im Header nichts heraus", async () => {
+    // Ohne gesetztes Token darf kein Wert die Prüfung bestehen – auch nicht
+    // der leere String, auf den ein unachtsamer Vergleich hereinfiele.
+    const app = await appWith(undefined);
+
+    for (const authorization of ["Bearer ", `Bearer ${TOKEN}`, "Bearer undefined"]) {
+      const res = await app.inject({ method: "GET", url: "/metrics", headers: { authorization } });
+      expect(res.statusCode, authorization).toBe(401);
+      expect(res.body).not.toContain("http_requests_total");
+    }
+    await app.close();
+  });
+
+  it("antwortet gleich, ob ein Token konfiguriert ist oder nicht", async () => {
+    // Sonst verriete der Statuscode, ob dieser Dienst überwacht wird.
+    const off = await appWith(undefined);
+    const on = await appWith(TOKEN);
+
+    const a = await off.inject({ method: "GET", url: "/metrics" });
+    const b = await on.inject({ method: "GET", url: "/metrics" });
+
+    expect(a.statusCode).toBe(b.statusCode);
+    expect(a.body).toBe(b.body);
+    await off.close();
+    await on.close();
   });
 
   it("weist eine Anfrage ohne Token ab", async () => {
@@ -99,9 +130,10 @@ describe("/metrics", () => {
   });
 
   it("zählt Anfragen nur, wenn der Endpunkt aktiv ist", async () => {
-    // Ohne Token wird auch kein onResponse-Hook gesetzt: was niemand abholt,
-    // muss nicht erhoben werden. Zwei unterschiedliche Routennamen, weil die
-    // Registry prozessweit ist und beide Fälle sonst dieselbe Zeitreihe träfen.
+    // Die Route gibt es jetzt immer – der onResponse-Hook aber weiterhin nur
+    // mit Token: was niemand abholen kann, muss nicht erhoben werden. Zwei
+    // unterschiedliche Routennamen, weil die Registry prozessweit ist und
+    // beide Fälle sonst dieselbe Zeitreihe träfen.
     const off = await appWith(undefined, (a) => a.get("/ping-off", async () => ({ ok: true })));
     await off.inject({ method: "GET", url: "/ping-off" });
 
