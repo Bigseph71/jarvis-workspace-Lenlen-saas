@@ -66,6 +66,10 @@ function visit(overrides: Partial<Visit> = {}): Visit {
     status: "PLANNED",
     isEmergency: false,
     emergencyReason: null,
+    // Seit die Liste ihre GPS-Felder auch im Typ fuehrt, gehoeren sie in die
+    // Attrappe: ein Besuch ohne Pointage ist der Normalfall vor der Ankunft.
+    gpsArrivalAt: null,
+    gpsDepartureAt: null,
     patient: { id: "p-1", firstName: "Erika", lastName: "Muster" },
     caregiver: ANNA,
     assignedCaregiver: { id: ANNA.id, firstName: ANNA.firstName, lastName: ANNA.lastName },

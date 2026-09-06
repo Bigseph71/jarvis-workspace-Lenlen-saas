@@ -15,6 +15,8 @@ import {
   enforcesStammRules,
   checkVisitNote,
   checkIncidentAck,
+  isDelayed,
+  DELAY_THRESHOLD_MINUTES,
   type NoteRejection,
 } from "./visit.rules.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
@@ -513,6 +515,80 @@ export async function myVisitHistory(
     ]);
 
     return paginated(data, total, pagination);
+  });
+}
+
+export interface VisitDaySummary {
+  date: string;
+  total: number;
+  planned: number;
+  inProgress: number;
+  completed: number;
+  missed: number;
+  canceled: number;
+  emergencies: number;
+  delayed: number;
+  delayThresholdMinutes: number;
+}
+
+/**
+ * Kennzahlen eines Tages fuer die Uebersicht.
+ *
+ * Warum ein eigener Endpunkt und nicht die Besuchsliste: gefragt sind ZAHLEN,
+ * nicht Zeilen. Ein grosser Traeger hat mehrere hundert Besuche am Tag; sie
+ * seitenweise in den Browser zu laden, nur um dort zu zaehlen, waere Verkehr
+ * fuer nichts und ergaebe je nach Seitengroesse ein anderes Ergebnis.
+ *
+ * Die Verspaetungen werden bewusst NICHT in der Datenbank gezaehlt: die
+ * Bedingung vergleicht zwei Spalten mit einem Zuschlag, und dafuer braeuchte es
+ * rohes SQL, wovon dieses Projekt sonst keinen Gebrauch macht. Stattdessen
+ * kommen genau zwei Zeitstempel je Besuch heraus und werden hier gezaehlt --
+ * ein Tag ist beschraenkt, und die Rechnung bleibt lesbar.
+ */
+export async function dailyVisitSummary(
+  ctx: TenantContext,
+  date: Date,
+): Promise<VisitDaySummary> {
+  return withTenant(ctx.organizationId, async (tx) => {
+    const { start, end } = dayRange(date);
+    const where: Prisma.VisitWhereInput = {
+      organizationId: ctx.organizationId,
+      scheduledAt: { gte: start, lt: end },
+    };
+
+    const [byStatus, emergencies, arrivals] = await Promise.all([
+      tx.visit.groupBy({ by: ["status"], where, _count: { _all: true } }),
+      tx.visit.count({ where: { ...where, isEmergency: true } }),
+      tx.visit.findMany({
+        where: { ...where, gpsArrivalAt: { not: null } },
+        select: { scheduledAt: true, gpsArrivalAt: true },
+      }),
+    ]);
+
+    const count = (status: VisitStatus): number =>
+      byStatus.find((row) => row.status === status)?._count._all ?? 0;
+
+    // Die Regel steht in visit.rules, damit sie ohne Datenbank pruefbar ist.
+    const delayed = arrivals.filter((visit) => isDelayed(visit)).length;
+
+    return {
+      date: start.toISOString(),
+      // Storniertes zaehlt NICHT zur Tagesmenge: der Besuch findet nicht
+      // statt, und ihn mitzuzaehlen liesse den Tag voller aussehen als er ist.
+      total:
+        count(VisitStatus.PLANNED) +
+        count(VisitStatus.IN_PROGRESS) +
+        count(VisitStatus.COMPLETED) +
+        count(VisitStatus.MISSED),
+      planned: count(VisitStatus.PLANNED),
+      inProgress: count(VisitStatus.IN_PROGRESS),
+      completed: count(VisitStatus.COMPLETED),
+      missed: count(VisitStatus.MISSED),
+      canceled: count(VisitStatus.CANCELED),
+      emergencies,
+      delayed,
+      delayThresholdMinutes: DELAY_THRESHOLD_MINUTES,
+    };
   });
 }
 

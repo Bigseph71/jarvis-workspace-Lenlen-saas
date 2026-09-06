@@ -50,6 +50,11 @@ export const myVisitsQuerySchema = z.object({
   date: z.coerce.date().optional(),
 });
 
+/** Kennzahlen eines Tages (Uebersicht). Ohne Angabe: heute. */
+export const daySummaryQuerySchema = z.object({
+  date: z.coerce.date().optional(),
+});
+
 /**
  * Verlauf der eigenen Besuche (Mobile, Reiter „Verlauf“).
  *

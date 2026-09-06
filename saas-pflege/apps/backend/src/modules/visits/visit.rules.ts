@@ -126,3 +126,33 @@ export function checkIncidentAck(visit: {
   return "acknowledge";
 }
 
+
+/**
+ * Ab welcher Abweichung ein Besuch als verspaetet gilt.
+ *
+ * Nicht "jede Minute nach dem Termin": eine Pflegetour laeuft nie auf die
+ * Minute, und eine Kennzahl, die bei zwei Minuten anschlaegt, zaehlt das
+ * Rauschen mit und wird nach einer Woche ignoriert. Fuenfzehn Minuten sind die
+ * Schwelle, ab der ein Patient das Warten bemerkt.
+ */
+export const DELAY_THRESHOLD_MINUTES = 15;
+
+/**
+ * Gilt dieser Besuch als verspaetet?
+ *
+ * Ohne Ankunfts-Pointage: nein. Das ist keine Spitzfindigkeit -- vor der
+ * Ankunft gibt es keine Verspaetung, sondern nur eine Erwartung, und ein
+ * ungepointeter Besuch wuerde sonst als puenktlich ODER als verspaetet
+ * gezaehlt, je nachdem wie herum man die Bedingung schreibt.
+ *
+ * Eine Ankunft VOR dem Termin ergibt eine negative Abweichung und ist damit
+ * nie verspaetet -- die Schwelle ist eine Untergrenze, kein Betrag.
+ */
+export function isDelayed(
+  visit: { scheduledAt: Date; gpsArrivalAt: Date | null },
+  thresholdMinutes: number = DELAY_THRESHOLD_MINUTES,
+): boolean {
+  if (!visit.gpsArrivalAt) return false;
+  const driftMs = visit.gpsArrivalAt.getTime() - visit.scheduledAt.getTime();
+  return driftMs > thresholdMinutes * 60_000;
+}
