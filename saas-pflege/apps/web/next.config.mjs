@@ -49,26 +49,25 @@ const nextConfig = {
   // Workspace-Pakete werden als TypeScript-Quellcode konsumiert.
   transpilePackages: ["@len-len/api-client"],
 
-  async redirects() {
-    return [
-      {
-        // /planung hiess die Karte des Echtzeit-Trackings – und kollidierte
-        // damit mit "Planung", dem Menütitel von /visits. Die Route heisst
-        // jetzt /tracking; gesetzte Lesezeichen und geteilte Links sollen
-        // trotzdem weiter funktionieren.
-        //
-        // In der Konfiguration und nicht als Seite: Weiterleitungen laufen VOR
-        // der Middleware, also ohne dass eine React-Seite ausgeliefert werden
-        // muss. Das Locale-Segment wird durchgereicht.
-        source: "/:locale/planung",
-        destination: "/:locale/tracking",
-        // Bewusst kein permanent: ein 308 wird vom Browser dauerhaft
-        // zwischengespeichert und liesse sich nach einer Fehlentscheidung nur
-        // schwer zurücknehmen.
-        permanent: false,
-      },
-    ];
-  },
+  /*
+   * KEINE Weiterleitung von /planung mehr.
+   *
+   * Hier stand eine: `/:locale/planung -> /:locale/tracking`, gesetzt, als
+   * /planung noch die Karte des Echtzeit-Trackings war und der Name für den
+   * Menüpunkt "Planung" frei werden musste. Sie sollte alte Lesezeichen
+   * auffangen.
+   *
+   * Später bekam /planung wieder eine Seite – den Planungsarbeitsplatz. Die
+   * Weiterleitung blieb stehen, und weil Weiterleitungen aus dieser Datei VOR
+   * dem Dateirouting ausgewertet werden, hat diese Seite nie jemand gesehen:
+   * jeder Aufruf landete auf dem Live-Tracking. Der Menüpunkt in der Kopfzeile
+   * führte damit an einem Bildschirm vorbei, den es längst gab.
+   *
+   * Was das kostet: Lesezeichen aus der Zeit vor der Umbenennung zeigen jetzt
+   * auf den Planungsarbeitsplatz statt auf das Tracking. Das ist der
+   * geringere Schaden – die Weiterleitung war ausdrücklich `permanent: false`
+   * gesetzt, also als rücknehmbar gedacht.
+   */
 };
 
 // `next build` -> ["…/next", "build"] ; `next lint` -> ["…/next", "lint"].

@@ -62,35 +62,56 @@ export function tokenMatches(expected: string, provided: string | undefined): bo
 
 export interface MetricsOptions {
   /**
-   * Scrape-Token. Ohne Token entsteht kein `/metrics`-Endpunkt.
+   * Scrape-Token. Ohne Token liefert `/metrics` ausnahmslos 401.
    *
-   * Der Vorgabezustand ist bewusst "gar nicht vorhanden" statt "offen": der
-   * Endpunkt war auf Railway monatelang ohne jede Prüfung aus dem Internet
-   * erreichbar. Der Kommentar im Code nahm an, er liege netzintern – das gilt
-   * für docker-compose, nicht für einen Dienst mit öffentlicher Domain. Wird
-   * eines Tages ein Prometheus danebengestellt, bekommt er ein Token; einen
+   * Der Vorgabezustand ist bewusst "verschlossen" statt "offen": der Endpunkt
+   * war auf Railway monatelang ohne jede Prüfung aus dem Internet erreichbar.
+   * Der Kommentar im Code nahm an, er liege netzintern – das gilt für
+   * docker-compose, nicht für einen Dienst mit öffentlicher Domain. Wird eines
+   * Tages ein Prometheus danebengestellt, bekommt er ein Token; einen
    * ungeschützten Zustand gibt es dann nicht mehr.
    */
   token?: string | undefined;
 }
 
 /**
- * Registriert – sofern ein Scrape-Token gesetzt ist – den Prometheus-Endpunkt
- * `/metrics` und einen Hook, der jede Antwort in die Histogramm-/Counter-
+ * Registriert den Prometheus-Endpunkt `/metrics` und – sofern ein Scrape-Token
+ * gesetzt ist – einen Hook, der jede Antwort in die Histogramm-/Counter-
  * Metriken einträgt.
  *
  * Als Route-Label wird das Fastify-Routen-Muster (z.B. `/patients/:id`) statt
  * der konkreten URL verwendet – das hält die Kardinalität der Zeitreihen niedrig.
  * Anfragen ohne gematchte Route (404) werden zu `unknown` zusammengefasst.
  *
- * Ohne Token wird nichts angelegt und nichts gesammelt: keine Route, kein
- * Hook, keine Standardmetriken. Was niemand abholt, muss auch nicht erhoben
- * werden – und was es nicht gibt, kann nicht ausgelesen werden.
+ * **Die Route existiert immer, das Sammeln nicht.** Zuvor wurde ohne Token gar
+ * keine Route angelegt, und `/metrics` antwortete mit 404. Das war von aussen
+ * nicht von "dieser Dienst läuft nicht" oder "diese Fassung kennt den Endpunkt
+ * noch nicht" zu unterscheiden – in der Produktion stand die Überwachung
+ * deshalb monatelang unbemerkt still. Ein 401 sagt dagegen genau das Richtige:
+ * es gibt hier etwas, und du darfst es nicht.
+ *
+ * Ausgelesen wird trotzdem nichts: ohne Token scheitert die Prüfung
+ * ausnahmslos, und die Antwort ist dieselbe wie bei einem falschen Token. Ob
+ * ein Token gesetzt ist, verrät der Endpunkt also nicht.
+ *
+ * Erhoben wird ohne Token weiterhin nichts – kein Hook, keine
+ * Standardmetriken. Was niemand abholen kann, muss auch nicht gemessen werden.
  */
 export function registerMetrics(app: FastifyInstance, options: MetricsOptions = {}): void {
   const token = options.token;
+
+  app.get("/metrics", async (request: FastifyRequest, reply) => {
+    // `!token` zuerst: ohne gesetztes Token gibt es keinen Vergleich, der
+    // gelingen könnte, und die Antwort ist die eines falschen Tokens.
+    if (!token || !tokenMatches(token, bearerToken(request.headers.authorization))) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    reply.header("Content-Type", registry.contentType);
+    return registry.metrics();
+  });
+
   if (!token) {
-    app.log.info("METRICS_TOKEN nicht gesetzt – /metrics ist deaktiviert");
+    app.log.info("METRICS_TOKEN nicht gesetzt – /metrics antwortet 401, es wird nichts erhoben");
     return;
   }
 
@@ -109,13 +130,5 @@ export function registerMetrics(app: FastifyInstance, options: MetricsOptions = 
     httpRequestsTotal.inc(labels);
     // Fastify misst die Bearbeitungszeit bereits (Millisekunden) -> in Sekunden.
     httpRequestDurationSeconds.observe(labels, reply.elapsedTime / 1000);
-  });
-
-  app.get("/metrics", async (request: FastifyRequest, reply) => {
-    if (!tokenMatches(token, bearerToken(request.headers.authorization))) {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-    reply.header("Content-Type", registry.contentType);
-    return registry.metrics();
   });
 }
