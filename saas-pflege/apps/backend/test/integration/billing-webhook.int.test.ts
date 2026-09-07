@@ -234,4 +234,61 @@ describe.skipIf(!runDbTests)("Abo-Lebenszyklus über Webhooks (DB)", () => {
     // plan : mieux vaut ne rien toucher que rétrograder le tenant par erreur.
     expect((await org()).subscriptionPlan).toBe("BASIC");
   });
+
+  /**
+   * Die Frist der Testphase muss STEHEN.
+   *
+   * Vorher schrieb JEDES Abo-Ereignis sie neu, und Stripe sendet davon viele
+   * (Zahlungsmittelwechsel, Mengenaenderung, Preisaktualisierung). Wer die
+   * Frist las, sah eine Zahl, die sich unter ihm bewegte -- und eine Frist, die
+   * wandert, ist keine Frist.
+   */
+  it("schreibt das Ende der Testphase genau EINMAL", async () => {
+    const ersteFrist = Math.floor(new Date("2026-10-01T00:00:00.000Z").getTime() / 1000);
+    const spaetereFrist = Math.floor(new Date("2026-12-24T00:00:00.000Z").getTime() / 1000);
+
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "trialing",
+        trial_end: ersteFrist,
+        metadata: { organizationId, plan: "BASIC" },
+      }),
+    );
+    const nachErstem = await org();
+    expect(nachErstem.trialEndsAt?.toISOString()).toBe("2026-10-01T00:00:00.000Z");
+
+    // Zweites Ereignis mit einer ANDEREN Frist: es darf nichts mehr bewegen.
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "trialing",
+        trial_end: spaetereFrist,
+        metadata: { organizationId, plan: "BASIC" },
+      }),
+    );
+
+    const nachZweitem = await org();
+    expect(nachZweitem.trialEndsAt?.toISOString()).toBe("2026-10-01T00:00:00.000Z");
+  });
+
+  it("loescht die Frist nicht, wenn die Testphase vorbei ist", async () => {
+    // Die zweite Haelfte desselben Fehlers: das Datum verschwand, sobald der
+    // Tenant zahlte, und mit ihm die Antwort auf "wann lief die Testphase?".
+    // Gefahrlos, weil jede Anzeige am STATUS haengt und nicht am Datum.
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "active",
+        metadata: { organizationId, plan: "BASIC" },
+      }),
+    );
+
+    const after = await org();
+    expect(after.trialEndsAt).not.toBeNull();
+    expect(after.subscriptionStatus).toBe("ACTIVE");
+  });
 });

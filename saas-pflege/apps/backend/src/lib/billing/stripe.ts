@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { AppError } from "../errors.js";
 import { planForPrice, priceForPlan } from "./prices.js";
 import type {
+  PayingRefs,
   BillingEvent,
   BillingProvider,
   CheckoutParams,
@@ -239,9 +240,9 @@ export class StripeBillingProvider implements BillingProvider {
    * Jährliche Preise werden auf den Monat umgelegt (das ist die Bedeutung von
    * "monatlich wiederkehrend"), Wochen- und Tagespreise hochgerechnet.
    */
-  async getRecurringRevenue(eligible: ReadonlySet<string>): Promise<RecurringRevenue> {
+  async getRecurringRevenue(eligible: PayingRefs): Promise<RecurringRevenue> {
     // Kein zählbares Abo: gar nicht erst bei Stripe nachfragen.
-    if (eligible.size === 0) {
+    if (eligible.subscriptionIds.size === 0 && eligible.customerIds.size === 0) {
       return { amountCents: 0, currency: "eur", subscriptions: 0, truncated: false };
     }
 
@@ -265,7 +266,22 @@ export class StripeBillingProvider implements BillingProvider {
       });
 
       for (const subscription of batch.data) {
-        if (!eligible.has(subscription.id)) continue;
+        // Entweder die Abo-Kennung ist bekannt, ODER das Abo gehoert einem
+        // unserer zahlenden Kunden. Der zweite Weg faengt genau die
+        // Organisationen auf, deren `stripeSubscriptionId` nie geschrieben
+        // wurde, weil das Webhook-Ereignis ausblieb.
+        // `customer` kann eine Kennung, ein aufgeloestes Objekt oder -- bei
+        // einem geloeschten Kunden -- gar nichts sein. Alle drei Faelle
+        // abfangen, sonst wirft die Umsatzrechnung an einer Stelle, an der sie
+        // nur zaehlen soll.
+        const customer =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : (subscription.customer?.id ?? null);
+        const mine =
+          eligible.subscriptionIds.has(subscription.id) ||
+          (customer !== null && eligible.customerIds.has(customer));
+        if (!mine) continue;
 
         for (const item of subscription.items.data) {
           const price = item.price;

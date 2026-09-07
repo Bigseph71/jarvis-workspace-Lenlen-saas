@@ -623,11 +623,26 @@ async function processEvent(event: BillingEvent): Promise<void> {
     // Datum ewig mitzuschleppen – ein Tenant stand auf ACTIVE und behielt eine
     // Testphase, die im August abgelaufen war.
     const trialEnd = int(object.trial_end);
-    const stillTrialing = subStatus === SubscriptionStatus.TRIAL && trialEnd !== null;
-    await prisma.organization.updateMany({
-      where: { stripeCustomerId: customerId },
-      data: { trialEndsAt: stillTrialing ? new Date(trialEnd * 1000) : null },
-    });
+    if (subStatus === SubscriptionStatus.TRIAL && trialEnd !== null) {
+      // EINMAL schreiben, danach nie wieder: `trialEndsAt: null` in der
+      // Bedingung macht daraus ein Einfügen, kein Überschreiben.
+      //
+      // Vorher stand hier ein bedingungsloses Update bei JEDEM
+      // Abonnement-Ereignis, und Stripe sendet davon viele. Die Frist wurde
+      // dadurch fortlaufend neu gesetzt und konnte sich verschieben; wer sie
+      // las, sah eine Zahl, die sich unter ihm bewegte. Eine Frist, die
+      // wandert, ist keine Frist.
+      await prisma.organization.updateMany({
+        where: { stripeCustomerId: customerId, trialEndsAt: null },
+        data: { trialEndsAt: new Date(trialEnd * 1000) },
+      });
+    }
+    // KEIN Zurücksetzen auf null mehr, wenn die Testphase vorbei ist. Das war
+    // die zweite Hälfte desselben Fehlers: das Datum verschwand, sobald der
+    // Tenant zahlte, und mit ihm die Antwort auf "wann lief die Testphase?".
+    // Gefahrlos, weil jede Anzeige am STATUS hängt und nicht am Datum (siehe
+    // getSubscription und events.ts): ein abgelaufenes Datum an einem
+    // ACTIVE-Tenant wird nirgends gezeigt.
 
     const subscriptionId = str(object.id);
     if (subscriptionId) {

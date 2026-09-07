@@ -1,4 +1,5 @@
 import type {
+  PayingRefs,
   BillingEvent,
   BillingProvider,
   CheckoutParams,
@@ -43,7 +44,7 @@ export class StubBillingProvider implements BillingProvider {
   // Ohne Stripe gibt es keine Abos und damit keinen Umsatz. Null zurückgeben,
   // nicht eine erfundene Zahl: das Panel zeigt in Dev sonst einen Betrag an,
   // den niemand zuordnen kann.
-  async getRecurringRevenue(_eligible: ReadonlySet<string>): Promise<RecurringRevenue> {
+  async getRecurringRevenue(_eligible: PayingRefs): Promise<RecurringRevenue> {
     return { amountCents: 0, currency: "eur", subscriptions: 0, truncated: false };
   }
 

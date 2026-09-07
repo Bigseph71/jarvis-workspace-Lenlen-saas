@@ -15,6 +15,8 @@ import {
   enforcesStammRules,
   checkVisitNote,
   checkIncidentAck,
+  caregiverSlotWindow,
+  CAREGIVER_SLOT_MINUTES,
   isDelayed,
   DELAY_THRESHOLD_MINUTES,
   type NoteRejection,
@@ -53,6 +55,47 @@ async function loadActiveCaregiver(tx: TenantTx, id: string): Promise<CaregiverC
     throw new AppError(422, "Fachkraft nicht gefunden oder inaktiv", "UnprocessableEntity");
   }
   return caregiver;
+}
+
+/**
+ * Keine zwei Besuche derselben Fachkraft im selben Zeitfenster.
+ *
+ * Bis hierher liess sich dieselbe Fachkraft zur selben Minute an zwei Adressen
+ * einplanen. Nichts hielt es auf: Regel 1 zaehlt je PATIENT und Woche, der
+ * Arbeitstag prueft den Wochentag. Wer den Fehler machte, sah ihn erst auf der
+ * Tour -- und die zweite Patientin wartete.
+ *
+ * Geprueft werden nur Besuche, die noch stattfinden (ACTIVE_STATUSES):
+ * Storniertes und Verpasstes belegt keine Zeit mehr. Notfaelle zaehlen MIT --
+ * sie sind ausserhalb des Wochenzyklus, aber die Fachkraft ist waehrenddessen
+ * genauso gebunden.
+ */
+async function assertCaregiverFree(
+  tx: TenantTx,
+  organizationId: string,
+  caregiverId: string,
+  scheduledAt: Date,
+  excludeVisitId?: string,
+): Promise<void> {
+  const { start, end } = caregiverSlotWindow(scheduledAt);
+  const clash = await tx.visit.findFirst({
+    where: {
+      organizationId,
+      caregiverId,
+      status: { in: ACTIVE_STATUSES },
+      scheduledAt: { gte: start, lt: end },
+      ...(excludeVisitId ? { id: { not: excludeVisitId } } : {}),
+    },
+    select: { id: true, scheduledAt: true },
+  });
+  if (clash) {
+    const uhrzeit = clash.scheduledAt.toISOString().slice(11, 16);
+    throw new ConflictError(
+      `Diese Fachkraft hat um ${uhrzeit} UTC bereits einen Besuch. ` +
+        `Zwischen zwei Besuchen derselben Fachkraft müssen mindestens ` +
+        `${CAREGIVER_SLOT_MINUTES} Minuten liegen.`,
+    );
+  }
 }
 
 /** Regel métier 1: max. 1 regulärer Besuch pro Patient und ISO-Woche. */
@@ -128,6 +171,7 @@ export async function createVisit(ctx: TenantContext, input: CreateVisitInput): 
 
     assertWorkDay(effective, input.scheduledAt);
     await assertNoWeeklyClash(tx, ctx.organizationId, input.patientId, input.scheduledAt);
+    await assertCaregiverFree(tx, ctx.organizationId, effectiveId, input.scheduledAt);
 
     const visit = await tx.visit.create({
       data: {
@@ -160,7 +204,12 @@ export async function createEmergencyVisit(
     if (!patient) throw new AppError(422, "Patient nicht gefunden oder inaktiv", "UnprocessableEntity");
 
     // Notfall darf abweichende Qualifikation/Arbeitstage haben (out of cycle).
-    if (input.caregiverId) await loadActiveCaregiver(tx, input.caregiverId);
+    if (input.caregiverId) {
+      await loadActiveCaregiver(tx, input.caregiverId);
+      // Auch im Notfall: niemand ist zur selben Zeit an zwei Adressen. Die
+      // uebrigen Stamm-Regeln entfallen hier (enforcesStammRules), diese nicht.
+      await assertCaregiverFree(tx, ctx.organizationId, input.caregiverId, input.scheduledAt);
+    }
 
     const visit = await tx.visit.create({
       data: {
@@ -244,6 +293,12 @@ export async function rescheduleVisit(
       await assertNoWeeklyClash(tx, ctx.organizationId, visit.patientId, input.scheduledAt, id);
     }
 
+    // Auch beim Notfall geprueft, deshalb ausserhalb des Blocks daureber: der
+    // Besuch selbst ist per `id` ausgenommen, sonst kollidierte er mit sich.
+    if (visit.caregiverId) {
+      await assertCaregiverFree(tx, ctx.organizationId, visit.caregiverId, input.scheduledAt, id);
+    }
+
     const updated = await tx.visit.update({
       where: { id },
       data: { scheduledAt: input.scheduledAt },
@@ -285,6 +340,11 @@ export async function assignCaregiver(
       assertSameQualification(replacement, attitre);
       assertWorkDay(replacement, visit.scheduledAt);
     }
+
+    // Die VERTRETUNG muss zu dieser Uhrzeit frei sein. Ohne diese Pruefung
+    // liess sich die Doppelbuchung ueber den Umweg der Umbesetzung anlegen,
+    // nachdem sie beim Anlegen verhindert wurde.
+    await assertCaregiverFree(tx, ctx.organizationId, caregiverId, visit.scheduledAt, id);
 
     const updated = await tx.visit.update({
       where: { id },
