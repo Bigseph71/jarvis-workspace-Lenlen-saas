@@ -589,6 +589,60 @@ async function processEvent(event: BillingEvent): Promise<void> {
       }
     }
 
+    /*
+     * REIHENFOLGE: erst die Frist, dann der Status.
+     *
+     * Umgekehrt entstand ein Zustand, den es nicht geben darf -- ACTIVE mit
+     * laufender Testphase. Der Weg dahin:
+     *
+     *   1. dieser Handler schreibt TRIAL,
+     *   2. ein NEBENLÄUFIGES Zahlungs-Ereignis trifft ein (Stripe stellt zu
+     *      Beginn der Testphase sofort eine Rechnung über 0 € aus). Seine
+     *      Schranke OVERWRITABLE_BY_PAYMENT enthält `trialEndsAt: null` --
+     *      und die Frist steht hier noch nicht. Die Schranke lässt durch,
+     *      der Tenant wird ACTIVE,
+     *   3. dieser Handler schreibt die Frist nach.
+     *
+     * Ergebnis: ACTIVE, Testphase bis in zwei Wochen. Die Abrechnungsseite
+     * zeigt der Kundin dann keinen Countdown (ihre Anzeige hängt am Status),
+     * und sie wird am Ende der Frist belastet, ohne dass es ihr angekündigt
+     * wurde.
+     *
+     * Steht die Frist ZUERST, greift die Schranke in jeder Reihenfolge: ein
+     * Zahlungs-Ereignis davor wird vom Status-Schreiben danach korrigiert,
+     * eines dazwischen oder danach sieht eine laufende Testphase und lässt
+     * die Finger davon.
+     */
+    const trialEnd = int(object.trial_end);
+    if (subStatus === SubscriptionStatus.TRIAL && trialEnd !== null) {
+      // EINMAL schreiben, danach nie wieder: `trialEndsAt: null` in der
+      // Bedingung macht daraus ein Einfügen, kein Überschreiben.
+      //
+      // Vorher stand hier ein bedingungsloses Update bei JEDEM
+      // Abonnement-Ereignis, und Stripe sendet davon viele
+      // (Zahlungsmittelwechsel, Mengenänderung, Preisaktualisierung). Die
+      // Frist wurde dadurch fortlaufend neu gesetzt und konnte sich
+      // verschieben; wer sie las, sah eine Zahl, die sich unter ihm bewegte.
+      // Eine Frist, die wandert, ist keine Frist.
+      await prisma.organization.updateMany({
+        where: { stripeCustomerId: customerId, trialEndsAt: null },
+        data: { trialEndsAt: new Date(trialEnd * 1000) },
+      });
+    } else if (subStatus !== SubscriptionStatus.TRIAL) {
+      // Die Testphase ist vorbei: Frist abräumen. Das ist KEIN Neuberechnen,
+      // sondern das eine Ende ihres Lebens – geschrieben, wenn sie beginnt,
+      // gelöscht, wenn sie endet, und dazwischen unangetastet.
+      //
+      // Bewusst beibehalten: Stripe lässt `trial_end` nach dem Ende am Abo
+      // stehen, wo es eine historische Angabe ist. Ohne dieses Abräumen
+      // schleppte ein zahlender Tenant eine abgelaufene Testphase mit sich
+      // (der Grund für diese Zeile steht in billing-trial-lifecycle).
+      await prisma.organization.updateMany({
+        where: { stripeCustomerId: customerId, trialEndsAt: { not: null } },
+        data: { trialEndsAt: null },
+      });
+    }
+
     // "subscription": der Zustand kommt aus dem Abo-Objekt selbst und gilt
     // ohne Vorbehalt – hier darf ACTIVE eine Testphase beenden, denn genau das
     // sagt Stripe dann aus.
@@ -622,36 +676,6 @@ async function processEvent(event: BillingEvent): Promise<void> {
     // historische Angabe. Nur auf `trial_end` zu schauen hiess deshalb, das
     // Datum ewig mitzuschleppen – ein Tenant stand auf ACTIVE und behielt eine
     // Testphase, die im August abgelaufen war.
-    const trialEnd = int(object.trial_end);
-    if (subStatus === SubscriptionStatus.TRIAL && trialEnd !== null) {
-      // EINMAL schreiben, danach nie wieder: `trialEndsAt: null` in der
-      // Bedingung macht daraus ein Einfügen, kein Überschreiben.
-      //
-      // Vorher stand hier ein bedingungsloses Update bei JEDEM
-      // Abonnement-Ereignis, und Stripe sendet davon viele
-      // (Zahlungsmittelwechsel, Mengenänderung, Preisaktualisierung). Die
-      // Frist wurde dadurch fortlaufend neu gesetzt und konnte sich
-      // verschieben; wer sie las, sah eine Zahl, die sich unter ihm bewegte.
-      // Eine Frist, die wandert, ist keine Frist.
-      await prisma.organization.updateMany({
-        where: { stripeCustomerId: customerId, trialEndsAt: null },
-        data: { trialEndsAt: new Date(trialEnd * 1000) },
-      });
-    } else if (subStatus !== SubscriptionStatus.TRIAL) {
-      // Die Testphase ist vorbei: Frist abräumen. Das ist KEIN Neuberechnen,
-      // sondern das eine Ende ihres Lebens – geschrieben, wenn sie beginnt,
-      // gelöscht, wenn sie endet, und dazwischen unangetastet.
-      //
-      // Bewusst beibehalten: Stripe lässt `trial_end` nach dem Ende am Abo
-      // stehen, wo es eine historische Angabe ist. Ohne dieses Abräumen
-      // schleppte ein zahlender Tenant eine abgelaufene Testphase mit sich
-      // (der Grund für diese Zeile steht in billing-trial-lifecycle).
-      await prisma.organization.updateMany({
-        where: { stripeCustomerId: customerId, trialEndsAt: { not: null } },
-        data: { trialEndsAt: null },
-      });
-    }
-
     const subscriptionId = str(object.id);
     if (subscriptionId) {
       await prisma.organization.updateMany({

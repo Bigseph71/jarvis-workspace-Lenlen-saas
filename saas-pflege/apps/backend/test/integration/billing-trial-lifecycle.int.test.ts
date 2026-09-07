@@ -206,4 +206,96 @@ describe.skipIf(!runDbTests)("Testphase über Webhooks (DB)", () => {
 
     expect((await org()).subscriptionStatus).toBe("ACTIVE");
   });
+
+  /**
+   * Der Zustand, den es nicht geben darf: ACTIVE mit laufender Testphase.
+   *
+   * Gefunden bei einem echten Tenant (Eseka-Aid): Stripe fuehrte das Abo als
+   * `trialing` bis zum 16.09., unsere Basis stand auf ACTIVE. Die Kundin sah
+   * deshalb keinen Countdown -- die Abrechnungsseite haengt ihre Anzeige am
+   * Status -- und waere am Ende der Frist belastet worden, ohne Ankuendigung.
+   *
+   * Ursache war die Reihenfolge im Handler: der Status wurde VOR der Frist
+   * geschrieben. Dazwischen passte ein nebenlaeufiges Zahlungs-Ereignis (die
+   * 0-Euro-Rechnung zu Beginn der Testphase), dessen Schranke bei noch leerer
+   * Frist durchlaesst.
+   */
+  describe("Reihenfolge Status/Frist", () => {
+    const KUNDE = `cus_reihenfolge_${stamp}`;
+    const ABO = `sub_reihenfolge_${stamp}`;
+
+    it("setzt TRIAL, auch wenn der Tenant schon ACTIVE ist", async () => {
+      // Die Zusicherung im Klartext: sagt Stripe `trialing`, gewinnt das --
+      // unabhaengig davon, was vorher in der Spalte stand.
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: {
+          subscriptionStatus: "ACTIVE",
+          trialEndsAt: null,
+          stripeCustomerId: KUNDE,
+        },
+      });
+
+      await billing.handleStripeEvent(
+        event("customer.subscription.updated", {
+          id: ABO,
+          customer: KUNDE,
+          status: "trialing",
+          trial_end: trialEndUnix(14),
+          metadata: { organizationId, plan: "PRO" },
+        }),
+      );
+
+      const after = await org();
+      expect(after.subscriptionStatus).toBe("TRIAL");
+      expect(after.trialEndsAt).not.toBeNull();
+    });
+
+    it("laesst ein Zahlungs-Ereignis die laufende Testphase danach nicht kippen", async () => {
+      // Die Gegenprobe zur Reihenfolge: steht die Frist, haelt die Schranke.
+      await billing.handleStripeEvent(
+        event("invoice.payment_succeeded", {
+          id: `in_reihenfolge_${stamp}`,
+          customer: KUNDE,
+          amount_due: 0,
+          amount_paid: 0,
+          currency: "eur",
+          status: "paid",
+          created: Math.floor(Date.now() / 1000),
+        }),
+      );
+
+      const after = await org();
+      expect(after.subscriptionStatus).toBe("TRIAL");
+    });
+
+    it("schreibt die Frist BEVOR es den Status setzt", async () => {
+      // Der eigentliche Kern, und er ist nur ueber die Wirkung pruefbar:
+      // waere die Reihenfolge wieder vertauscht, koennte ein Zahlungs-
+      // Ereignis zwischen beiden Schreibvorgaengen ACTIVE setzen -- und der
+      // vorige Test faende danach ACTIVE statt TRIAL vor.
+      //
+      // Zusaetzlich hier festgehalten: nach EINEM Abo-Ereignis ist der
+      // Datensatz in sich stimmig, nicht erst nach zweien.
+      const frisch = `cus_stimmig_${stamp}`;
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: { subscriptionStatus: "SUSPENDED", trialEndsAt: null, stripeCustomerId: frisch },
+      });
+
+      await billing.handleStripeEvent(
+        event("customer.subscription.created", {
+          id: `sub_stimmig_${stamp}`,
+          customer: frisch,
+          status: "trialing",
+          trial_end: trialEndUnix(14),
+          metadata: { organizationId, plan: "PRO" },
+        }),
+      );
+
+      const after = await org();
+      expect(after.subscriptionStatus).toBe("TRIAL");
+      expect(after.trialEndsAt).not.toBeNull();
+    });
+  });
 });
