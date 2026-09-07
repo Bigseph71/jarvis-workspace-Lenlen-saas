@@ -8,7 +8,7 @@ import {
 import { AppError, ConflictError } from "../../lib/errors.js";
 import { paginated, toSkipTake, type Paginated } from "../../lib/pagination.js";
 import { getBillingProvider } from "../../lib/billing/index.js";
-import type { RecurringRevenue } from "../../lib/billing/types.js";
+import type { PayingRefs, RecurringRevenue } from "../../lib/billing/types.js";
 import { daysAgo, fillStatusCounts, toCsv, trialAlertWindow, type StatusCounts } from "./admin.rules.js";
 import type {
   AuditLogExportQuery,
@@ -68,7 +68,11 @@ async function writeAdminAudit(
 
 export interface AdminDashboard {
   organizations: { total: number; byStatus: StatusCounts };
-  revenue: RecurringRevenue & { available: boolean };
+  revenue: RecurringRevenue & {
+    available: boolean;
+    /** Aktive Organisationen ohne jede Stripe-Kennung: sie koennen nie zaehlen. */
+    missingStripeRef: number;
+  };
   growth: { last7Days: number; last30Days: number };
   alerts: {
     trialsEndingSoon: { id: string; name: string; trialEndsAt: Date | null }[];
@@ -90,19 +94,51 @@ export interface AdminDashboard {
  *     Umsatz.
  *
  * Gezählt wird deshalb nur, was hier UND bei Stripe als laufend gilt: Status
- * ACTIVE, nicht gelöscht, mit hinterlegtem Abo.
+ * ACTIVE und nicht gelöscht.
+ *
+ * ZWEI Anker, nicht mehr nur einer. Zuvor musste eine `stripeSubscriptionId`
+ * hinterlegt sein -- ein Feld, das ausschliesslich ein Webhook füllt. Blieb
+ * dieses Ereignis aus (Endpunkt nicht erreichbar, Signaturfehler, verlorene
+ * Zustellung), war die Spalte leer und die Organisation fehlte im Umsatz,
+ * obwohl sie zahlte. Fünf aktive Tenants, einer im MRR: von aussen sah das aus
+ * wie ein niedriger Umsatz und nicht wie ein Datenverlust.
+ *
+ * Die Kundenkennung entsteht dagegen beim Checkout und ändert sich nicht. Ein
+ * Abo zählt jetzt, wenn ENTWEDER seine Kennung bekannt ist ODER es einem
+ * unserer zahlenden Kunden gehört. Ohne beides bleibt eine Organisation
+ * unsichtbar -- und `missingStripeRef` unten sagt, wie viele das sind.
  */
-export async function payingSubscriptionIds(): Promise<ReadonlySet<string>> {
+export async function payingStripeRefs(): Promise<PayingRefs> {
   const rows = await prisma.organization.findMany({
+    where: { ...NOT_DELETED, subscriptionStatus: SubscriptionStatus.ACTIVE },
+    select: { stripeSubscriptionId: true, stripeCustomerId: true },
+  });
+
+  const notNull = (value: string | null): value is string => value !== null;
+  return {
+    subscriptionIds: new Set(rows.map((r) => r.stripeSubscriptionId).filter(notNull)),
+    customerIds: new Set(rows.map((r) => r.stripeCustomerId).filter(notNull)),
+  };
+}
+
+/**
+ * Aktive Organisationen, die bei Stripe an NICHTS hängen.
+ *
+ * Sie können im Umsatz nicht auftauchen, und das ist keine Meinung, sondern
+ * eine Lücke: entweder wurde nie ein Checkout abgeschlossen, oder beide
+ * Webhook-Ereignisse blieben aus. Die Zahl gehört ins Panel, weil sonst
+ * niemand den Unterschied zwischen "wenig Umsatz" und "kaputte Zustellung"
+ * sieht.
+ */
+export async function organizationsWithoutStripeRef(): Promise<number> {
+  return prisma.organization.count({
     where: {
       ...NOT_DELETED,
       subscriptionStatus: SubscriptionStatus.ACTIVE,
-      stripeSubscriptionId: { not: null },
+      stripeSubscriptionId: null,
+      stripeCustomerId: null,
     },
-    select: { stripeSubscriptionId: true },
   });
-
-  return new Set(rows.map((r) => r.stripeSubscriptionId).filter((id): id is string => id !== null));
 }
 
 export async function getDashboard(now: Date = new Date()): Promise<AdminDashboard> {
@@ -137,10 +173,18 @@ export async function getDashboard(now: Date = new Date()): Promise<AdminDashboa
   // Stripe darf das Dashboard nicht mitreissen: fällt der Aufruf aus (Netz,
   // Schlüssel, Rate Limit), fehlt der Umsatz und der Rest steht trotzdem.
   // `available: false` sagt der Oberfläche, dass sie nicht 0 € anzeigen soll.
-  let revenue: RecurringRevenue & { available: boolean };
+  // Unabhaengig von Stripe: sie beantwortet, ob ein niedriger Umsatz an den
+  // Zahlen liegt oder daran, dass Organisationen an gar nichts haengen.
+  const missingStripeRef = await organizationsWithoutStripeRef();
+
+  let revenue: RecurringRevenue & { available: boolean; missingStripeRef: number };
   try {
-    const eligible = await payingSubscriptionIds();
-    revenue = { ...(await getBillingProvider().getRecurringRevenue(eligible)), available: true };
+    const eligible = await payingStripeRefs();
+    revenue = {
+      ...(await getBillingProvider().getRecurringRevenue(eligible)),
+      available: true,
+      missingStripeRef,
+    };
   } catch {
     revenue = {
       amountCents: 0,
@@ -148,6 +192,7 @@ export async function getDashboard(now: Date = new Date()): Promise<AdminDashboa
       subscriptions: 0,
       truncated: false,
       available: false,
+      missingStripeRef,
     };
   }
 

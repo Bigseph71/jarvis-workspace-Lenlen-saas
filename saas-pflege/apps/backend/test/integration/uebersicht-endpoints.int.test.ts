@@ -107,30 +107,44 @@ describe.skipIf(!runDbTests)("Endpunkte der Uebersicht (DB)", () => {
       return v.id;
     };
 
-    // Fuenf Besuche am Testtag, mit verschiedenen Zustaenden und Pointages.
-    const erledigtPuenktlich = await makeVisit("Puenktlich", TAG);
+    /*
+     * Fuenf Besuche am Testtag, jeweils eine halbe Stunde auseinander.
+     *
+     * Frueher lagen sie alle auf DERSELBEN Minute -- was das System damals
+     * zuliess und was der Doppelbuchungs-Schutz jetzt zurecht mit 409 abweist.
+     * Eine Tour, auf der eine Fachkraft fuenf Patienten gleichzeitig besucht,
+     * war ohnehin keine Tour: die Fixture bildete einen Fehler ab, kein
+     * Arbeitsleben.
+     *
+     * Die Ankunftszeiten haengen deshalb am EIGENEN Termin jedes Besuchs und
+     * nicht mehr an einer gemeinsamen Uhrzeit -- die geprueften Abweichungen
+     * (2, 40 und 25 Minuten) bleiben damit unveraendert.
+     */
+    const slot = (index: number): Date => new Date(TAG.getTime() + index * 30 * 60_000);
+
+    const erledigtPuenktlich = await makeVisit("Puenktlich", slot(0));
     await prisma.visit.update({
       where: { id: erledigtPuenktlich },
       // Zwei Minuten spaeter: das uebliche Rauschen, KEINE Verspaetung.
-      data: { status: "COMPLETED", gpsArrivalAt: new Date(TAG.getTime() + 2 * 60_000) },
+      data: { status: "COMPLETED", gpsArrivalAt: new Date(slot(0).getTime() + 2 * 60_000) },
     });
 
-    const erledigtVerspaetet = await makeVisit("Verspaetet", TAG);
+    const erledigtVerspaetet = await makeVisit("Verspaetet", slot(1));
     await prisma.visit.update({
       where: { id: erledigtVerspaetet },
-      data: { status: "COMPLETED", gpsArrivalAt: new Date(TAG.getTime() + 40 * 60_000) },
+      data: { status: "COMPLETED", gpsArrivalAt: new Date(slot(1).getTime() + 40 * 60_000) },
     });
 
-    const laufend = await makeVisit("Laufend", TAG);
+    const laufend = await makeVisit("Laufend", slot(2));
     await prisma.visit.update({
       where: { id: laufend },
       // Ebenfalls verspaetet: der Zustand aendert daran nichts.
-      data: { status: "IN_PROGRESS", gpsArrivalAt: new Date(TAG.getTime() + 25 * 60_000) },
+      data: { status: "IN_PROGRESS", gpsArrivalAt: new Date(slot(2).getTime() + 25 * 60_000) },
     });
 
-    await makeVisit("Geplant", TAG); // ohne Pointage
+    await makeVisit("Geplant", slot(3)); // ohne Pointage
 
-    const storniert = await makeVisit("Storniert", TAG);
+    const storniert = await makeVisit("Storniert", slot(4));
     await prisma.visit.update({ where: { id: storniert }, data: { status: "CANCELED" } });
 
     // Ein Besuch am Folgetag: er darf in keiner Zahl des Testtags auftauchen.

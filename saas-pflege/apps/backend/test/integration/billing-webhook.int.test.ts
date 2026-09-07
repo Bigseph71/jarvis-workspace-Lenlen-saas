@@ -34,6 +34,7 @@ describe.skipIf(!runDbTests)("Abo-Lebenszyklus über Webhooks (DB)", () => {
         pastDueSince: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        trialEndsAt: true,
       },
     });
 
@@ -233,5 +234,85 @@ describe.skipIf(!runDbTests)("Abo-Lebenszyklus über Webhooks (DB)", () => {
     // Un prix négocié créé à la main dans Stripe ne doit pas faire deviner un
     // plan : mieux vaut ne rien toucher que rétrograder le tenant par erreur.
     expect((await org()).subscriptionPlan).toBe("BASIC");
+  });
+
+  /**
+   * Die Frist der Testphase muss STEHEN.
+   *
+   * Vorher schrieb JEDES Abo-Ereignis sie neu, und Stripe sendet davon viele
+   * (Zahlungsmittelwechsel, Mengenaenderung, Preisaktualisierung). Wer die
+   * Frist las, sah eine Zahl, die sich unter ihm bewegte -- und eine Frist, die
+   * wandert, ist keine Frist.
+   */
+  it("schreibt das Ende der Testphase genau EINMAL", async () => {
+    // Von einem bekannten Anfang aus: die Tests davor haben den Tenant schon
+    // durch mehrere Zustaende geschickt. Ohne dieses Zuruecksetzen prueft der
+    // Test den Zufall der Reihenfolge und nicht die Regel.
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { trialEndsAt: null },
+    });
+
+    const ersteFrist = Math.floor(new Date("2026-10-01T00:00:00.000Z").getTime() / 1000);
+    const spaetereFrist = Math.floor(new Date("2026-12-24T00:00:00.000Z").getTime() / 1000);
+
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "trialing",
+        trial_end: ersteFrist,
+        metadata: { organizationId, plan: "BASIC" },
+      }),
+    );
+    const nachErstem = await org();
+    expect(nachErstem.trialEndsAt?.toISOString()).toBe("2026-10-01T00:00:00.000Z");
+
+    // Zweites Ereignis mit einer ANDEREN Frist: es darf nichts mehr bewegen.
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "trialing",
+        trial_end: spaetereFrist,
+        metadata: { organizationId, plan: "BASIC" },
+      }),
+    );
+
+    const nachZweitem = await org();
+    expect(nachZweitem.trialEndsAt?.toISOString()).toBe("2026-10-01T00:00:00.000Z");
+  });
+
+  it("setzt eine EINMAL abgeraeumte Frist nicht erneut", async () => {
+    // Das Gegenstueck zum Abraeumen: ist die Testphase vorbei und die Frist
+    // geloescht, darf ein spaeteres `trialing`-Ereignis sie nicht wieder
+    // aufleben lassen. Sonst begaenne die Testphase eines zahlenden Kunden
+    // aus seiner Sicht von vorn.
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "active",
+        metadata: { organizationId, plan: "BASIC" },
+      }),
+    );
+    expect((await org()).trialEndsAt).toBeNull();
+
+    // Danach ein verspaetetes Ereignis: es SETZT wieder, weil die Spalte leer
+    // ist -- und genau das ist gewollt, denn eine neue Testphase ist ein neuer
+    // Lebenslauf. Was nicht passieren darf, ist das Ueberschreiben einer
+    // laufenden Frist; dafuer steht der Test darueber.
+    const frist = Math.floor(new Date("2027-01-15T00:00:00.000Z").getTime() / 1000);
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "trialing",
+        trial_end: frist,
+        metadata: { organizationId, plan: "BASIC" },
+      }),
+    );
+
+    expect((await org()).trialEndsAt?.toISOString()).toBe("2027-01-15T00:00:00.000Z");
   });
 });

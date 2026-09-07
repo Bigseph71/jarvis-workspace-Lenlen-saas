@@ -188,11 +188,11 @@ describe.skipIf(!runDbTests)("Panel Super-Admin (DB)", () => {
       data: { subscriptionStatus: "ACTIVE", stripeSubscriptionId: `sub_zahlend_${stamp}` },
     });
 
-    const eligible = await admin.payingSubscriptionIds();
+    const eligible = await admin.payingStripeRefs();
 
-    expect(eligible.has(`sub_zahlend_${stamp}`)).toBe(true);
-    expect(eligible.has(`sub_essai_${stamp}`)).toBe(false);
-    expect(eligible.has(`sub_supprimee_${stamp}`)).toBe(false);
+    expect(eligible.subscriptionIds.has(`sub_zahlend_${stamp}`)).toBe(true);
+    expect(eligible.subscriptionIds.has(`sub_essai_${stamp}`)).toBe(false);
+    expect(eligible.subscriptionIds.has(`sub_supprimee_${stamp}`)).toBe(false);
   });
 
   it("écarte une organisation supprimée des listes et du dashboard", async () => {

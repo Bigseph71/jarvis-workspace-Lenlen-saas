@@ -56,6 +56,25 @@ export interface SubscriptionState {
  * `subscriptions` ist die Zahl der Abos, aus denen er stammt – ohne sie liesse
  * sich ein Wert von 0 nicht deuten (kein Abo? oder alle beitragsfrei?).
  */
+/**
+ * Woran ein Abo bei Stripe als "unseres" erkannt wird.
+ *
+ * ZWEI Wege, und der zweite ist der Grund für diesen Typ. Bis hierher wurde
+ * ausschliesslich über die gespeicherte `stripeSubscriptionId` verglichen --
+ * ein Feld, das nur ein Webhook füllt. Kam dieses Ereignis nie an (Endpunkt
+ * nicht erreichbar, Signaturfehler, Zustellung verloren), blieb die Spalte
+ * leer, und die Organisation fehlte im Umsatz, OBWOHL sie zahlte. Von aussen
+ * sah das aus wie ein niedriger Umsatz, nicht wie ein Datenverlust.
+ *
+ * Die Kundenkennung ist der stabilere Anker: sie entsteht beim Checkout und
+ * ändert sich nicht mehr. Ein Abo zählt deshalb, wenn ENTWEDER seine Kennung
+ * bekannt ist ODER es einem unserer zahlenden Kunden gehört.
+ */
+export interface PayingRefs {
+  subscriptionIds: ReadonlySet<string>;
+  customerIds: ReadonlySet<string>;
+}
+
 export interface RecurringRevenue {
   amountCents: number;
   currency: string;
@@ -121,7 +140,7 @@ export interface BillingProvider {
    *   Ergebnis 0, nicht "alle" – ein leerer Filter darf nie zu einer Summe
    *   über fremde Abos führen.
    */
-  getRecurringRevenue(eligibleSubscriptionIds: ReadonlySet<string>): Promise<RecurringRevenue>;
+  getRecurringRevenue(eligible: PayingRefs): Promise<RecurringRevenue>;
   /**
    * Beendet ein Abo SOFORT (keine Weiterlaufzeit bis Periodenende).
    *

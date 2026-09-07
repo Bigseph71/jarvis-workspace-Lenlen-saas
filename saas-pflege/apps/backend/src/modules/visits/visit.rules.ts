@@ -156,3 +156,47 @@ export function isDelayed(
   const driftMs = visit.gpsArrivalAt.getTime() - visit.scheduledAt.getTime();
   return driftMs > thresholdMinutes * 60_000;
 }
+
+/**
+ * Mindestabstand zwischen zwei Besuchen DERSELBEN Fachkraft.
+ *
+ * Fuenfzehn Minuten, und die Zahl ist keine Toleranz, sondern eine Aussage
+ * ueber die Wirklichkeit: niemand ist zur selben Minute an zwei Adressen, und
+ * zwischen zwei Klingelknoepfen liegt immer eine Fahrt. Zwei Termine, die
+ * naeher beieinander liegen, sind ein Planungsfehler und keine enge Tour.
+ */
+export const CAREGIVER_SLOT_MINUTES = 15;
+
+/**
+ * Fenster, in dem ein zweiter Termin derselben Fachkraft als Kollision gilt.
+ *
+ * Symmetrisch um den Termin herum: ein Besuch zehn Minuten DAVOR kollidiert
+ * genauso wie einer zehn Minuten danach. Eine einseitige Pruefung liesse die
+ * Doppelbuchung durch, sobald man sie in der anderen Reihenfolge anlegt.
+ */
+export function caregiverSlotWindow(
+  scheduledAt: Date,
+  slotMinutes: number = CAREGIVER_SLOT_MINUTES,
+): { start: Date; end: Date } {
+  const ms = slotMinutes * 60_000;
+  return {
+    start: new Date(scheduledAt.getTime() - ms + 1),
+    end: new Date(scheduledAt.getTime() + ms),
+  };
+}
+
+/**
+ * Kollidieren zwei Termine derselben Fachkraft?
+ *
+ * Die Grenze selbst kollidiert NICHT: genau 15 Minuten Abstand sind erlaubt,
+ * 14 nicht. Ohne diese Festlegung haengt das Ergebnis an einer Sekunde, und
+ * eine Planung, die um 8:00 und 8:15 zulaesst, muss das auch um 9:00 und 9:15
+ * tun.
+ */
+export function collidesWithSlot(
+  scheduledAt: Date,
+  other: Date,
+  slotMinutes: number = CAREGIVER_SLOT_MINUTES,
+): boolean {
+  return Math.abs(other.getTime() - scheduledAt.getTime()) < slotMinutes * 60_000;
+}

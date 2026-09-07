@@ -623,11 +623,34 @@ async function processEvent(event: BillingEvent): Promise<void> {
     // Datum ewig mitzuschleppen – ein Tenant stand auf ACTIVE und behielt eine
     // Testphase, die im August abgelaufen war.
     const trialEnd = int(object.trial_end);
-    const stillTrialing = subStatus === SubscriptionStatus.TRIAL && trialEnd !== null;
-    await prisma.organization.updateMany({
-      where: { stripeCustomerId: customerId },
-      data: { trialEndsAt: stillTrialing ? new Date(trialEnd * 1000) : null },
-    });
+    if (subStatus === SubscriptionStatus.TRIAL && trialEnd !== null) {
+      // EINMAL schreiben, danach nie wieder: `trialEndsAt: null` in der
+      // Bedingung macht daraus ein Einfügen, kein Überschreiben.
+      //
+      // Vorher stand hier ein bedingungsloses Update bei JEDEM
+      // Abonnement-Ereignis, und Stripe sendet davon viele
+      // (Zahlungsmittelwechsel, Mengenänderung, Preisaktualisierung). Die
+      // Frist wurde dadurch fortlaufend neu gesetzt und konnte sich
+      // verschieben; wer sie las, sah eine Zahl, die sich unter ihm bewegte.
+      // Eine Frist, die wandert, ist keine Frist.
+      await prisma.organization.updateMany({
+        where: { stripeCustomerId: customerId, trialEndsAt: null },
+        data: { trialEndsAt: new Date(trialEnd * 1000) },
+      });
+    } else if (subStatus !== SubscriptionStatus.TRIAL) {
+      // Die Testphase ist vorbei: Frist abräumen. Das ist KEIN Neuberechnen,
+      // sondern das eine Ende ihres Lebens – geschrieben, wenn sie beginnt,
+      // gelöscht, wenn sie endet, und dazwischen unangetastet.
+      //
+      // Bewusst beibehalten: Stripe lässt `trial_end` nach dem Ende am Abo
+      // stehen, wo es eine historische Angabe ist. Ohne dieses Abräumen
+      // schleppte ein zahlender Tenant eine abgelaufene Testphase mit sich
+      // (der Grund für diese Zeile steht in billing-trial-lifecycle).
+      await prisma.organization.updateMany({
+        where: { stripeCustomerId: customerId, trialEndsAt: { not: null } },
+        data: { trialEndsAt: null },
+      });
+    }
 
     const subscriptionId = str(object.id);
     if (subscriptionId) {
