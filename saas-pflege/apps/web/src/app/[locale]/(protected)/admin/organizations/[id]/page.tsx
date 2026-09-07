@@ -47,7 +47,22 @@ export default function AdminOrganizationDetailPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const [plan, setPlan] = useState<SubscriptionPlan | "">("");
-  const [trialUntil, setTrialUntil] = useState(inDays(14));
+  /*
+   * LEER, und das ist der Kern dieser Korrektur.
+   *
+   * Hier stand `inDays(14)`, also heute + 14 Tage. Das Feld sah damit aus wie
+   * eine ANZEIGE des Testphasen-Endes -- und weil `new Date()` bei jedem
+   * Aufbau der Seite neu ausgewertet wird, wanderte die gezeigte Frist Tag für
+   * Tag mit. Gemeldet wurde das als "trial_ends_at wird täglich neu berechnet";
+   * in der Datenbank stand die ganze Zeit der richtige Wert, nur zeigte ihn
+   * niemand.
+   *
+   * Ein leeres Feld kann nicht als Anzeige missverstanden werden. Es macht
+   * ausserdem den Knopf daneben unbedienbar (`!trialUntil`), solange niemand
+   * ein Datum gewählt hat -- vorher liess sich mit einem Klick "heute + 14"
+   * schreiben, im Glauben, das Angezeigte zu bestätigen.
+   */
+  const [trialUntil, setTrialUntil] = useState("");
   const [reason, setReason] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   /** Suppression faite, mais l'abonnement n'a pas pu être résilié. */
@@ -95,6 +110,27 @@ export default function AdminOrganizationDetailPage() {
 
   const deleted = org.deletedAt !== null;
 
+  /**
+   * Der gespeicherte Stand der Testphase, in Worten.
+   *
+   * Drei Fälle, und sie sind nicht dasselbe:
+   *
+   *   keine Frist     die Organisation hatte nie eine Testphase, oder das
+   *                   Webhook-Ereignis kam nie an. Ein Datum zu zeigen wäre
+   *                   hier die Erfindung, die diese Seite gerade gekostet hat.
+   *   läuft           Frist in der Zukunft.
+   *   abgelaufen      Frist in der Vergangenheit. Sie bleibt sichtbar, statt
+   *                   zu verschwinden: "wann lief die Testphase?" ist genau
+   *                   die Frage, die im Gespräch mit einem Kunden aufkommt.
+   */
+  function trialState(endsAt: string | null): string {
+    if (!endsAt) return t("trial.none");
+    const date = formatDate(new Date(endsAt), locale);
+    return new Date(endsAt).getTime() > Date.now()
+      ? t("trial.running", { date })
+      : t("trial.expired", { date });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -102,6 +138,16 @@ export default function AdminOrganizationDetailPage() {
           <h2 className="text-xl font-bold text-gray-900">{org.name}</h2>
           <p className="mt-1 text-sm text-gray-500">
             {ts(org.subscriptionStatus)} · {org.subscriptionPlan} · {t("since", { date: formatDate(new Date(org.createdAt), locale) })}
+          </p>
+          {/*
+            Der GESPEICHERTE Stand der Testphase. Er fehlte auf dieser Seite
+            vollständig: `trialEndsAt` kam vom Backend mit, wurde aber nur im
+            PATCH-Rumpf des Verlängern-Knopfes verwendet. Wer das Ende der
+            Testphase wissen wollte, las das Eingabefeld darunter -- und das
+            zeigte heute + 14.
+          */}
+          <p data-testid="trial-state" className="mt-0.5 text-sm text-gray-500">
+            {trialState(org.trialEndsAt)}
           </p>
         </div>
         <Link href="/admin/organizations" className="text-sm text-gray-600 underline-offset-2 hover:underline">
@@ -189,7 +235,7 @@ export default function AdminOrganizationDetailPage() {
           <div className="mt-4 flex flex-wrap items-end gap-3">
             <div>
               <label htmlFor="trial" className="block text-xs font-medium text-gray-600">
-                {t("actions.trialUntil")}
+                {t("actions.trialNewEnd")}
               </label>
               <input
                 id="trial"

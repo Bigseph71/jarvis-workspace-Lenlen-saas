@@ -1046,7 +1046,6 @@
         "plan": "Plan",
         "changePlan": "Change plan",
         "planDone": "Plan changed.",
-        "trialUntil": "Trial until",
         "extendTrial": "Extend trial",
         "trialDone": "Trial extended.",
         "suspend": "Suspend",
@@ -1060,7 +1059,8 @@
         "delete": "Delete",
         "deleteConfirm": "Really delete {name}?",
         "deleteYes": "Yes, delete",
-        "deleteDone": "Organization deleted."
+        "deleteDone": "Organization deleted.",
+        "trialNewEnd": "New end date"
       },
       "invoices": {
         "title": "Latest invoices",
@@ -1075,6 +1075,11 @@
       "billing": {
         "cancelFailedTitle": "Organization deleted — subscription NOT cancelled",
         "cancelFailedBody": "The deletion went through, but cancelling with the payment provider failed. The customer keeps being charged until the subscription is ended there by hand."
+      },
+      "trial": {
+        "none": "No trial on file",
+        "running": "Trial runs until {date}",
+        "expired": "Trial ended on {date}"
       }
     },
     "audit": {

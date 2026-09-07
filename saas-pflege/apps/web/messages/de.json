@@ -1046,7 +1046,6 @@
         "plan": "Plan",
         "changePlan": "Plan wechseln",
         "planDone": "Plan gewechselt.",
-        "trialUntil": "Testphase bis",
         "extendTrial": "Testphase verlängern",
         "trialDone": "Testphase verlängert.",
         "suspend": "Sperren",
@@ -1060,7 +1059,8 @@
         "delete": "Löschen",
         "deleteConfirm": "{name} wirklich löschen?",
         "deleteYes": "Ja, löschen",
-        "deleteDone": "Organisation gelöscht."
+        "deleteDone": "Organisation gelöscht.",
+        "trialNewEnd": "Neues Enddatum"
       },
       "invoices": {
         "title": "Letzte Rechnungen",
@@ -1075,6 +1075,11 @@
       "billing": {
         "cancelFailedTitle": "Organisation gelöscht – Abo NICHT gekündigt",
         "cancelFailedBody": "Die Löschung ist vollzogen, die Kündigung beim Zahlungsanbieter ist fehlgeschlagen. Der Kunde wird weiter abgebucht, bis das Abo dort von Hand beendet wird."
+      },
+      "trial": {
+        "none": "Keine Testphase hinterlegt",
+        "running": "Testphase läuft bis {date}",
+        "expired": "Testphase abgelaufen am {date}"
       }
     },
     "audit": {
