@@ -6,8 +6,10 @@ import { Link } from "@/i18n/navigation";
 import { IncidentAlerts } from "@/components/incident-alerts";
 import { addDays, formatDate, formatDateTime, startOfWeek } from "@/lib/datetime";
 import {
+  ApiError,
   assignVisitCaregiver,
   cancelVisit,
+  rescheduleVisit,
   listCaregivers,
   listVisits,
   missingWeek,
@@ -52,6 +54,28 @@ function needsCaregiver(visit: Visit): boolean {
   return visit.caregiver === null && ASSIGNABLE.includes(visit.status);
 }
 
+/** Was gerade bearbeitet wird. `null`, solange die Tabelle nur gelesen wird. */
+interface EditDraft {
+  id: string;
+  /** Wert des datetime-local-Feldes, also LOKALE Zeit ohne Zone. */
+  scheduledAt: string;
+  caregiverId: string;
+}
+
+/**
+ * ISO-Zeitstempel -> Wert fuer <input type="datetime-local">.
+ *
+ * `toISOString().slice(0, 16)` waere falsch: es liefert UTC, und das Feld
+ * versteht seinen Wert als LOKALE Zeit. Ein Besuch um 9 Uhr deutscher Zeit
+ * erschiene im Sommer als 7 Uhr -- und wer speicherte, verschoebe ihn
+ * tatsaechlich um zwei Stunden.
+ */
+function toLocalInput(iso: string): string {
+  const date = new Date(iso);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
 export default function VisitsPage() {
   const t = useTranslations("visits");
   const locale = useLocale();
@@ -64,6 +88,9 @@ export default function VisitsPage() {
   const [alerts, setAlerts] = useState<MissingWeekResult | null>(null);
   const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
   const [assignError, setAssignError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<EditDraft | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const range = useMemo(() => {
     const to = addDays(weekStart, 7);
@@ -124,6 +151,54 @@ export default function VisitsPage() {
       load();
     } catch {
       /* Stille Wiederholung über erneutes Laden würde nichts ändern; ignoriert. */
+    }
+  }
+
+  /**
+   * Eine geplante Visite bearbeiten.
+   *
+   * NUR bei PLANNED: ein begonnener Besuch hat einen Ankunftszeitpunkt, und
+   * ihn nachtraeglich zu verschieben hiesse, die Dokumentation von der
+   * Wirklichkeit zu loesen. Ein abgeschlossener erst recht nicht.
+   *
+   * Beide Aenderungen gehen an ZWEI Endpunkte (Termin und Fachkraft sind im
+   * Backend getrennte Vorgaenge mit je eigenen Regeln). Deshalb der Termin
+   * zuerst: scheitert er, bleibt auch die Fachkraft unveraendert, und der
+   * Besuch steht so da wie vorher. Umgekehrt bliebe eine halb angewandte
+   * Aenderung stehen.
+   */
+  function startEdit(visit: Visit) {
+    setEditError(null);
+    setEditing({
+      id: visit.id,
+      // datetime-local erwartet lokale Zeit ohne Zone; toISOString waere UTC
+      // und verschoebe den angezeigten Termin um den Zonenversatz.
+      scheduledAt: toLocalInput(visit.scheduledAt),
+      caregiverId: visit.caregiver?.id ?? "",
+    });
+  }
+
+  async function onSaveEdit(visit: Visit) {
+    if (!editing) return;
+    setEditError(null);
+    setSaving(true);
+    try {
+      const nextIso = new Date(editing.scheduledAt).toISOString();
+      if (nextIso !== visit.scheduledAt) {
+        await rescheduleVisit(visit.id, nextIso);
+      }
+      if (editing.caregiverId && editing.caregiverId !== visit.caregiver?.id) {
+        await assignVisitCaregiver(visit.id, editing.caregiverId);
+      }
+      setEditing(null);
+      load();
+    } catch (err) {
+      // Die Meldung des Backends WEITERREICHEN und nicht durch eine eigene
+      // ersetzen: sie nennt die belegte Uhrzeit, die fehlende Qualifikation
+      // oder den freien Tag. Eine Sammelmeldung zwaenge zum Raten.
+      setEditError(err instanceof ApiError ? err.message : t("editError"));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -220,6 +295,14 @@ export default function VisitsPage() {
         </p>
       ) : null}
 
+      {/* Der Text kommt vom Backend und nennt den Grund beim Namen: die belegte
+          Uhrzeit, den freien Tag, die fehlende Qualifikation. */}
+      {editError ? (
+        <p role="alert" className="mt-4 text-sm text-red-600">
+          {editError}
+        </p>
+      ) : null}
+
       {/* Gemeldete Vorfälle zuerst: ein Vorfall ist eine Beobachtung am
           Patienten, ein fehlender Wochenbesuch eine Lücke im Plan. */}
       <IncidentAlerts />
@@ -271,7 +354,21 @@ export default function VisitsPage() {
             ) : (
               visits.map((visit) => (
                 <tr key={visit.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-900">{formatDateTime(visit.scheduledAt, locale)}</td>
+                  <td className="px-4 py-3 text-gray-900">
+                    {editing?.id === visit.id ? (
+                      <input
+                        type="datetime-local"
+                        aria-label={t("editDateLabel")}
+                        value={editing.scheduledAt}
+                        onChange={(e) =>
+                          setEditing({ ...editing, scheduledAt: e.target.value })
+                        }
+                        className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 focus:border-gray-900 focus:outline-none"
+                      />
+                    ) : (
+                      formatDateTime(visit.scheduledAt, locale)
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {visit.patient.lastName}, {visit.patient.firstName}
                     {visit.isEmergency ? (
@@ -289,7 +386,21 @@ export default function VisitsPage() {
                     ) : null}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {needsCaregiver(visit) ? (
+                    {editing?.id === visit.id ? (
+                      <select
+                        aria-label={t("editCaregiverLabel")}
+                        value={editing.caregiverId}
+                        onChange={(e) => setEditing({ ...editing, caregiverId: e.target.value })}
+                        className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 focus:border-gray-900 focus:outline-none"
+                      >
+                        <option value="">{t("assignChoose")}</option>
+                        {caregivers.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.lastName}, {c.firstName}
+                          </option>
+                        ))}
+                      </select>
+                    ) : needsCaregiver(visit) ? (
                       <select
                         aria-label={t("assignLabel")}
                         value=""
@@ -315,15 +426,53 @@ export default function VisitsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {CANCELABLE.includes(visit.status) ? (
-                      <button
-                        type="button"
-                        onClick={() => void onCancel(visit.id)}
-                        className="text-sm font-medium text-red-600 underline-offset-2 hover:underline"
-                      >
-                        {t("actions.cancel")}
-                      </button>
-                    ) : null}
+                    {editing?.id === visit.id ? (
+                      <span className="flex justify-end gap-3">
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => void onSaveEdit(visit)}
+                          className="text-sm font-medium text-gray-900 underline-offset-2 hover:underline disabled:opacity-50"
+                        >
+                          {t("actions.save")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditing(null);
+                            setEditError(null);
+                          }}
+                          className="text-sm font-medium text-gray-500 underline-offset-2 hover:underline"
+                        >
+                          {t("actions.abort")}
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="flex justify-end gap-3">
+                        {/* Nur PLANNED: ein begonnener Besuch hat bereits einen
+                            Ankunftszeitpunkt, ein abgeschlossener eine
+                            Dokumentation. Beide nachtraeglich zu verschieben
+                            loeste die Akte von der Wirklichkeit. */}
+                        {visit.status === "PLANNED" ? (
+                          <button
+                            type="button"
+                            onClick={() => startEdit(visit)}
+                            className="text-sm font-medium text-gray-900 underline-offset-2 hover:underline"
+                          >
+                            {t("actions.edit")}
+                          </button>
+                        ) : null}
+                        {CANCELABLE.includes(visit.status) ? (
+                          <button
+                            type="button"
+                            onClick={() => void onCancel(visit.id)}
+                            className="text-sm font-medium text-red-600 underline-offset-2 hover:underline"
+                          >
+                            {t("actions.cancel")}
+                          </button>
+                        ) : null}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))

@@ -11,7 +11,10 @@
     "loading": "Loading …",
     "logout": "Sign out",
     "errorGeneric": "Something went wrong. Please try again.",
-    "forbidden": "You do not have permission for this action."
+    "forbidden": "You do not have permission for this action.",
+    "cancel": "Cancel",
+    "logoutConfirmTitle": "Log out?",
+    "logoutConfirmMessage": "You will be logged out and will have to sign in again. Unsaved input is lost."
   },
   "auth": {
     "login": {
@@ -82,9 +85,6 @@
     },
     "greeting": "Hello.",
     "greetingNamed": "Hello {name}.",
-    "actions": {
-      "weeklyReport": "Weekly report"
-    },
     "kpi": {
       "planningTime": {
         "label": "Planning time",
@@ -576,7 +576,10 @@
       "CANCELED": "Canceled"
     },
     "actions": {
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "save": "Save",
+      "abort": "Discard"
     },
     "form": {
       "newTitle": "New visit",
@@ -600,7 +603,10 @@
         "scheduledAt": "Please choose a date and time.",
         "emergencyReason": "Please give a reason (at least 3 characters)."
       }
-    }
+    },
+    "editDateLabel": "New appointment",
+    "editCaregiverLabel": "Change caregiver",
+    "editError": "The visit could not be changed."
   },
   "leasing": {
     "title": "Leasing / Vehicles",

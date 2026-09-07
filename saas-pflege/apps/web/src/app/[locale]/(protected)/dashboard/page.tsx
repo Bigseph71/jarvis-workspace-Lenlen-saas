@@ -3,7 +3,6 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth/auth-context";
 import { firstNameFromEmail } from "@/lib/display-name";
-import { SecondaryButton } from "@/components/ui/buttons";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DemoNotice } from "@/components/overview/demo-notice";
 import { ToursCard } from "@/components/overview/tours-card";
@@ -61,14 +60,18 @@ export default function OverviewPage() {
         </div>
 
         {/*
-          "Morgen planen" ist entfallen: der Knopf führte nirgendwohin, und ein
-          Knopf, der nichts tut, ist auf einem Arbeitsbildschirm schlimmer als
-          gar keiner. Der Wochenbericht bleibt, er ist ein Ausblick auf ein
-          vorhandenes Ziel.
+          KEINE Knöpfe mehr in dieser Kopfzeile.
+          
+          Hier standen "Morgen planen" und "Wochenbericht". Beide führten
+          nirgendwohin: der erste ist mit der Anbindung entfallen, der zweite
+          jetzt. Ein Knopf, der nichts tut, ist auf einem Arbeitsbildschirm
+          schlimmer als gar keiner -- man drückt ihn, hält das Ausbleiben einer
+          Reaktion für eine Ladezeit und drückt erneut.
+          
+          Der Wochenbericht bleibt eine sinnvolle Funktion und ist mit den
+          vorhandenen Endpunkten (Tagesbilanz, Abwesenheiten, Fachkräfte) auch
+          kein grosser Bau. Er wird wiederkommen, wenn er etwas ausgibt.
         */}
-        <div className="flex flex-wrap gap-2.5">
-          <SecondaryButton>{t("actions.weeklyReport")}</SecondaryButton>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

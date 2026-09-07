@@ -6,6 +6,7 @@ import type { UserRole } from "@len-len/api-client";
 import { Link, usePathname } from "@/i18n/navigation";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { BrandMark } from "@/components/brand-mark";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/lib/auth/auth-context";
 import { initialsFromEmail, displayNameFromEmail } from "@/lib/display-name";
 import { OPEN_ARBITRATIONS } from "@/lib/demo/planning-draft";
@@ -349,6 +350,32 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tn = useTranslations("nav");
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  /*
+   * Abmelden mit Rückfrage.
+   *
+   * "Abmelden" sitzt in der Kopfzeile direkt neben dem Sprachumschalter und
+   * dem Namensblock -- also inmitten von Bedienelementen, die man beiläufig
+   * anfasst. Ein Fehlgriff warf die Koordination mitten in der Disposition auf
+   * den Anmeldebildschirm zurück, samt allem, was gerade offen war.
+   *
+   * Dasselbe Verhalten wie auf dem Telefon (PR #66), nur mit einem eigenen
+   * Dialog: der Browser hat keine Systemabfrage, die sich einbetten liesse.
+   */
+  const [confirmLogout, setConfirmLogout] = useState(false);
+
+  const logoutDialog = confirmLogout ? (
+    <ConfirmDialog
+      title={tc("logoutConfirmTitle")}
+      body={tc("logoutConfirmMessage")}
+      confirmLabel={tc("logout")}
+      cancelLabel={tc("cancel")}
+      onConfirm={() => {
+        setConfirmLogout(false);
+        void logout();
+      }}
+      onCancel={() => setConfirmLogout(false)}
+    />
+  ) : null;
 
   const { primary, secondary } = navigationFor(user?.role);
   // An der ROLLE festgemacht und nicht am Pfad: der Super-Admin kommt
@@ -360,9 +387,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
       <div className="min-h-screen bg-page px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto min-h-[900px] max-w-[1240px] overflow-hidden rounded-app border border-border-default bg-app shadow-app">
-          <PlatformHeader onLogout={() => void logout()} />
+          <PlatformHeader onLogout={() => setConfirmLogout(true)} />
           <main className="px-8 pb-12 pt-9">{children}</main>
         </div>
+        {logoutDialog}
       </div>
     );
   }
@@ -410,7 +438,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {user ? <UserBlock email={user.email} role={user.role} /> : null}
             <button
               type="button"
-              onClick={() => void logout()}
+              onClick={() => setConfirmLogout(true)}
               className="whitespace-nowrap rounded-full px-2 py-1.5 text-label font-medium text-ink-muted transition-colors duration-120 hover:text-ink-body"
             >
               {tc("logout")}
@@ -420,6 +448,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main className="px-8 pb-11 pt-9">{children}</main>
       </div>
+      {logoutDialog}
     </div>
   );
 }
