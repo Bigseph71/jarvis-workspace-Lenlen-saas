@@ -34,6 +34,7 @@ describe.skipIf(!runDbTests)("Abo-Lebenszyklus über Webhooks (DB)", () => {
         pastDueSince: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        trialEndsAt: true,
       },
     });
 
