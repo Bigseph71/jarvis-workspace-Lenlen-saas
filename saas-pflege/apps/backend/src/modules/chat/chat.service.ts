@@ -1,5 +1,6 @@
 import { UserRole, withTenant } from "@len-len/database";
 import { AppError, ForbiddenError } from "../../lib/errors.js";
+import { publishChatMessage } from "../../lib/realtime.js";
 import type { TenantContext, TenantTx } from "../../lib/context.js";
 import type { ListMessagesQuery, SendMessageInput } from "./chat.schemas.js";
 
@@ -65,7 +66,7 @@ export async function sendMessage(
   actor: ChatActor,
   input: SendMessageInput,
 ): Promise<unknown> {
-  return withTenant(ctx.organizationId, async (tx) => {
+  const message = await withTenant(ctx.organizationId, async (tx) => {
     const caregiverId = await resolveCaregiverId(tx, ctx, actor, input.caregiverId);
     return tx.message.create({
       data: {
@@ -77,6 +78,33 @@ export async function sendMessage(
       include: MESSAGE_INCLUDE,
     });
   });
+
+  /*
+   * Live-Push NACH dem Schreiben, und ausserhalb der Transaktion.
+   *
+   * Die Reihenfolge ist der Punkt: was gepusht wird, steht bereits in der
+   * Datenbank. Innerhalb der Transaktion gepusht, könnte ein Empfänger eine
+   * Nachricht sehen, die gleich darauf zurückgerollt wird -- und beim nächsten
+   * Laden wieder verschwindet.
+   *
+   * `publishChatMessage` schluckt seine Fehler (siehe realtime.ts): ein
+   * unerreichbares Redis darf das SENDEN nicht scheitern lassen. Die Nachricht
+   * ist dann gespeichert und kommt beim nächsten Laden an, nur eben nicht in
+   * derselben Sekunde. Umgekehrt wäre sie verloren.
+   */
+  await publishChatMessage(ctx.organizationId, {
+    id: message.id,
+    caregiverId: message.caregiverId,
+    body: message.body,
+    createdAt: message.createdAt.toISOString(),
+    sender: {
+      id: message.sender.id,
+      email: message.sender.email,
+      role: message.sender.role,
+    },
+  });
+
+  return message;
 }
 
 export async function listMessages(

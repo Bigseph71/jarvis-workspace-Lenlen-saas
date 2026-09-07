@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import { getApiConfig } from "./config";
 import type { UserRole } from "./auth";
 
 /**
@@ -67,4 +68,33 @@ export interface CaregiverUnread {
  */
 export async function chatUnreadByCaregiver(): Promise<CaregiverUnread[]> {
   return apiFetch<CaregiverUnread[]>("/chat/unread-by-caregiver");
+}
+
+// ── Live-Strom (WebSocket) ────────────────────────────────────────────────
+
+/**
+ * Über WebSocket gepushte Nachricht.
+ *
+ * `ready` bestätigt, dass die Verbindung steht und gefiltert ist. Der Client
+ * darf sein Abfragen im Takt erst danach einstellen -- vorher wüsste er nicht,
+ * ob er gerade gar nichts empfängt oder nur nichts passiert.
+ */
+export type ChatSocketMessage =
+  | { type: "ready"; caregiverId: string | null }
+  | ({ type: "message" } & ChatMessage & { caregiverId: string });
+
+/**
+ * Baut die WebSocket-URL des Chat-Stroms. Der Token wird als Query
+ * mitgegeben, da Browser bei WS keinen Authorization-Header setzen können.
+ *
+ * `caregiverId` nur für die Planung: sie wählt die offene Konversation. Eine
+ * Fachkraft darf ihn nicht mitgeben -- das Backend weist die Verbindung sonst
+ * ab, statt den Parameter stillschweigend zu übergehen.
+ */
+export function chatSocketUrl(token: string, caregiverId?: string): string {
+  const { baseUrl } = getApiConfig();
+  const wsBase = baseUrl.replace(/^http/i, "ws");
+  const query = new URLSearchParams({ token });
+  if (caregiverId) query.set("caregiverId", caregiverId);
+  return `${wsBase}/chat/ws?${query.toString()}`;
 }

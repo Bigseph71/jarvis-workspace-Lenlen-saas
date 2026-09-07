@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -13,20 +13,22 @@ import {
 import { Redirect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { listChatMessages, sendChatMessage, type ChatMessage } from "@len-len/api-client";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { connectChat, type ChatSocketController } from "@/lib/chat-socket";
+import { tokenStorage } from "@/lib/token-storage";
+import { MIN_TOUCH_HEIGHT } from "@/lib/theme";
 import { useAuth } from "@/lib/auth-context";
-
-const POLL_INTERVAL_MS = 30_000;
 
 export default function ChatScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { status, user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -38,12 +40,47 @@ export default function ChatScreen() {
     }
   }, [t]);
 
-  // Initial + Polling alle 30s (MVP; WebSocket kommt in Phase 2).
+  /*
+   * Erstes Laden über REST, danach der Live-Strom.
+   *
+   * Vorher wurde alle 30 Sekunden neu abgefragt. Für eine Rückfrage aus dem
+   * Treppenhaus ist das zu lang: die Fachkraft steht beim Patienten und wartet
+   * auf eine Antwort, die längst geschrieben ist. Jetzt trifft sie in dem
+   * Moment ein, in dem die Koordination sie absendet.
+   *
+   * Der Rückfall auf Abfragen bleibt (lib/chat-socket): ein WebSocket ist auf
+   * einem Telefon nicht selbstverständlich, und ein Chat, der still nichts
+   * mehr zeigt, ist schlechter als einer, der langsam ist.
+   */
   useEffect(() => {
     void load();
-    pollRef.current = setInterval(() => void load(), POLL_INTERVAL_MS);
+
+    // `getAccessToken` darf laut gemeinsamer Schnittstelle auch ein Promise
+    // liefern (andere Ablagen tun das); mobil ist es synchron. Beides annehmen
+    // kostet eine Zeile und erspart eine Abhängigkeit von der Implementierung.
+    let cancelled = false;
+    let connection: ChatSocketController | null = null;
+
+    void Promise.resolve(tokenStorage.getAccessToken()).then((token) => {
+      if (!token || cancelled) return;
+      connection = connectChat(token, {
+      // Anhängen statt neu laden: die Nachricht ist vollständig dabei, und ein
+      // erneuter Abruf kostete eine Rundreise für etwas, das schon da ist.
+        onMessage: (event) => {
+          setMessages((current) => {
+            if (!current) return current;
+            // Die eigene Nachricht steht nach dem Senden bereits in der Liste.
+            if (current.some((message) => message.id === event.id)) return current;
+            return [...current, event];
+          });
+        },
+        onFallbackTick: () => void load(),
+      });
+    });
+
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      cancelled = true;
+      connection?.close();
     };
   }, [load]);
 
@@ -80,9 +117,22 @@ export default function ChatScreen() {
   };
 
   return (
+    /*
+      Tastatur UND Systemleiste.
+
+      `behavior` jetzt auch auf Android ("height"): der Bildschirm hat keine
+      eigene Kopfzeile, der Versatz ist also null, und ohne Angabe schob Android
+      gar nichts -- die Tastatur legte sich über das Eingabefeld.
+
+      Der untere Innenabstand der Eingabezeile kommt aus dem
+      Sicherheitsabstand des Systems, wie bei der Reiterleiste (PR #66). Auf
+      Geräten mit Gestensteuerung beansprucht der Wischbalken die untersten
+      Bildpunkte: was dort gezeichnet wird, ist sichtbar, aber Berührungen
+      gehen an das System. Feld und Sendeknopf waren deshalb kaum zu treffen.
+    */
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={0}
     >
       <View style={styles.header}>
@@ -114,7 +164,7 @@ export default function ChatScreen() {
         />
       )}
 
-      <View style={styles.inputRow}>
+      <View style={[styles.inputRow, { paddingBottom: 12 + insets.bottom }]}>
         <TextInput
           style={styles.input}
           value={draft}
@@ -176,6 +226,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    minHeight: MIN_TOUCH_HEIGHT,
     borderWidth: 1,
     borderColor: "#d4d4d8",
     borderRadius: 20,
@@ -189,7 +240,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#1d4ed8",
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    // Mindesthöhe statt blossem Innenabstand: der Knopf sass am unteren Rand
+    // und war mit Handschuhen im Treppenhaus kaum zu treffen.
+    minHeight: MIN_TOUCH_HEIGHT,
+    minWidth: 72,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sendDisabled: { opacity: 0.5 },
   sendText: { color: "#fff", fontWeight: "600" },

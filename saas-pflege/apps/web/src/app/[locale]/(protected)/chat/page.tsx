@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { useTranslations, useLocale } from "next-intl";
 import {
   listCaregivers,
+  chatSocketUrl,
   listChatMessages,
   sendChatMessage,
   chatUnreadCount,
@@ -11,7 +12,9 @@ import {
   type Caregiver,
   type ChatMessage,
   type UserRole,
+  type ChatSocketMessage,
 } from "@len-len/api-client";
+import { getAccessToken } from "@/lib/auth/tokens";
 import { useAuth } from "@/lib/auth/auth-context";
 
 /**
@@ -27,7 +30,11 @@ import { useAuth } from "@/lib/auth/auth-context";
 // Rollen, die das Backend auf /chat zulässt (ohne FACHKRAFT: die nutzt die App).
 const PLANNER_ROLES: readonly UserRole[] = ["STRUKTUR_ADMIN", "KOORDINATOR"];
 
-const POLL_INTERVAL_MS = 30_000;
+/**
+ * Rückfall-Takt, falls der Live-Strom nicht zustande kommt. Kürzer als die
+ * früheren 30 s: er ist jetzt der Ausnahmefall, nicht der Normalbetrieb.
+ */
+const FALLBACK_INTERVAL_MS = 10_000;
 const CAREGIVER_PAGE_SIZE = 100;
 const MESSAGE_LIMIT = 100;
 const MAX_BODY_LENGTH = 2000;
@@ -120,8 +127,62 @@ export default function ChatPage() {
     const refresh = () => void loadMessages(caregiverId).then(loadUnread);
 
     refresh();
-    const id = setInterval(refresh, POLL_INTERVAL_MS);
-    return () => clearInterval(id);
+
+    /*
+     * Live-Strom statt Abfragen im 30-Sekunden-Takt.
+     *
+     * Der Takt war auf beiden Seiten zu lang: die Fachkraft steht beim
+     * Patienten und wartet auf eine Antwort, die längst geschrieben ist.
+     *
+     * Der Takt bleibt trotzdem als RÜCKFALL bestehen, nur langsamer: ein
+     * WebSocket kann an einem Firmen-Proxy scheitern, und ein Chat, der still
+     * nichts mehr zeigt, ist schlechter als einer, der langsam ist. Steht die
+     * Verbindung ("ready"), wird der Takt abgeschaltet.
+     *
+     * Neu geladen statt angehängt: der Abruf markiert eingehende Nachrichten
+     * zugleich als gelesen und hält damit die Zähler richtig. Das kostet eine
+     * Rundreise, aber erst NACHDEM das Ereignis eingetroffen ist -- die
+     * wahrgenommene Verzögerung bleibt die des Netzes, nicht die des Taktes.
+     */
+    let fallback: ReturnType<typeof setInterval> | null = setInterval(
+      refresh,
+      FALLBACK_INTERVAL_MS,
+    );
+    const stopFallback = (): void => {
+      if (fallback !== null) {
+        clearInterval(fallback);
+        fallback = null;
+      }
+    };
+    const startFallback = (): void => {
+      if (fallback === null) fallback = setInterval(refresh, FALLBACK_INTERVAL_MS);
+    };
+
+    const token = getAccessToken();
+    const socket = token ? new WebSocket(chatSocketUrl(token, caregiverId)) : null;
+
+    if (socket) {
+      socket.onmessage = (event: MessageEvent<string>) => {
+        let parsed: ChatSocketMessage;
+        try {
+          parsed = JSON.parse(event.data) as ChatSocketMessage;
+        } catch {
+          return;
+        }
+        if (parsed.type === "ready") {
+          stopFallback();
+          return;
+        }
+        if (parsed.type === "message" && parsed.caregiverId === caregiverId) refresh();
+      };
+      socket.onerror = startFallback;
+      socket.onclose = startFallback;
+    }
+
+    return () => {
+      stopFallback();
+      socket?.close();
+    };
   }, [selected, loadMessages, loadUnread]);
 
   useEffect(() => {
