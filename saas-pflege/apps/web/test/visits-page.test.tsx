@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Visit } from "@len-len/api-client";
 import { render, t } from "./helpers/render";
@@ -24,6 +24,7 @@ const {
   cancelVisit,
   listCaregivers,
   assignVisitCaregiver,
+  rescheduleVisit,
   openIncidents,
   acknowledgeIncident,
 } = vi.hoisted(() => ({
@@ -32,6 +33,7 @@ const {
   cancelVisit: vi.fn(),
   listCaregivers: vi.fn(),
   assignVisitCaregiver: vi.fn(),
+  rescheduleVisit: vi.fn(),
   openIncidents: vi.fn(),
   acknowledgeIncident: vi.fn(),
 }));
@@ -42,6 +44,20 @@ vi.mock("@len-len/api-client", () => ({
   cancelVisit: (...args: unknown[]) => cancelVisit(...args),
   listCaregivers: (...args: unknown[]) => listCaregivers(...args),
   assignVisitCaregiver: (...args: unknown[]) => assignVisitCaregiver(...args),
+  rescheduleVisit: (...args: unknown[]) => rescheduleVisit(...args),
+  // Die Seite reicht die Backend-Meldung eines 409 durch; ohne die echte
+  // Klasse waere `err instanceof ApiError` immer falsch und der Test pruefte
+  // still den Sammelfehler.
+  ApiError: class ApiError extends Error {
+    constructor(
+      public readonly status: number,
+      public readonly code: string,
+      message: string,
+    ) {
+      super(message);
+      this.name = "ApiError";
+    }
+  },
   // Die Seite bindet seit den Vorfall-Alarmen zwei weitere Aufrufe ein. Ohne
   // Attrappe liefe der Test gegen `undefined` und prüfte still den Fehlerpfad.
   openIncidents: (...args: unknown[]) => openIncidents(...args),
@@ -196,5 +212,105 @@ describe("Besuchsliste", () => {
     await user.selectOptions(screen.getByLabelText(t("visits.assignLabel")), BERND.id);
 
     expect(await screen.findByText(t("visits.assignError"))).toBeInTheDocument();
+  });
+});
+
+/**
+ * Eine geplante Visite bearbeiten.
+ *
+ * Der Bildschirm konnte bis hierher nur ABSAGEN. Wer einen Termin um eine
+ * halbe Stunde verschieben wollte, musste den Besuch stornieren und neu
+ * anlegen -- und verlor dabei seine Vorgeschichte im Audit-Log.
+ */
+describe("Besuch bearbeiten", () => {
+  async function renderMitBesuch(over: Partial<Visit> = {}) {
+    // Die Zaehler der Attrappen zuruecksetzen: die Tests dieses Blocks pruefen,
+    // dass ein Endpunkt NICHT gerufen wurde, und ein Aufruf aus dem Test davor
+    // faende sich sonst hier wieder.
+    vi.clearAllMocks();
+    listVisits.mockResolvedValue({ data: [visit(over)], total: 1, page: 1, pageSize: 50, totalPages: 1 });
+    missingWeek.mockResolvedValue({ week: { start: "", end: "" }, count: 0, patients: [] });
+    listCaregivers.mockResolvedValue({ data: [ANNA, BERND] });
+    openIncidents.mockResolvedValue({ data: [], total: 0, page: 1, pageSize: 20, totalPages: 0 });
+    render(<VisitsPage />);
+    await screen.findByText(/Muster/);
+  }
+
+  it("bietet das Bearbeiten nur bei PLANNED an", async () => {
+    // Ein begonnener Besuch hat einen Ankunftszeitpunkt, ein abgeschlossener
+    // eine Dokumentation. Beide nachtraeglich zu verschieben loeste die Akte
+    // von der Wirklichkeit.
+    await renderMitBesuch({ status: "IN_PROGRESS" });
+
+    expect(screen.queryByRole("button", { name: t("visits.actions.edit") })).not.toBeInTheDocument();
+  });
+
+  it("verschiebt den Termin ueber den Reschedule-Endpunkt", async () => {
+    await renderMitBesuch();
+
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.edit") }));
+    fireEvent.change(screen.getByLabelText(t("visits.editDateLabel")), {
+      target: { value: "2026-09-07T10:30" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.save") }));
+
+    await waitFor(() => expect(rescheduleVisit).toHaveBeenCalledTimes(1));
+    expect(rescheduleVisit.mock.calls[0]![0]).toBe("v-1");
+  });
+
+  it("wechselt die Fachkraft einer bereits zugewiesenen Visite", async () => {
+    // Vorher liess sich nur eine Visite OHNE Fachkraft zuweisen; eine
+    // Umbesetzung war ueber die Oberflaeche gar nicht moeglich.
+    await renderMitBesuch();
+
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.edit") }));
+    fireEvent.change(screen.getByLabelText(t("visits.editCaregiverLabel")), {
+      target: { value: BERND.id },
+    });
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.save") }));
+
+    await waitFor(() => expect(assignVisitCaregiver).toHaveBeenCalledWith("v-1", BERND.id));
+  });
+
+  it("ruft nichts auf, wenn sich nichts geaendert hat", async () => {
+    // Ein Speichern ohne Aenderung darf keinen Audit-Eintrag erzeugen.
+    await renderMitBesuch();
+
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.edit") }));
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.save") }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(rescheduleVisit).not.toHaveBeenCalled();
+    expect(assignVisitCaregiver).not.toHaveBeenCalled();
+  });
+
+  it("zeigt die Meldung des Backends bei einer Doppelbuchung", async () => {
+    // Der 409 nennt die belegte Uhrzeit. Ihn durch eine eigene Sammelmeldung
+    // zu ersetzen zwaenge den Koordinator zum Raten.
+    const { ApiError } = await import("@len-len/api-client");
+    rescheduleVisit.mockRejectedValue(
+      new ApiError(409, "Conflict", "Diese Fachkraft hat um 09:00 UTC bereits einen Besuch."),
+    );
+    await renderMitBesuch();
+
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.edit") }));
+    fireEvent.change(screen.getByLabelText(t("visits.editDateLabel")), {
+      target: { value: "2026-09-07T09:00" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.save") }));
+
+    expect(await screen.findByText(/bereits einen Besuch/)).toBeInTheDocument();
+  });
+
+  it("laesst die Bearbeitung verwerfen", async () => {
+    await renderMitBesuch();
+
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.edit") }));
+    fireEvent.click(screen.getByRole("button", { name: t("visits.actions.abort") }));
+
+    await waitFor(() =>
+      expect(screen.queryByLabelText(t("visits.editDateLabel"))).not.toBeInTheDocument(),
+    );
+    expect(rescheduleVisit).not.toHaveBeenCalled();
   });
 });

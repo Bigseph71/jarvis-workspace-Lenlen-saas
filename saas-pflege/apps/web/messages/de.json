@@ -11,7 +11,10 @@
     "loading": "Wird geladen …",
     "logout": "Abmelden",
     "errorGeneric": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
-    "forbidden": "Für diese Aktion fehlt die Berechtigung."
+    "forbidden": "Für diese Aktion fehlt die Berechtigung.",
+    "cancel": "Abbrechen",
+    "logoutConfirmTitle": "Abmelden?",
+    "logoutConfirmMessage": "Sie werden abgemeldet und müssen sich neu anmelden. Nicht gespeicherte Eingaben gehen verloren."
   },
   "auth": {
     "login": {
@@ -82,9 +85,6 @@
     },
     "greeting": "Guten Tag.",
     "greetingNamed": "Guten Tag, {name}.",
-    "actions": {
-      "weeklyReport": "Wochenbericht"
-    },
     "kpi": {
       "planningTime": {
         "label": "Planungsdauer",
@@ -576,7 +576,10 @@
       "CANCELED": "Storniert"
     },
     "actions": {
-      "cancel": "Stornieren"
+      "cancel": "Stornieren",
+      "edit": "Bearbeiten",
+      "save": "Speichern",
+      "abort": "Verwerfen"
     },
     "form": {
       "newTitle": "Neue Visite",
@@ -600,7 +603,10 @@
         "scheduledAt": "Bitte einen Termin wählen.",
         "emergencyReason": "Bitte einen Grund angeben (mindestens 3 Zeichen)."
       }
-    }
+    },
+    "editDateLabel": "Neuer Termin",
+    "editCaregiverLabel": "Fachkraft ändern",
+    "editError": "Der Besuch konnte nicht geändert werden."
   },
   "leasing": {
     "title": "Leasing / Fahrzeuge",

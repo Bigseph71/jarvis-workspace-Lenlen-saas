@@ -11,7 +11,10 @@
     "loading": "Chargement …",
     "logout": "Se déconnecter",
     "errorGeneric": "Une erreur est survenue. Veuillez réessayer.",
-    "forbidden": "Vous n'avez pas les droits pour cette action."
+    "forbidden": "Vous n'avez pas les droits pour cette action.",
+    "cancel": "Annuler",
+    "logoutConfirmTitle": "Se déconnecter ?",
+    "logoutConfirmMessage": "Vous serez déconnecté et devrez vous reconnecter. Les saisies non enregistrées seront perdues."
   },
   "auth": {
     "login": {
@@ -82,9 +85,6 @@
     },
     "greeting": "Bonjour.",
     "greetingNamed": "Bonjour {name}.",
-    "actions": {
-      "weeklyReport": "Rapport hebdomadaire"
-    },
     "kpi": {
       "planningTime": {
         "label": "Temps de planification",
@@ -576,7 +576,10 @@
       "CANCELED": "Annulée"
     },
     "actions": {
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "abort": "Abandonner"
     },
     "form": {
       "newTitle": "Nouvelle visite",
@@ -600,7 +603,10 @@
         "scheduledAt": "Veuillez choisir une date et une heure.",
         "emergencyReason": "Veuillez indiquer un motif (3 caractères minimum)."
       }
-    }
+    },
+    "editDateLabel": "Nouvel horaire",
+    "editCaregiverLabel": "Changer de soignant",
+    "editError": "La visite n'a pas pu être modifiée."
   },
   "leasing": {
     "title": "Leasing / Véhicules",

@@ -90,6 +90,21 @@ export async function createEmergencyVisit(input: CreateEmergencyVisitInput): Pr
   return apiFetch<Visit>("/visits/emergency", { method: "POST", body: input });
 }
 
+/**
+ * Termin eines geplanten Besuchs verschieben (PATCH /visits/:id/reschedule).
+ *
+ * Das Backend prüft dabei erneut alles, was auch beim Anlegen gilt:
+ * Arbeitstag der Fachkraft, ein Besuch je Patient und Woche, und seit
+ * Kurzem, dass die Fachkraft zu dieser Uhrzeit nicht schon unterwegs ist
+ * (409). Der Aufrufer muss diese Fehler anzeigen, nicht abfangen.
+ */
+export async function rescheduleVisit(id: string, scheduledAt: string): Promise<Visit> {
+  return apiFetch<Visit>(`/visits/${id}/reschedule`, {
+    method: "PATCH",
+    body: { scheduledAt },
+  });
+}
+
 export async function cancelVisit(id: string): Promise<Visit> {
   return apiFetch<Visit>(`/visits/${id}/cancel`, { method: "POST" });
 }
