@@ -335,7 +335,16 @@ describe("handleStripeEvent – Subscription-Lebenszyklus", () => {
     await handleStripeEvent(
       event("customer.subscription.updated", { customer: "cus_1", id: "sub_1", status: "unpaid" }, "evt_1"),
     );
-    expect(callsTo("organization.updateMany")[0].data).toMatchObject({
+    // Nach INHALT gesucht und nicht nach Position: der Handler schreibt seit
+    // der Reihenfolge-Korrektur zuerst die Testphasen-Frist und erst danach
+    // den Status. Ein Test, der an `[0]` haengt, prueft die Reihenfolge der
+    // Schreibvorgaenge statt ihrer Wirkung -- und schlaegt beim naechsten
+    // Umstellen wieder fehl, ohne dass etwas kaputt waere.
+    const statusCall = callsTo("organization.updateMany").find(
+      (call) => "subscriptionStatus" in (call.data as Record<string, unknown>),
+    );
+
+    expect(statusCall?.data).toMatchObject({
       subscriptionStatus: "SUSPENDED",
       pastDueSince: null,
     });
