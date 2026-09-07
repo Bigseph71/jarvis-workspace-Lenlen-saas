@@ -1046,7 +1046,6 @@
         "plan": "Plan",
         "changePlan": "Changer de plan",
         "planDone": "Plan modifié.",
-        "trialUntil": "Essai jusqu’au",
         "extendTrial": "Prolonger l’essai",
         "trialDone": "Essai prolongé.",
         "suspend": "Suspendre",
@@ -1060,7 +1059,8 @@
         "delete": "Supprimer",
         "deleteConfirm": "Supprimer vraiment {name} ?",
         "deleteYes": "Oui, supprimer",
-        "deleteDone": "Organisation supprimée."
+        "deleteDone": "Organisation supprimée.",
+        "trialNewEnd": "Nouvelle date de fin"
       },
       "invoices": {
         "title": "Dernières factures",
@@ -1075,6 +1075,11 @@
       "billing": {
         "cancelFailedTitle": "Organisation supprimée — abonnement NON résilié",
         "cancelFailedBody": "La suppression a bien eu lieu, mais la résiliation chez le prestataire de paiement a échoué. Le client continue d’être prélevé tant que l’abonnement n’y est pas arrêté à la main."
+      },
+      "trial": {
+        "none": "Aucune période d'essai enregistrée",
+        "running": "Essai en cours jusqu'au {date}",
+        "expired": "Essai terminé le {date}"
       }
     },
     "audit": {
