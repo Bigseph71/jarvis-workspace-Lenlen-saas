@@ -628,21 +628,29 @@ async function processEvent(event: BillingEvent): Promise<void> {
       // Bedingung macht daraus ein Einfügen, kein Überschreiben.
       //
       // Vorher stand hier ein bedingungsloses Update bei JEDEM
-      // Abonnement-Ereignis, und Stripe sendet davon viele. Die Frist wurde
-      // dadurch fortlaufend neu gesetzt und konnte sich verschieben; wer sie
-      // las, sah eine Zahl, die sich unter ihm bewegte. Eine Frist, die
-      // wandert, ist keine Frist.
+      // Abonnement-Ereignis, und Stripe sendet davon viele
+      // (Zahlungsmittelwechsel, Mengenänderung, Preisaktualisierung). Die
+      // Frist wurde dadurch fortlaufend neu gesetzt und konnte sich
+      // verschieben; wer sie las, sah eine Zahl, die sich unter ihm bewegte.
+      // Eine Frist, die wandert, ist keine Frist.
       await prisma.organization.updateMany({
         where: { stripeCustomerId: customerId, trialEndsAt: null },
         data: { trialEndsAt: new Date(trialEnd * 1000) },
       });
+    } else if (subStatus !== SubscriptionStatus.TRIAL) {
+      // Die Testphase ist vorbei: Frist abräumen. Das ist KEIN Neuberechnen,
+      // sondern das eine Ende ihres Lebens – geschrieben, wenn sie beginnt,
+      // gelöscht, wenn sie endet, und dazwischen unangetastet.
+      //
+      // Bewusst beibehalten: Stripe lässt `trial_end` nach dem Ende am Abo
+      // stehen, wo es eine historische Angabe ist. Ohne dieses Abräumen
+      // schleppte ein zahlender Tenant eine abgelaufene Testphase mit sich
+      // (der Grund für diese Zeile steht in billing-trial-lifecycle).
+      await prisma.organization.updateMany({
+        where: { stripeCustomerId: customerId, trialEndsAt: { not: null } },
+        data: { trialEndsAt: null },
+      });
     }
-    // KEIN Zurücksetzen auf null mehr, wenn die Testphase vorbei ist. Das war
-    // die zweite Hälfte desselben Fehlers: das Datum verschwand, sobald der
-    // Tenant zahlte, und mit ihm die Antwort auf "wann lief die Testphase?".
-    // Gefahrlos, weil jede Anzeige am STATUS hängt und nicht am Datum (siehe
-    // getSubscription und events.ts): ein abgelaufenes Datum an einem
-    // ACTIVE-Tenant wird nirgends gezeigt.
 
     const subscriptionId = str(object.id);
     if (subscriptionId) {

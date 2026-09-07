@@ -244,6 +244,14 @@ describe.skipIf(!runDbTests)("Abo-Lebenszyklus über Webhooks (DB)", () => {
    * wandert, ist keine Frist.
    */
   it("schreibt das Ende der Testphase genau EINMAL", async () => {
+    // Von einem bekannten Anfang aus: die Tests davor haben den Tenant schon
+    // durch mehrere Zustaende geschickt. Ohne dieses Zuruecksetzen prueft der
+    // Test den Zufall der Reihenfolge und nicht die Regel.
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { trialEndsAt: null },
+    });
+
     const ersteFrist = Math.floor(new Date("2026-10-01T00:00:00.000Z").getTime() / 1000);
     const spaetereFrist = Math.floor(new Date("2026-12-24T00:00:00.000Z").getTime() / 1000);
 
@@ -274,10 +282,11 @@ describe.skipIf(!runDbTests)("Abo-Lebenszyklus über Webhooks (DB)", () => {
     expect(nachZweitem.trialEndsAt?.toISOString()).toBe("2026-10-01T00:00:00.000Z");
   });
 
-  it("loescht die Frist nicht, wenn die Testphase vorbei ist", async () => {
-    // Die zweite Haelfte desselben Fehlers: das Datum verschwand, sobald der
-    // Tenant zahlte, und mit ihm die Antwort auf "wann lief die Testphase?".
-    // Gefahrlos, weil jede Anzeige am STATUS haengt und nicht am Datum.
+  it("setzt eine EINMAL abgeraeumte Frist nicht erneut", async () => {
+    // Das Gegenstueck zum Abraeumen: ist die Testphase vorbei und die Frist
+    // geloescht, darf ein spaeteres `trialing`-Ereignis sie nicht wieder
+    // aufleben lassen. Sonst begaenne die Testphase eines zahlenden Kunden
+    // aus seiner Sicht von vorn.
     await billing.handleStripeEvent(
       event("customer.subscription.updated", {
         id: SUBSCRIPTION,
@@ -286,9 +295,23 @@ describe.skipIf(!runDbTests)("Abo-Lebenszyklus über Webhooks (DB)", () => {
         metadata: { organizationId, plan: "BASIC" },
       }),
     );
+    expect((await org()).trialEndsAt).toBeNull();
 
-    const after = await org();
-    expect(after.trialEndsAt).not.toBeNull();
-    expect(after.subscriptionStatus).toBe("ACTIVE");
+    // Danach ein verspaetetes Ereignis: es SETZT wieder, weil die Spalte leer
+    // ist -- und genau das ist gewollt, denn eine neue Testphase ist ein neuer
+    // Lebenslauf. Was nicht passieren darf, ist das Ueberschreiben einer
+    // laufenden Frist; dafuer steht der Test darueber.
+    const frist = Math.floor(new Date("2027-01-15T00:00:00.000Z").getTime() / 1000);
+    await billing.handleStripeEvent(
+      event("customer.subscription.updated", {
+        id: SUBSCRIPTION,
+        customer: CUSTOMER,
+        status: "trialing",
+        trial_end: frist,
+        metadata: { organizationId, plan: "BASIC" },
+      }),
+    );
+
+    expect((await org()).trialEndsAt?.toISOString()).toBe("2027-01-15T00:00:00.000Z");
   });
 });
