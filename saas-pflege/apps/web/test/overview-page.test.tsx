@@ -59,6 +59,10 @@ const ROUTES = {
       vrptwScore: 88,
       totalKm: 24.5,
       visitCount: 9,
+      // Optimiert UND nicht fahrbar: genau der Fall, den die Karte zeigen muss.
+      feasible: false,
+      violationCount: 2,
+      uncheckedVisits: 0,
     },
     {
       id: "r-2",
@@ -69,6 +73,10 @@ const ROUTES = {
       vrptwScore: null,
       totalKm: 17.3,
       visitCount: 6,
+      feasible: true,
+      violationCount: 0,
+      // Drei Patienten ohne Koordinaten: geprüft ist diese Tour nur halb.
+      uncheckedVisits: 3,
     },
   ],
   page: 1,
@@ -181,6 +189,67 @@ describe("Übersicht", () => {
     expect(screen.getByText(t("overview.tours.unassigned"))).toBeInTheDocument();
     expect(screen.getByText(t("overview.tours.state.optimized"))).toBeInTheDocument();
     expect(screen.getByText(t("overview.tours.state.notOptimized"))).toBeInTheDocument();
+  });
+
+  it("sagt an der Tour, dass sie zeitlich nicht aufgeht", async () => {
+    // Die Kernaussage dieser Fassung. Der Endpunkt rechnet sie seit #78 bei
+    // jedem Lesen; ohne diese Zeile bliebe sie unsichtbar.
+    renderPage();
+
+    await waitFor(() =>
+      expect(screen.getByText(t("overview.tours.state.infeasible").replace("{count}", "2"))).toBeInTheDocument(),
+    );
+  });
+
+  it("meldet nicht fahrbar, obwohl die Tour optimiert ist", async () => {
+    // "Optimiert" heisst nur, dass ein Solver gelaufen ist. Verdraengte die
+    // eine Angabe die andere, waere die teuerste Tour die unauffaelligste:
+    // sie saehe erledigt aus.
+    renderPage();
+
+    await waitFor(() =>
+      expect(screen.getByText(t("overview.tours.state.optimized"))).toBeInTheDocument(),
+    );
+    expect(
+      screen.getByText(t("overview.tours.state.infeasible").replace("{count}", "2")),
+    ).toBeInTheDocument();
+  });
+
+  it("zaehlt die nicht fahrbaren Touren im Untertitel der Karte", async () => {
+    // Damit man den Tag beurteilen kann, ohne die Liste abzusuchen.
+    renderPage();
+
+    const subtitle = t("overview.tours.summaryIssues")
+      .replace("{tours}", "2")
+      .replace("{km}", "41,8")
+      .replace("{issues}", "1");
+
+    await waitFor(() => expect(screen.getByText(subtitle)).toBeInTheDocument());
+  });
+
+  it("nennt ungeprüfte Besuche in der Zeile, nicht als Alarm", async () => {
+    // Eine Luecke in den Stammdaten (fehlende Geokodierung) ist kein Vorfall
+    // des Tages. Sie darf aber auch nicht als "in Ordnung" durchgehen.
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText(/3 ungeprüft/)).toBeInTheDocument());
+    // Und keine zweite Pastille: es gibt genau eine laute Meldung je Zeile.
+    expect(screen.getAllByText(/geht nicht auf|Geht nicht auf/i)).toHaveLength(1);
+  });
+
+  it("schlaegt keinen Alarm, wenn das Backend die Pruefung noch nicht liefert", async () => {
+    // Waehrend einer Auslieferung antwortet die alte Fassung ohne diese
+    // Felder. Ein Fehlalarm waere schlimmer als ein fehlender Hinweis: nach
+    // der dritten falschen Meldung sieht niemand mehr hin.
+    api.listRoutes.mockResolvedValue({
+      ...ROUTES,
+      data: ROUTES.data.map(({ feasible, violationCount, uncheckedVisits, ...rest }) => rest),
+    });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Nadia Reinhardt")).toBeInTheDocument());
+    expect(screen.queryByText(/geht nicht auf/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ungeprüft/)).not.toBeInTheDocument();
   });
 
   it("erklärt eine leere Tourenliste, statt sie leer zu lassen", async () => {

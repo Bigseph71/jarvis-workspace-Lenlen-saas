@@ -24,7 +24,44 @@ import { initialsFromName } from "@/lib/display-name";
  * wirklich hat: wer sie fährt, wie viele Besuche, wie viele Kilometer, und ob
  * sie optimiert wurde. Der Balken trägt jetzt den VRPTW-Score – die einzige
  * Verhältniszahl, die eine Tour tatsächlich mitbringt.
+ *
+ * Dazu seit GET /routes die Frage, die im Betrieb vor allen anderen kommt:
+ * GEHT DIE TOUR ÜBERHAUPT AUF? Pflegezeit plus Fahrzeit gegen den nächsten
+ * Termin gerechnet. "Optimiert" sagt nur, dass ein Solver gelaufen ist – eine
+ * optimierte Tour kann trotzdem nicht fahrbar sein, und genau die ist die
+ * teuerste: sie sieht erledigt aus.
  */
+
+/** Zustand einer Tour, so wie die Karte ihn anzeigt. */
+export interface TourFlags {
+  /** Die Tour geht zeitlich nicht auf. */
+  infeasible: boolean;
+  /** Wie viele Anschlüsse daran scheitern. */
+  violationCount: number;
+  /** Besuche ohne Koordinaten – nicht geprüft, nicht "in Ordnung". */
+  uncheckedVisits: number;
+}
+
+/**
+ * Liest die Prüfung einer Tour für die Anzeige.
+ *
+ * `feasible === false` und nicht `!feasible`: eine Antwort ohne das Feld –
+ * ein Backend, das noch nicht neu ausgeliefert ist – darf nicht als "geht
+ * nicht auf" gelesen werden. Ein Fehlalarm kostet mehr als ein fehlender
+ * Hinweis: nach der dritten falschen Meldung sieht niemand mehr hin.
+ */
+export function tourFlags(route: RouteRow): TourFlags {
+  return {
+    infeasible: route.feasible === false,
+    violationCount: Math.max(0, route.violationCount ?? 0),
+    uncheckedVisits: Math.max(0, route.uncheckedVisits ?? 0),
+  };
+}
+
+/** Wie viele Touren des Tages nicht aufgehen. Steht im Untertitel der Karte. */
+export function dayIssueCount(routes: readonly RouteRow[]): number {
+  return routes.filter((route) => tourFlags(route).infeasible).length;
+}
 
 function TourRow({ route }: { route: RouteRow }) {
   const t = useTranslations("overview.tours");
@@ -33,6 +70,8 @@ function TourRow({ route }: { route: RouteRow }) {
   const name = route.caregiver
     ? `${route.caregiver.firstName} ${route.caregiver.lastName}`
     : t("unassigned");
+
+  const flags = tourFlags(route);
 
   return (
     <li className="flex items-center gap-4 border-b border-hairline px-0.5 py-4 transition-colors duration-120 hover:bg-surface">
@@ -47,10 +86,16 @@ function TourRow({ route }: { route: RouteRow }) {
 
       <span className="min-w-0 flex-1">
         <span className="block truncate text-row font-semibold text-ink-primary">{name}</span>
+        {/*
+          Ungeprüfte Besuche stehen in der Zeile und nicht als Pastille: es ist
+          eine Lücke in den Stammdaten (fehlende Geokodierung), kein Vorfall
+          des Tages. Zwei Alarmstärken nebeneinander entwerten die lautere.
+        */}
         <span className="block truncate text-meta text-ink-muted">
-          {t("meta", {
+          {t(flags.uncheckedVisits > 0 ? "metaUnchecked" : "meta", {
             visits: format.number(route.visitCount),
             km: route.totalKm === null ? t("noKm") : format.number(route.totalKm),
+            unchecked: format.number(flags.uncheckedVisits),
           })}
         </span>
       </span>
@@ -86,6 +131,17 @@ function TourRow({ route }: { route: RouteRow }) {
         )}
       </span>
 
+      {/*
+        Die Pastille steht VOR dem Optimierungszustand, weil sie ihn aussticht:
+        wer disponiert, sucht die Touren, die nicht aufgehen, nicht die, die
+        noch keinen Solver gesehen haben.
+      */}
+      {flags.infeasible ? (
+        <StatusPill tone="attention">
+          {t("state.infeasible", { count: format.number(flags.violationCount) })}
+        </StatusPill>
+      ) : null}
+
       <StatusPill tone={route.optimized ? "positive" : "neutral"}>
         {t(route.optimized ? "state.optimized" : "state.notOptimized")}
       </StatusPill>
@@ -97,10 +153,17 @@ export function ToursCard({ routes, pending }: { routes: RouteDay | null; pendin
   const t = useTranslations("overview.tours");
   const format = useFormatter();
 
+  // Der Untertitel zählt über die GELIEFERTE Seite, die Tourenzahl daneben
+  // über den ganzen Tag. Bei pageSize 500 ist das dieselbe Menge; bliebe die
+  // Seite je abgeschnitten, wäre die kleinere Zahl die ehrliche – sie
+  // behauptet nichts über Touren, die der Bildschirm nie gesehen hat.
+  const issues = routes ? dayIssueCount(routes.data) : 0;
+
   const subtitle = routes
-    ? t("summary", {
+    ? t(issues > 0 ? "summaryIssues" : "summary", {
         tours: format.number(routes.totals.routes),
         km: format.number(routes.totals.totalKm),
+        issues: format.number(issues),
       })
     : t("summaryPending");
 

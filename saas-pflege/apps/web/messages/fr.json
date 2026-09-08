@@ -108,13 +108,16 @@
     "tours": {
       "title": "Tournees du jour",
       "summary": "{tours} tournees · {km} km",
+      "summaryIssues": "{tours} tournees · {km} km · {issues} intenables",
       "meta": "{visits} visites · {km} km",
+      "metaUnchecked": "{visits} visites · {km} km · {unchecked} non verifiees",
       "state": {
         "enRoute": "En route",
         "overloaded": "Surchargée",
         "notStarted": "En attente",
         "optimized": "Optimisee",
-        "notOptimized": "Non optimisee"
+        "notOptimized": "Non optimisee",
+        "infeasible": "Ne tient pas · {count}"
       },
       "openPlanning": "Ouvrir les visites",
       "summaryPending": "Chargement …",
