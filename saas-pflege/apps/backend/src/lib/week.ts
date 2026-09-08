@@ -89,6 +89,24 @@ export function weekdayCode(date: Date, timeZone: string = APP_TIME_ZONE): WeekD
   return WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()]!;
 }
 
+/**
+ * Kalendertag, wie er in der Zone auf dem Kalender steht, als YYYY-MM-DD.
+ *
+ * Fuer den Vergleich mit `@db.Date`-Spalten (Abwesenheiten, Tourdatum): die
+ * stehen als UTC-Mitternacht in der Datenbank und meinen einen KALENDERTAG,
+ * keinen Zeitpunkt. Ein Besuch ist dagegen ein Zeitstempel. Beide direkt zu
+ * vergleichen verschiebt das Ergebnis um einen Tag, sobald die Uhrzeit nahe
+ * an Mitternacht liegt -- und ein Urlaubstag, der um einen Tag verrutscht,
+ * meldet entweder nichts oder das Falsche.
+ *
+ * Als Zeichenkette und nicht als Zeitpunkt: zwei Kalendertage vergleicht man
+ * als Kalendertage. ISO-Datumsangaben sortieren lexikografisch richtig.
+ */
+export function isoDay(date: Date, timeZone: string = APP_TIME_ZONE): string {
+  const { year, month, day } = zonedYMD(date, timeZone);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 /** Montag 00:00 ORTSZEIT der Woche, in der `date` liegt. */
 export function startOfISOWeek(date: Date, timeZone: string = APP_TIME_ZONE): Date {
   const ymd = zonedYMD(date, timeZone);

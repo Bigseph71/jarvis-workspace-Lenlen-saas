@@ -1,4 +1,11 @@
-import { AuditAction, GeocodingStatus, VisitStatus, withTenant, type Prisma } from "@len-len/database";
+import {
+  AbsenceStatus,
+  AuditAction,
+  GeocodingStatus,
+  VisitStatus,
+  withTenant,
+  type Prisma,
+} from "@len-len/database";
 import { AppError } from "../../lib/errors.js";
 import { writeAudit } from "../../lib/audit.js";
 import { env } from "../../config/env.js";
@@ -6,7 +13,12 @@ import type { TenantContext } from "../../lib/context.js";
 import { solveVrptw, type Stop } from "../../lib/vrptw/solver.js";
 import { assessTour, type FeasibilityReport } from "../../lib/vrptw/feasibility.js";
 import { pickVehicleForTrip } from "../vehicles/vehicle.rules.js";
-import { assessStaffing, emptyStaffing, type StaffingReport } from "./tour.rules.js";
+import {
+  assessStaffing,
+  emptyStaffing,
+  type StaffingReport,
+  type TourAbsence,
+} from "./tour.rules.js";
 
 export interface OptimizeResult {
   routeId: string;
@@ -34,6 +46,45 @@ export interface OptimizeResult {
    */
   staffing: StaffingReport;
 }
+
+/**
+ * Genehmigte Abwesenheiten, die in das Tagesfenster einer Tour ragen.
+ *
+ * Einen Tag Rand auf beiden Seiten: das Fenster steht in UTC, die Besuche
+ * stehen in Ortszeit, und ein Termin um 23:00 deutscher Zeit liegt in UTC
+ * schon am Folgetag. Der Rand kostet nichts -- welcher Besuch wirklich in
+ * eine Abwesenheit fällt, entscheidet danach der Kalendertag-Vergleich in
+ * tour.rules und nicht diese Abfrage.
+ *
+ * NUR genehmigte: über einen beantragten Urlaub hat noch niemand entschieden,
+ * und eine Warnung darüber wäre ein Alarm über eine offene Entscheidung.
+ * Dieselbe Auswahl trifft die Personalplanung (hr.service).
+ */
+function absencesWhere(
+  caregiverIds: readonly string[],
+  organizationId: string,
+  window: { start: Date; end: Date },
+): Prisma.AbsenceWhereInput {
+  const from = new Date(window.start);
+  from.setUTCDate(from.getUTCDate() - 1);
+  const to = new Date(window.end);
+  to.setUTCDate(to.getUTCDate() + 1);
+
+  return {
+    organizationId,
+    caregiverId: { in: [...caregiverIds] },
+    status: AbsenceStatus.APPROVED,
+    startDate: { lt: to },
+    endDate: { gte: from },
+  };
+}
+
+const ABSENCE_SELECT = {
+  caregiverId: true,
+  type: true,
+  startDate: true,
+  endDate: true,
+} satisfies Prisma.AbsenceSelect;
 
 /** Tagesfenster [00:00, +24h) in UTC für ein @db.Date. */
 function dayWindow(date: Date): { start: Date; end: Date } {
@@ -111,10 +162,17 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
       select: { id: true, leasingKmUsed: true, leasingKmLimit: true, leasingEndDate: true },
     });
 
-    return { route, visits, vehicles };
+    const absences = route.caregiverId
+      ? await tx.absence.findMany({
+          where: absencesWhere([route.caregiverId], ctx.organizationId, { start, end }),
+          select: ABSENCE_SELECT,
+        })
+      : [];
+
+    return { route, visits, vehicles, absences };
   });
 
-  const { route, visits, vehicles } = data;
+  const { route, visits, vehicles, absences } = data;
 
   // Leere Tour: nichts zu optimieren, aber als optimiert markieren (idempotent).
   if (visits.length === 0) {
@@ -191,7 +249,7 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
    * regelkonform machen, indem er sie umsortiert -- und genau deshalb muss die
    * Meldung neben dem Vorschlag stehen und nicht an seiner Stelle.
    */
-  const staffing = assessStaffing(route.caregiver, visits);
+  const staffing = assessStaffing(route.caregiver, visits, absences);
 
   // 4) Regel 6: Fahrzeug mit den wenigsten genutzten km für die Strecke.
   const pick = pickVehicleForTrip(vehicles, solution.totalKm);
@@ -278,6 +336,16 @@ export async function getRoute(ctx: TenantContext, routeId: string): Promise<Rou
       orderBy: { scheduledAt: "asc" },
     });
 
+    // Die einzige Angabe, die NICHT aus den ohnehin geladenen Besuchen fällt:
+    // eine Abwesenheit hängt an der Fachkraft und am Kalender, nicht am
+    // Besuch. Eine Abfrage je Tour, nicht je Besuch.
+    const absences = route.caregiverId
+      ? await tx.absence.findMany({
+          where: absencesWhere([route.caregiverId], ctx.organizationId, dayWindow(route.date)),
+          select: ABSENCE_SELECT,
+        })
+      : [];
+
     return {
       id: route.id,
       caregiverId: route.caregiverId,
@@ -288,7 +356,7 @@ export async function getRoute(ctx: TenantContext, routeId: string): Promise<Rou
       vrptwScore: route.vrptwScore === null ? null : Number(route.vrptwScore),
       totalKm: route.totalKm === null ? null : Number(route.totalKm),
       feasibility: assessTour(visits, order.length > 0 ? order : null),
-      staffing: assessStaffing(route.caregiver, visits),
+      staffing: assessStaffing(route.caregiver, visits, absences),
     };
   });
 }
@@ -506,6 +574,19 @@ export async function listRoutesForDay(
             orderBy: { scheduledAt: "asc" },
           });
 
+    /*
+     * EINE Abfrage für die Abwesenheiten der ganzen Seite, nach demselben
+     * Muster wie die Besuche darüber: bis zu 500 Touren, und eine Abfrage je
+     * Tour hiesse 500 Rundläufe für die Frage, wer heute überhaupt da ist.
+     */
+    const dayAbsences =
+      caregiverIds.length === 0
+        ? []
+        : await tx.absence.findMany({
+            where: absencesWhere(caregiverIds, ctx.organizationId, { start, end }),
+            select: ABSENCE_SELECT,
+          });
+
     const reportFor = (row: (typeof rows)[number]) => {
       const own = dayVisits.filter(
         (visit) =>
@@ -513,9 +594,12 @@ export async function listRoutesForDay(
           (row.caregiverId !== null && visit.routeId === null && visit.caregiverId === row.caregiverId),
       );
       const order = Array.isArray(row.visitsOrder) ? (row.visitsOrder as string[]) : [];
+      const absences: TourAbsence[] = dayAbsences.filter(
+        (absence) => absence.caregiverId === row.caregiverId,
+      );
       return {
         feasibility: assessTour(own, order.length > 0 ? order : null),
-        staffing: assessStaffing(row.caregiver, own),
+        staffing: assessStaffing(row.caregiver, own, absences),
       };
     };
 

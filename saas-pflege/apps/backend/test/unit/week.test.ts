@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { weekdayCode, startOfISOWeek, weekRange, dayRange } from "../../src/lib/week.js";
+import { weekdayCode, startOfISOWeek, weekRange, dayRange, isoDay } from "../../src/lib/week.js";
 
 /**
  * Tages- und Wochengrenzen in der Anwendungs-Zeitzone (Europe/Berlin).
@@ -131,5 +131,29 @@ describe("weekRange", () => {
       expect(weekdayCode(start)).toBe("MON");
       expect(weekdayCode(end)).toBe("MON");
     }
+  });
+});
+
+describe("isoDay", () => {
+  it("nennt den Kalendertag der ORTSZEIT, nicht den von UTC", () => {
+    // 22:00 UTC ist in Berlin (Sommerzeit) bereits Mitternacht des Folgetags.
+    // In UTC verglichen fiele ein Abendbesuch aus dem letzten Urlaubstag
+    // heraus -- und zwar nur abends, was niemand reproduzieren koennte.
+    expect(isoDay(new Date("2026-09-08T22:00:00Z"))).toBe("2026-09-09");
+    expect(isoDay(new Date("2026-09-08T21:00:00Z"))).toBe("2026-09-08");
+  });
+
+  it("liest eine @db.Date-Spalte als den Kalendertag, der dort steht", () => {
+    // Abwesenheiten stehen als UTC-Mitternacht in der Datenbank und meinen
+    // einen Kalendertag. Verschoebe die Umrechnung sie um einen Tag, meldete
+    // die Pruefung den falschen -- oder gar keinen.
+    expect(isoDay(new Date("2026-09-09T00:00:00.000Z"))).toBe("2026-09-09");
+    expect(isoDay(new Date("2026-01-15T00:00:00.000Z"))).toBe("2026-01-15");
+  });
+
+  it("schreibt Monat und Tag zweistellig", () => {
+    // Sonst waere der lexikografische Vergleich zweier Kalendertage falsch:
+    // "2026-9-9" liegt vor "2026-10-01", aber nach "2026-12-01".
+    expect(isoDay(new Date("2026-01-05T12:00:00Z"))).toBe("2026-01-05");
   });
 });
