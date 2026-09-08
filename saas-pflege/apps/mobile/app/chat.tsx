@@ -16,7 +16,7 @@ import { listChatMessages, sendChatMessage, type ChatMessage } from "@len-len/ap
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { connectChat, type ChatSocketController } from "@/lib/chat-socket";
 import { tokenStorage } from "@/lib/token-storage";
-import { MIN_TOUCH_HEIGHT } from "@/lib/theme";
+import { chatInputLayout } from "@/lib/layout";
 import { useAuth } from "@/lib/auth-context";
 
 export default function ChatScreen() {
@@ -24,6 +24,8 @@ export default function ChatScreen() {
   const router = useRouter();
   const { status, user } = useAuth();
   const insets = useSafeAreaInsets();
+  // Die Regel steht in lib/layout und ist dort ohne Renderer pruefbar.
+  const inputLayout = chatInputLayout(insets.bottom);
 
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [draft, setDraft] = useState("");
@@ -164,9 +166,9 @@ export default function ChatScreen() {
         />
       )}
 
-      <View style={[styles.inputRow, { paddingBottom: 12 + insets.bottom }]}>
+      <View style={[styles.inputRow, { paddingBottom: inputLayout.paddingBottom }]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { minHeight: inputLayout.minHeight }]}
           value={draft}
           onChangeText={setDraft}
           placeholder={t("chat.placeholder")}
@@ -175,7 +177,11 @@ export default function ChatScreen() {
           editable={!sending}
         />
         <Pressable
-          style={[styles.send, (!draft.trim() || sending) && styles.sendDisabled]}
+          style={[
+            styles.send,
+            { minHeight: inputLayout.minHeight },
+            (!draft.trim() || sending) && styles.sendDisabled,
+          ]}
           onPress={() => void onSend()}
           disabled={!draft.trim() || sending}
         >
@@ -226,7 +232,6 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: MIN_TOUCH_HEIGHT,
     borderWidth: 1,
     borderColor: "#d4d4d8",
     borderRadius: 20,
@@ -240,9 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1d4ed8",
     borderRadius: 20,
     paddingHorizontal: 16,
-    // Mindesthöhe statt blossem Innenabstand: der Knopf sass am unteren Rand
-    // und war mit Handschuhen im Treppenhaus kaum zu treffen.
-    minHeight: MIN_TOUCH_HEIGHT,
+    // minHeight kommt aus chatInputLayout: die Zahl soll genau EINE Quelle haben.
     minWidth: 72,
     alignItems: "center",
     justifyContent: "center",

@@ -3,7 +3,8 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
-import { color, font, MIN_TAB_HEIGHT } from "@/lib/theme";
+import { color, font } from "@/lib/theme";
+import { tabBarLayout } from "@/lib/layout";
 import { TAB_ORDER, tabNavigation, type TabKey } from "@/lib/tabs";
 
 /**
@@ -36,6 +37,8 @@ export function TabBar({ active, unread = 0 }: { active: TabKey; unread?: number
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // Die Regel steht in lib/layout und ist dort ohne Renderer pruefbar.
+  const layout = tabBarLayout(insets.bottom);
 
   const label: Record<TabKey, string> = {
     tour: t("today.tabTour"),
@@ -52,13 +55,13 @@ export function TabBar({ active, unread = 0 }: { active: TabKey; unread?: number
   };
 
   return (
-    <View style={[styles.tabBar, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.tabBar, { paddingBottom: layout.paddingBottom }]}>
       {TAB_ORDER.map((key) => {
         const isActive = key === active;
         return (
           <Pressable
             key={key}
-            style={styles.tab}
+            style={[styles.tab, { minHeight: layout.minHeight }]}
             onPress={() => go(key)}
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
@@ -117,11 +120,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     backgroundColor: color.app,
   },
+  // minHeight kommt aus tabBarLayout: die Zahl soll genau EINE Quelle haben.
   tab: {
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    minHeight: MIN_TAB_HEIGHT,
     minWidth: 64,
     flex: 1,
   },
