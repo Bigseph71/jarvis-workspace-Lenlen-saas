@@ -4,6 +4,12 @@ import { writeAudit } from "../../lib/audit.js";
 import { env } from "../../config/env.js";
 import type { TenantContext } from "../../lib/context.js";
 import { solveVrptw, type Stop } from "../../lib/vrptw/solver.js";
+import {
+  checkTourFeasibility,
+  visitDurationMinutes,
+  type FeasibilityReport,
+  type TourStop,
+} from "../../lib/vrptw/feasibility.js";
 import { pickVehicleForTrip } from "../vehicles/vehicle.rules.js";
 
 export interface OptimizeResult {
@@ -16,6 +22,13 @@ export interface OptimizeResult {
   /** false, wenn kein Fahrzeug die Strecke im Leasing-Rahmen fahren kann. */
   sufficientCapacity: boolean;
   visitCount: number;
+  /**
+   * Geht die vorgeschlagene Reihenfolge zeitlich auf?
+   *
+   * Teil des Ergebnisses und nicht bloss ein Log-Eintrag: die Koordination
+   * muss sehen, WO es klemmt, sonst bleibt ihr nur, dem Vorschlag zu glauben.
+   */
+  feasibility: FeasibilityReport;
 }
 
 /** Tagesfenster [00:00, +24h) in UTC für ein @db.Date. */
@@ -64,8 +77,17 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
       select: {
         id: true,
         scheduledAt: true,
+        durationMinutes: true,
         patient: {
-          select: { id: true, latitude: true, longitude: true, geocodingStatus: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            careMinutes: true,
+            latitude: true,
+            longitude: true,
+            geocodingStatus: true,
+          },
         },
       },
       orderBy: { scheduledAt: "asc" },
@@ -93,6 +115,8 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
       sufficientCapacity: true,
       visitCount: 0,
       visitIds: [],
+      // Eine leere Tour geht immer auf.
+      feasibility: { feasible: true, violations: [], totalTravelMinutes: 0, totalCareMinutes: 0 },
     });
   }
 
@@ -120,6 +144,37 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
   }));
   const solution = solveVrptw(stops, { deadline: Date.now() + env.VRPTW_TIMEOUT_MS });
 
+  /*
+   * 3b) IST die vorgeschlagene Reihenfolge fahrbar?
+   *
+   * Der Solver ordnet nach Nähe und ist damit fertig; ob die Fachkraft es
+   * schafft, fragte bisher niemand. Hier wird nachgerechnet, was zwischen zwei
+   * Klingelknöpfen wirklich vergeht: die Pflegezeit beim Patienten und die
+   * Fahrt danach.
+   *
+   * Die Prüfung ÄNDERT die Reihenfolge nicht. Sie meldet, wo sie nicht aufgeht
+   * -- und das ist der Unterschied zwischen einem Plan, dem man ansieht warum
+   * er so aussieht, und einer Blackbox. Die Koordination entscheidet, nicht
+   * der Rechner: einen Termin zu verschieben heisst, bei einem Patienten
+   * anzurufen.
+   */
+  const byId = new Map(visits.map((visit) => [visit.id, visit]));
+  const orderedStops: TourStop[] = solution.order.flatMap((visitId) => {
+    const visit = byId.get(visitId);
+    if (!visit) return [];
+    return [
+      {
+        visitId: visit.id,
+        patientName: `${visit.patient.firstName} ${visit.patient.lastName}`,
+        scheduledAt: visit.scheduledAt,
+        durationMinutes: visitDurationMinutes(visit),
+        lat: Number(visit.patient.latitude),
+        lng: Number(visit.patient.longitude),
+      },
+    ];
+  });
+  const feasibility = checkTourFeasibility(orderedStops);
+
   // 4) Regel 6: Fahrzeug mit den wenigsten genutzten km für die Strecke.
   const pick = pickVehicleForTrip(vehicles, solution.totalKm);
 
@@ -134,6 +189,7 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
     sufficientCapacity: pick?.sufficientCapacity ?? false,
     visitCount: visits.length,
     visitIds: visits.map((v) => v.id),
+    feasibility,
   });
 }
 

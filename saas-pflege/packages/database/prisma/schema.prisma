@@ -415,6 +415,17 @@ model Patient {
   longitude           Decimal?        @db.Decimal(9, 6)
   geocodingScore      Decimal?        @map("geocoding_score") @db.Decimal(5, 4)
   geocodingStatus     GeocodingStatus @default(PENDING) @map("geocoding_status")
+  // Übliche Dauer eines Besuchs bei diesem Patienten, in Minuten.
+  //
+  // Am PATIENTEN und nicht am Besuch, weil die Dauer am Pflegebedarf hängt und
+  // nicht am Tag: eine Ganzkörperpflege dauert jede Woche gleich lang. Der
+  // Einzelfall überschreibt sie am Besuch (visits.duration_minutes).
+  //
+  // 30 Minuten als Vorgabe: der übliche Wert in der ambulanten Pflege im
+  // städtischen Umfeld. Ohne Vorgabe stünde bei jedem Altbestand eine 0, und
+  // eine Tour mit Besuchen ohne Dauer wäre rechnerisch immer machbar -- also
+  // genau die Prüfung, die hier eingeführt wird, stillschweigend wirkungslos.
+  careMinutes         Int             @default(30) @map("care_minutes")
   isActive            Boolean         @default(true) @map("is_active")
   // Löschverlangen eingegangen (DSGVO Art. 17), die Aufbewahrungsfrist läuft
   // aber noch. Bis dahin greift Art. 18: die Daten bleiben bestehen, dürfen
@@ -450,6 +461,13 @@ model Visit {
   assignedCaregiverId  String?     @map("assigned_caregiver_id") @db.Uuid
   routeId              String?     @map("route_id") @db.Uuid
   scheduledAt          DateTime    @map("scheduled_at")
+  // Abweichende Dauer DIESES Besuchs, in Minuten. null = die übliche Dauer des
+  // Patienten (patients.care_minutes) gilt.
+  //
+  // Bewusst nullable und nicht mit Vorgabe: eine Zahl hier bedeutet "jemand hat
+  // sich etwas dabei gedacht". Stünde überall eine Kopie der Patientendauer,
+  // liefe eine Änderung am Patienten an allen bestehenden Besuchen vorbei.
+  durationMinutes      Int?        @map("duration_minutes")
   status               VisitStatus @default(PLANNED)
   isEmergency          Boolean     @default(false) @map("is_emergency")
   emergencyReason      String?     @map("emergency_reason")
