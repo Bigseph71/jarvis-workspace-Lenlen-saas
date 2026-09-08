@@ -40,6 +40,35 @@ export interface FeasibilityReport {
   uncheckedVisits: number;
 }
 
+/** Warum ein Besuch der Fachkraft dieser Tour nicht zusteht. */
+export type StaffingReason = "off_day" | "qualification";
+
+export interface StaffingIssue {
+  visitId: string;
+  patientName: string;
+  reason: StaffingReason;
+  /** Wochentag des Besuchs (MON..SUN). Nur bei "off_day". */
+  weekday?: string;
+  /** Qualifikation der fahrenden Fachkraft. Nur bei "qualification". */
+  actualQualification?: string;
+  /** Qualifikation der Stamm-Fachkraft. Nur bei "qualification". */
+  requiredQualification?: string;
+}
+
+/**
+ * Darf die eingeteilte Fachkraft diese Tour fahren?
+ *
+ * Zweite Frage neben der Zeit, und die haertere: eine Verspaetung ist ein
+ * Aergernis, ein Einsatz an einem vertraglich freien Tag (Regel 5) oder mit
+ * der falschen Qualifikation (Regel 4) ist ein Regelverstoss. Beides haengt an
+ * der Person und am Kalender -- eine andere Reihenfolge heilt es nicht.
+ */
+export interface StaffingReport {
+  /** false = der Tour ist keine Fachkraft zugeteilt; es gab nichts zu pruefen. */
+  checked: boolean;
+  issues: StaffingIssue[];
+}
+
 /** Zustand einer Tour (VRPTW-Ergebnis). */
 export interface RouteStatus {
   id: string;
@@ -52,6 +81,8 @@ export interface RouteStatus {
   totalKm: number | null;
   /** Bei jedem Lesen neu gerechnet, nie gespeichert. */
   feasibility: FeasibilityReport;
+  /** Ebenfalls bei jedem Lesen neu gerechnet: Vertraege aendern sich. */
+  staffing: StaffingReport;
 }
 
 export interface OptimizeQueued {
@@ -90,6 +121,8 @@ export interface RouteRow {
   feasible: boolean;
   violationCount: number;
   uncheckedVisits: number;
+  /** Besuche, die diese Fachkraft nicht fahren duerfte. Gruende via getRoute. */
+  staffingIssueCount: number;
 }
 
 export interface RouteDay {

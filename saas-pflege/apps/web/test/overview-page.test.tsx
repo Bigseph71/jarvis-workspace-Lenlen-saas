@@ -63,6 +63,7 @@ const ROUTES = {
       feasible: false,
       violationCount: 2,
       uncheckedVisits: 0,
+      staffingIssueCount: 0,
     },
     {
       id: "r-2",
@@ -77,6 +78,7 @@ const ROUTES = {
       violationCount: 0,
       // Drei Patienten ohne Koordinaten: geprüft ist diese Tour nur halb.
       uncheckedVisits: 3,
+      staffingIssueCount: 0,
     },
   ],
   page: 1,
@@ -243,13 +245,53 @@ describe("Übersicht", () => {
     // der dritten falschen Meldung sieht niemand mehr hin.
     api.listRoutes.mockResolvedValue({
       ...ROUTES,
-      data: ROUTES.data.map(({ feasible, violationCount, uncheckedVisits, ...rest }) => rest),
+      data: ROUTES.data.map(
+        ({ feasible, violationCount, uncheckedVisits, staffingIssueCount, ...rest }) => rest,
+      ),
     });
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Nadia Reinhardt")).toBeInTheDocument());
     expect(screen.queryByText(/geht nicht auf/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/ungeprüft/)).not.toBeInTheDocument();
+  });
+
+  it("sagt an der Tour, dass die Fachkraft sie nicht fahren darf", async () => {
+    // Regel 4 und 5, jetzt auf Tour-Ebene: die Pruefung gab es bisher nur beim
+    // Zuweisen EINES Besuchs. Aendert sich danach ein Vertrag, bliebe die Tour
+    // unauffaellig stehen.
+    api.listRoutes.mockResolvedValue({
+      ...ROUTES,
+      data: [{ ...ROUTES.data[0], feasible: true, violationCount: 0, staffingIssueCount: 3 }],
+    });
+    renderPage();
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(t("overview.tours.state.staffing").replace("{count}", "3")),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it("zeigt die Besetzung und NICHT die Zeit, wenn beides zutrifft", async () => {
+    // Eine Tour, die jemand nicht fahren darf, wird nicht dadurch zulaessig,
+    // dass man sie umsortiert. Die zwoelf Minuten Verspaetung sind dann nicht
+    // das Problem -- und zwei Warnpastillen nebeneinander liessen offen,
+    // welche zuerst dran ist.
+    api.listRoutes.mockResolvedValue({
+      ...ROUTES,
+      data: [{ ...ROUTES.data[0], feasible: false, violationCount: 2, staffingIssueCount: 1 }],
+    });
+    renderPage();
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(t("overview.tours.state.staffing").replace("{count}", "1")),
+      ).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByText(t("overview.tours.state.infeasible").replace("{count}", "2")),
+    ).not.toBeInTheDocument();
   });
 
   it("erklärt eine leere Tourenliste, statt sie leer zu lassen", async () => {
