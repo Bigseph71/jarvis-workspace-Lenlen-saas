@@ -57,7 +57,8 @@ interface RouteDay {
 interface StaffingIssue {
   visitId: string;
   patientName: string;
-  reason: "off_day" | "qualification";
+  reason: "absence" | "off_day" | "qualification";
+  absenceType?: string;
   weekday?: string;
   actualQualification?: string;
   requiredQualification?: string;
@@ -80,6 +81,10 @@ describe.skipIf(!runDbTests)("Endpunkte der Uebersicht (DB)", () => {
   let freierTagRouteId: string;
   /** Tour, deren Fachkraft eine andere Qualifikation hat als die Stamm-Fachkraft. */
   let qualifikationRouteId: string;
+  /** Tour einer Fachkraft, die an dem Tag genehmigt abwesend ist. */
+  let abwesenheitRouteId: string;
+  /** Dieselbe Fachkraft, aber ein Tag ausserhalb ihrer Abwesenheit. */
+  let nachDerAbwesenheitRouteId: string;
 
   beforeAll(async () => {
     assertLocalTestDatabase(process.env.DATABASE_URL);
@@ -254,6 +259,86 @@ describe.skipIf(!runDbTests)("Endpunkte der Uebersicht (DB)", () => {
       data: { routeId: qualifikationRouteId },
     });
 
+    /*
+     * Dritter Fall: genehmigt abwesend.
+     *
+     * Krankgeschrieben von Donnerstag bis Freitag. Die Tour am Freitag darf
+     * sie nicht fahren -- die am Samstag schon. Zwei Touren derselben Person
+     * und nicht eine: die Regel ist erst dann geprueft, wenn sie auch einmal
+     * SCHWEIGT. Eine Pruefung, die immer anschlaegt, ist von einer kaputten
+     * nicht zu unterscheiden.
+     */
+    const kranke = (await caregivers.createCaregiver(adminCtx, {
+      firstName: "Karin",
+      lastName: "Krank",
+      qualification: "PFLEGEFACHKRAFT",
+      contractType: "FULL_100",
+      weeklyHours: 39,
+      workDays: [...ALL_DAYS],
+      maxPatients: 20,
+      validFrom: new Date("2026-01-01T00:00:00.000Z"),
+    })) as { id: string };
+
+    await prisma.absence.create({
+      data: {
+        organizationId,
+        caregiverId: kranke.id,
+        type: "SICK",
+        status: "APPROVED",
+        startDate: new Date("2026-09-03"),
+        endDate: new Date("2026-09-04"),
+      },
+    });
+
+    // Ein beantragter, aber nicht entschiedener Urlaub am Samstag: er darf
+    // NICHTS melden. Ueber ihn hat noch niemand entschieden.
+    await prisma.absence.create({
+      data: {
+        organizationId,
+        caregiverId: kranke.id,
+        type: "VACATION",
+        status: "REQUESTED",
+        startDate: new Date("2026-09-05"),
+        endDate: new Date("2026-09-05"),
+      },
+    });
+
+    const besuchWaehrendKrankheit = await makeVisit(
+      "Krankheitstag",
+      new Date(FREITAG.getTime() + 60 * 60_000),
+    );
+    const besuchDanach = await makeVisit("Samstag", new Date("2026-09-05T09:00:00.000Z"));
+
+    const abwesenheit = await prisma.route.create({
+      data: {
+        organizationId,
+        caregiverId: kranke.id,
+        date: new Date("2026-09-04"),
+        optimized: false,
+      },
+      select: { id: true },
+    });
+    const nachDerAbwesenheit = await prisma.route.create({
+      data: {
+        organizationId,
+        caregiverId: kranke.id,
+        date: new Date("2026-09-05"),
+        optimized: false,
+      },
+      select: { id: true },
+    });
+    abwesenheitRouteId = abwesenheit.id;
+    nachDerAbwesenheitRouteId = nachDerAbwesenheit.id;
+
+    await prisma.visit.update({
+      where: { id: besuchWaehrendKrankheit },
+      data: { routeId: abwesenheitRouteId },
+    });
+    await prisma.visit.update({
+      where: { id: besuchDanach },
+      data: { routeId: nachDerAbwesenheitRouteId },
+    });
+
     // Zwei Touren am Testtag, eine am Folgetag.
     await prisma.route.createMany({
       data: [
@@ -379,6 +464,28 @@ describe.skipIf(!runDbTests)("Endpunkte der Uebersicht (DB)", () => {
     expect(staffing.issues[0]?.reason).toBe("qualification");
     expect(staffing.issues[0]?.actualQualification).toBe("PFLEGEHILFSKRAFT");
     expect(staffing.issues[0]?.requiredQualification).toBe("PFLEGEFACHKRAFT");
+  });
+
+  it("meldet einen Besuch waehrend einer genehmigten Abwesenheit", async () => {
+    // Eine Krankmeldung nimmt der Fachkraft den Tag, aber bisher keine ihrer
+    // Touren: eine Tour, die niemand faehrt, sah genauso aus wie eine
+    // gefahrene -- bis der erste Patient anrief.
+    const staffing = await staffingOf(abwesenheitRouteId);
+
+    expect(staffing.issues).toHaveLength(1);
+    expect(staffing.issues[0]?.reason).toBe("absence");
+    expect(staffing.issues[0]?.absenceType).toBe("SICK");
+  });
+
+  it("schweigt am Tag nach der Abwesenheit und bei einem blossen Antrag", async () => {
+    // Zwei Dinge in einem Fall, weil beide dasselbe pruefen: dass die Regel
+    // auch SCHWEIGEN kann. Der Samstag liegt hinter der Krankschreibung, und
+    // der Urlaubsantrag darauf ist nicht entschieden -- ueber einen offenen
+    // Antrag zu warnen hiesse, eine Entscheidung zu melden, die aussteht.
+    const staffing = await staffingOf(nachDerAbwesenheitRouteId);
+
+    expect(staffing.checked).toBe(true);
+    expect(staffing.issues).toEqual([]);
   });
 
   it("meldet je Tour, wie viele Besuche die Fachkraft nicht fahren duerfte", async () => {

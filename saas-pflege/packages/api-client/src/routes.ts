@@ -41,12 +41,14 @@ export interface FeasibilityReport {
 }
 
 /** Warum ein Besuch der Fachkraft dieser Tour nicht zusteht. */
-export type StaffingReason = "off_day" | "qualification";
+export type StaffingReason = "absence" | "off_day" | "qualification";
 
 export interface StaffingIssue {
   visitId: string;
   patientName: string;
   reason: StaffingReason;
+  /** Art der genehmigten Abwesenheit (SICK, VACATION …). Nur bei "absence". */
+  absenceType?: string;
   /** Wochentag des Besuchs (MON..SUN). Nur bei "off_day". */
   weekday?: string;
   /** Qualifikation der fahrenden Fachkraft. Nur bei "qualification". */
@@ -60,8 +62,10 @@ export interface StaffingIssue {
  *
  * Zweite Frage neben der Zeit, und die haertere: eine Verspaetung ist ein
  * Aergernis, ein Einsatz an einem vertraglich freien Tag (Regel 5) oder mit
- * der falschen Qualifikation (Regel 4) ist ein Regelverstoss. Beides haengt an
- * der Person und am Kalender -- eine andere Reihenfolge heilt es nicht.
+ * der falschen Qualifikation (Regel 4) ist ein Regelverstoss -- und eine Tour,
+ * die einer genehmigt Abwesenden zugeteilt bleibt, faehrt gar niemand. Alles
+ * drei haengt an der Person und am Kalender: eine andere Reihenfolge heilt es
+ * nicht.
  */
 export interface StaffingReport {
   /** false = der Tour ist keine Fachkraft zugeteilt; es gab nichts zu pruefen. */

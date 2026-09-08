@@ -1,5 +1,5 @@
-import type { Prisma, Qualification } from "@len-len/database";
-import { weekdayCode, type WeekDay } from "../../lib/week.js";
+import type { AbsenceType, Prisma, Qualification } from "@len-len/database";
+import { isoDay, weekdayCode, type WeekDay } from "../../lib/week.js";
 import { enforcesStammRules, isWorkDay, sameQualification } from "../visits/visit.rules.js";
 
 /**
@@ -18,18 +18,27 @@ import { enforcesStammRules, isWorkDay, sameQualification } from "../visits/visi
  * oder die Stamm-Fachkraft eines Patienten, bleibt die Tour unauffällig
  * bestehen -- geprüft wurde sie ja, damals.
  *
+ * Dieselbe Lücke, dritter Fall: die ABWESENHEIT. Eine genehmigte Krankmeldung
+ * oder ein Urlaub nimmt der Fachkraft den Tag, aber keine ihrer Touren. Der
+ * Zusammenhang existierte im System bisher nur in der Personalplanung
+ * (hr.service, Wochenbilanz) -- in der Tagesdisposition nicht, und dort wird
+ * er gebraucht: eine Tour, die niemand fährt, sieht genauso aus wie eine
+ * gefahrene, bis der erste Patient anruft.
+ *
  * Deshalb werden hier DIESELBEN Funktionen aufgerufen und nicht neu
  * geschrieben. Zwei Fassungen derselben Regel laufen auseinander, und die
  * Koordination erführe je nach Bildschirm etwas anderes.
  */
 
 /** Warum ein Besuch dieser Fachkraft nicht zusteht. */
-export type StaffingReason = "off_day" | "qualification";
+export type StaffingReason = "absence" | "off_day" | "qualification";
 
 export interface StaffingIssue {
   visitId: string;
   patientName: string;
   reason: StaffingReason;
+  /** Art der Abwesenheit (Krankheit, Urlaub …). Nur bei "absence". */
+  absenceType?: AbsenceType;
   /** Wochentag des Besuchs. Nur bei "off_day". */
   weekday?: WeekDay;
   /** Qualifikation der fahrenden Fachkraft. Nur bei "qualification". */
@@ -58,6 +67,24 @@ export interface TourCaregiver {
   workDays: Prisma.JsonValue;
 }
 
+/**
+ * Eine genehmigte Abwesenheit dieser Fachkraft.
+ *
+ * NUR genehmigte: ein beantragter Urlaub ist noch keine Abwesenheit, und die
+ * Tour eines Menschen zu beanstanden, über dessen Antrag niemand entschieden
+ * hat, wäre ein Alarm über eine Entscheidung, die noch aussteht. Ausgewählt
+ * wird das in der Abfrage (AbsenceStatus.APPROVED), wie es die
+ * Personalplanung schon tut.
+ *
+ * `startDate` und `endDate` sind `@db.Date`: KALENDERTAGE, einschliesslich
+ * beider Enden.
+ */
+export interface TourAbsence {
+  type: AbsenceType;
+  startDate: Date;
+  endDate: Date;
+}
+
 /** Was von einem Besuch für die Besetzungsprüfung gebraucht wird. */
 export interface VisitForStaffing {
   id: string;
@@ -73,13 +100,30 @@ function nameOf(visit: VisitForStaffing): string {
 }
 
 /**
+ * Fällt der Besuch in diese Abwesenheit?
+ *
+ * Verglichen werden KALENDERTAGE, nicht Zeitpunkte: die Abwesenheit steht als
+ * Datum in der Datenbank, der Besuch als Zeitstempel. Ein Besuch um 22:00
+ * deutscher Zeit liegt in UTC schon am Folgetag -- direkt verglichen fiele er
+ * aus dem letzten Urlaubstag heraus, und zwar nur abends.
+ *
+ * Beide Enden zählen mit: wer bis Freitag krankgeschrieben ist, ist am Freitag
+ * krank.
+ */
+function covers(absence: TourAbsence, visitDay: string): boolean {
+  return isoDay(absence.startDate) <= visitDay && visitDay <= isoDay(absence.endDate);
+}
+
+/**
  * Prüft eine ganze Tour gegen die Fachkraft, die sie fährt.
  *
- * HÖCHSTENS EIN Befund je Besuch, und "off_day" schlägt "qualification":
- * arbeitet die Fachkraft an diesem Tag gar nicht, ist die Frage nach ihrer
- * Qualifikation gegenstandslos. Zwei Meldungen zu demselben Besuch liessen
- * die Tour doppelt so kaputt aussehen, wie sie ist -- und die Zahl in der
- * Übersicht soll "so viele Besuche muss ich anfassen" heissen.
+ * HÖCHSTENS EIN Befund je Besuch, in dieser Reihenfolge: Abwesenheit, freier
+ * Tag, Qualifikation. Jede schlägt die folgende, weil sie die folgende
+ * gegenstandslos macht -- wer krankgeschrieben ist, arbeitet auch nicht an
+ * seinem Arbeitstag, und über die Qualifikation einer Abwesenden zu streiten
+ * hilft niemandem. Zwei Meldungen zu demselben Besuch liessen die Tour
+ * doppelt so kaputt aussehen, wie sie ist -- und die Zahl in der Übersicht
+ * soll "so viele Besuche muss ich anfassen" heissen.
  *
  * Notfälle bleiben aussen vor (enforcesStammRules): sie entstehen ausserhalb
  * des Zyklus und dürfen laut Regel 2 von jeder aktiven Fachkraft gefahren
@@ -90,12 +134,33 @@ function nameOf(visit: VisitForStaffing): string {
 export function assessStaffing(
   caregiver: TourCaregiver | null,
   visits: readonly VisitForStaffing[],
+  absences: readonly TourAbsence[],
 ): StaffingReport {
   if (!caregiver) return { checked: false, issues: [] };
 
   const issues: StaffingIssue[] = [];
 
   for (const visit of visits) {
+    /*
+     * Die Abwesenheit gilt auch für den NOTFALL, und das ist der Unterschied
+     * zu den beiden anderen Regeln.
+     *
+     * Regel 2 erlaubt einem Notfall jede aktive Fachkraft -- aber eine
+     * krankgeschriebene Fachkraft ist nicht "aktiv, aber unpassend
+     * eingeteilt", sie ist NICHT DA. Eine Ausnahme, die den Notfall an sie
+     * vergibt, gibt ihn an niemanden.
+     */
+    const absence = absences.find((entry) => covers(entry, isoDay(visit.scheduledAt)));
+    if (absence) {
+      issues.push({
+        visitId: visit.id,
+        patientName: nameOf(visit),
+        reason: "absence",
+        absenceType: absence.type,
+      });
+      continue;
+    }
+
     if (!visit.isEmergency && !isWorkDay(caregiver, visit.scheduledAt)) {
       issues.push({
         visitId: visit.id,
