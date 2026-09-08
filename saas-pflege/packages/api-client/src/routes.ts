@@ -32,6 +32,12 @@ export interface FeasibilityReport {
   violations: FeasibilityViolation[];
   totalTravelMinutes: number;
   totalCareMinutes: number;
+  /**
+   * Besuche, die nicht geprüft werden konnten – ihrem Patienten fehlen die
+   * Koordinaten. Eine Tour, von der die Hälfte ungeprüft blieb, darf nicht als
+   * "geht auf" gelesen werden.
+   */
+  uncheckedVisits: number;
 }
 
 /** Zustand einer Tour (VRPTW-Ergebnis). */
@@ -44,6 +50,8 @@ export interface RouteStatus {
   optimized: boolean;
   vrptwScore: number | null;
   totalKm: number | null;
+  /** Bei jedem Lesen neu gerechnet, nie gespeichert. */
+  feasibility: FeasibilityReport;
 }
 
 export interface OptimizeQueued {
@@ -78,6 +86,10 @@ export interface RouteRow {
   vrptwScore: number | null;
   totalKm: number | null;
   visitCount: number;
+  /** Geht die Tour zeitlich auf? Die Einzelheiten liefert getRoute. */
+  feasible: boolean;
+  violationCount: number;
+  uncheckedVisits: number;
 }
 
 export interface RouteDay {

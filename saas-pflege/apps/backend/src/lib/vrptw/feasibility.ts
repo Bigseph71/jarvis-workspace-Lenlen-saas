@@ -126,6 +126,15 @@ export interface FeasibilityReport {
   totalTravelMinutes: number;
   /** Zeit beim Patienten, in Minuten. */
   totalCareMinutes: number;
+  /**
+   * Besuche, die NICHT geprüft werden konnten -- ihrem Patienten fehlen die
+   * Koordinaten.
+   *
+   * Als eigene Zahl und nicht stillschweigend übersprungen: eine Tour, von der
+   * die Hälfte ungeprüft blieb, darf nicht als "geht auf" durchgehen. Ein
+   * ungeprüfter Übergang ist kein bestandener Übergang.
+   */
+  uncheckedVisits: number;
 }
 
 /**
@@ -147,7 +156,7 @@ export interface FeasibilityReport {
 export function checkTourFeasibility(
   stops: readonly TourStop[],
   options: TravelOptions = {},
-): FeasibilityReport {
+): Omit<FeasibilityReport, "uncheckedVisits"> {
   const violations: FeasibilityViolation[] = [];
   let totalTravelMinutes = 0;
   let totalCareMinutes = 0;
@@ -185,4 +194,98 @@ export function checkTourFeasibility(
     totalTravelMinutes,
     totalCareMinutes,
   };
+}
+
+// ── Eine ganze Tour aus Besuchen bilden und bewerten ──────────────────────
+
+/** Was von einem Besuch gebraucht wird, ohne Prisma-Typen. */
+export interface VisitForTour {
+  id: string;
+  scheduledAt: Date;
+  durationMinutes?: number | null;
+  patient: {
+    firstName: string;
+    lastName: string;
+    careMinutes?: number | null;
+    /** Prisma liefert Decimal; hier reicht alles, was Number() versteht. */
+    latitude: unknown;
+    longitude: unknown;
+  } | null;
+}
+
+/**
+ * Koordinate aus einem Prisma-Decimal, oder null.
+ *
+ * `null` und `undefined` werden ZUERST abgefangen, und das ist kein
+ * Feilenstrich: `Number(null)` ergibt 0, und 0/0 ist ein gültiger Punkt --
+ * vor der Küste Westafrikas. Ein Patient ohne Koordinaten läge damit
+ * mehrere tausend Kilometer entfernt, die Fahrzeit ginge in die Stunden, und
+ * die Tour meldete Verstösse, die es nicht gibt. Falsche Warnungen sind
+ * schlimmer als keine: nach der dritten schaut niemand mehr hin.
+ */
+function coordinate(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const asNumber = Number(value);
+  return Number.isFinite(asNumber) ? asNumber : null;
+}
+
+/**
+ * Bewertet eine Tour aus ihren Besuchen.
+ *
+ * `order` ist die Reihenfolge, in der gefahren werden soll -- das Ergebnis des
+ * Optimierers (routes.visits_order). Fehlt sie, gilt die Terminfolge: eine
+ * noch nicht optimierte Tour wird so gefahren, wie sie geplant wurde.
+ *
+ * Besuche, die in `order` fehlen, werden nach Termin ANGEHÄNGT statt
+ * weggelassen. Ein nachträglich angelegter Besuch steht sonst in keiner
+ * Prüfung, und gerade der ist der wahrscheinlichste Grund, warum eine Tour
+ * plötzlich nicht mehr aufgeht.
+ *
+ * Ohne Koordinaten lässt sich keine Fahrzeit rechnen. Diese Besuche fallen aus
+ * der Prüfung heraus und werden GEZÄHLT (siehe uncheckedVisits) -- eine halb
+ * geprüfte Tour ist keine geprüfte Tour.
+ */
+export function assessTour(
+  visits: readonly VisitForTour[],
+  order: readonly string[] | null,
+  options: TravelOptions = {},
+): FeasibilityReport {
+  const byId = new Map(visits.map((visit) => [visit.id, visit]));
+  const byTime = [...visits].sort(
+    (a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime(),
+  );
+
+  const sequence: VisitForTour[] = [];
+  const placed = new Set<string>();
+  for (const id of order ?? []) {
+    const visit = byId.get(id);
+    if (visit && !placed.has(id)) {
+      sequence.push(visit);
+      placed.add(id);
+    }
+  }
+  for (const visit of byTime) {
+    if (!placed.has(visit.id)) sequence.push(visit);
+  }
+
+  let unchecked = 0;
+  const stops: TourStop[] = [];
+  for (const visit of sequence) {
+    const lat = coordinate(visit.patient?.latitude);
+    const lng = coordinate(visit.patient?.longitude);
+    if (lat === null || lng === null) {
+      unchecked += 1;
+      continue;
+    }
+    stops.push({
+      visitId: visit.id,
+      patientName: `${visit.patient?.firstName ?? ""} ${visit.patient?.lastName ?? ""}`.trim(),
+      scheduledAt: visit.scheduledAt,
+      durationMinutes: visitDurationMinutes(visit),
+      lat,
+      lng,
+    });
+  }
+
+  return { ...checkTourFeasibility(stops, options), uncheckedVisits: unchecked };
 }

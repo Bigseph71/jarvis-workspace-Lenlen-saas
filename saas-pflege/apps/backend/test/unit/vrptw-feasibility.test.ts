@@ -6,6 +6,7 @@ import {
   AVERAGE_SPEED_KMH,
   DETOUR_FACTOR,
   DEFAULT_CARE_MINUTES,
+  assessTour,
   type TourStop,
 } from "../../src/lib/vrptw/feasibility.js";
 
@@ -230,5 +231,112 @@ describe("checkTourFeasibility", () => {
 
     expect(report.feasible).toBe(false);
     expect(report.violations[0]!.lateByMinutes).toBe(1);
+  });
+});
+
+/**
+ * assessTour: der gemeinsame Eingang von Optimierung UND Lesen.
+ *
+ * Beide Wege gehen absichtlich durch dieselbe Funktion. Zwei getrennte
+ * Rechnungen liefen unweigerlich auseinander, und die Koordination saehe nach
+ * dem Neuladen andere Zahlen als direkt nach der Optimierung -- ohne dass
+ * jemand sagen koennte, welche stimmt.
+ */
+describe("assessTour", () => {
+  // Der Patient traegt latitude/longitude (wie in der Datenbank), nicht
+  // lat/lng wie ein TourStop.
+  const AT = { latitude: A.lat, longitude: A.lng };
+  const BEI = { latitude: B.lat, longitude: B.lng };
+
+  function visit(id: string, at: string, over: Record<string, unknown> = {}) {
+    return {
+      id,
+      scheduledAt: new Date(at),
+      durationMinutes: null,
+      patient: { firstName: "Ilse", lastName: "Vogel", careMinutes: 30, ...AT },
+      ...over,
+    };
+  }
+
+  it("folgt der uebergebenen Reihenfolge und nicht der Uhrzeit", () => {
+    // `order` ist das Ergebnis des Optimierers. Wuerde hier nach Termin
+    // sortiert, pruefte man einen anderen Plan als den vorgeschlagenen.
+    const visits = [
+      visit("v-1", "2026-09-08T09:00:00.000Z"),
+      visit("v-2", "2026-09-08T09:10:00.000Z", { patient: { firstName: "Otto", lastName: "Weiss", careMinutes: 30, ...BEI } }),
+    ];
+
+    // In Terminfolge waere v-1 -> v-2 zu eng. Umgekehrt gefahren stimmt es
+    // ebenfalls nicht, aber die gemeldete Zeile ist eine andere.
+    const inOrder = assessTour(visits, ["v-1", "v-2"]);
+    const reversed = assessTour(visits, ["v-2", "v-1"]);
+
+    expect(inOrder.violations[0]!.visitId).toBe("v-2");
+    expect(reversed.violations[0]!.visitId).toBe("v-1");
+  });
+
+  it("nimmt die Terminfolge, wenn keine Reihenfolge vorliegt", () => {
+    // Eine noch nie optimierte Tour wird so gefahren, wie sie geplant wurde.
+    const report = assessTour(
+      [
+        visit("v-2", "2026-09-08T11:00:00.000Z"),
+        visit("v-1", "2026-09-08T09:00:00.000Z"),
+      ],
+      null,
+    );
+
+    expect(report.feasible).toBe(true);
+  });
+
+  it("haengt einen Besuch an, der in der Reihenfolge fehlt", () => {
+    // Ein nachtraeglich angelegter Besuch steht in keiner alten
+    // `visits_order`. Ihn wegzulassen hiesse, genau den Besuch nicht zu
+    // pruefen, der die Tour zum Kippen bringt.
+    const visits = [
+      visit("v-1", "2026-09-08T09:00:00.000Z"),
+      visit("v-neu", "2026-09-08T09:10:00.000Z", { patient: { firstName: "Neu", lastName: "Patient", careMinutes: 30, ...BEI } }),
+    ];
+
+    const report = assessTour(visits, ["v-1"]);
+
+    expect(report.violations.map((v) => v.visitId)).toContain("v-neu");
+  });
+
+  it("zaehlt Besuche ohne Koordinaten, statt sie zu verschweigen", () => {
+    // Eine halb geprueefte Tour ist keine geprueefte Tour. Ohne diese Zahl
+    // liefe ein nicht geokodierter Patient als "geht auf" durch.
+    const report = assessTour(
+      [
+        visit("v-1", "2026-09-08T09:00:00.000Z"),
+        visit("v-2", "2026-09-08T09:30:00.000Z", {
+          patient: { firstName: "Ohne", lastName: "Koordinaten", careMinutes: 30, latitude: null, longitude: null },
+        }),
+      ],
+      null,
+    );
+
+    expect(report.uncheckedVisits).toBe(1);
+  });
+
+  it("nimmt die Dauer des Patienten, wenn der Besuch keine eigene hat", () => {
+    const kurz = assessTour(
+      [
+        visit("v-1", "2026-09-08T09:00:00.000Z", { patient: { firstName: "K", lastName: "Urz", careMinutes: 10, ...AT } }),
+        visit("v-2", "2026-09-08T09:20:00.000Z", { patient: { firstName: "Z", lastName: "Wei", careMinutes: 10, ...BEI } }),
+      ],
+      null,
+    );
+
+    // 10 Min. Pflege + ~7 Min. Fahrt = 17 < 20: es geht auf. Mit den 30
+    // Minuten der Vorgabe waere es ein Verstoss.
+    expect(kurz.feasible).toBe(true);
+  });
+
+  it("kommt mit einer Tour ohne Besuche zurecht", () => {
+    expect(assessTour([], null)).toMatchObject({
+      feasible: true,
+      violations: [],
+      uncheckedVisits: 0,
+    });
   });
 });
