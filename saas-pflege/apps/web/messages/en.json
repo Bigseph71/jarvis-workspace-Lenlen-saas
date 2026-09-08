@@ -108,7 +108,7 @@
     "tours": {
       "title": "Tours today",
       "summary": "{tours} tours · {km} km",
-      "summaryIssues": "{tours} tours · {km} km · {issues} do not add up",
+      "summaryIssues": "{tours} tours · {km} km · {issues} need attention",
       "meta": "{visits} visits · {km} km",
       "metaUnchecked": "{visits} visits · {km} km · {unchecked} unchecked",
       "state": {
@@ -117,7 +117,8 @@
         "notStarted": "Waiting",
         "optimized": "Optimised",
         "notOptimized": "Not optimised",
-        "infeasible": "Does not add up · {count}"
+        "infeasible": "Does not add up · {count}",
+        "staffing": "Not permitted · {count}"
       },
       "openPlanning": "Open visits",
       "summaryPending": "Loading …",

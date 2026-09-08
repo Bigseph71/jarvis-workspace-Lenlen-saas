@@ -108,7 +108,7 @@
     "tours": {
       "title": "Touren heute",
       "summary": "{tours} Touren · {km} km",
-      "summaryIssues": "{tours} Touren · {km} km · {issues} gehen nicht auf",
+      "summaryIssues": "{tours} Touren · {km} km · {issues} brauchen Aufmerksamkeit",
       "meta": "{visits} Besuche · {km} km",
       "metaUnchecked": "{visits} Besuche · {km} km · {unchecked} ungeprüft",
       "state": {
@@ -117,7 +117,8 @@
         "notStarted": "Wartet",
         "optimized": "Optimiert",
         "notOptimized": "Nicht optimiert",
-        "infeasible": "Geht nicht auf · {count}"
+        "infeasible": "Geht nicht auf · {count}",
+        "staffing": "Nicht einsetzbar · {count}"
       },
       "openPlanning": "Besuche oeffnen",
       "summaryPending": "Wird geladen …",

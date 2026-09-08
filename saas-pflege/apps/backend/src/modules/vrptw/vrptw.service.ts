@@ -6,6 +6,7 @@ import type { TenantContext } from "../../lib/context.js";
 import { solveVrptw, type Stop } from "../../lib/vrptw/solver.js";
 import { assessTour, type FeasibilityReport } from "../../lib/vrptw/feasibility.js";
 import { pickVehicleForTrip } from "../vehicles/vehicle.rules.js";
+import { assessStaffing, emptyStaffing, type StaffingReport } from "./tour.rules.js";
 
 export interface OptimizeResult {
   routeId: string;
@@ -24,6 +25,14 @@ export interface OptimizeResult {
    * muss sehen, WO es klemmt, sonst bleibt ihr nur, dem Vorschlag zu glauben.
    */
   feasibility: FeasibilityReport;
+  /**
+   * Darf die eingeteilte Fachkraft diese Besuche fahren?
+   *
+   * Neben der Zeit die zweite Frage, und die haertere: eine Verspaetung ist
+   * ein Aergernis, ein Einsatz an einem vertraglich freien Tag oder mit der
+   * falschen Qualifikation ist ein Regelverstoss.
+   */
+  staffing: StaffingReport;
 }
 
 /** Tagesfenster [00:00, +24h) in UTC für ein @db.Date. */
@@ -51,7 +60,13 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
   const data = await withTenant(ctx.organizationId, async (tx) => {
     const route = await tx.route.findFirst({
       where: { id: routeId, organizationId: ctx.organizationId },
-      select: { id: true, caregiverId: true, date: true },
+      select: {
+        id: true,
+        caregiverId: true,
+        date: true,
+        // Fuer die Besetzungspruefung: dieselbe Abfrage, keine zusaetzliche.
+        caregiver: { select: { qualification: true, workDays: true } },
+      },
     });
     if (!route) throw new AppError(404, "Tour nicht gefunden", "NotFound");
 
@@ -73,6 +88,9 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
         id: true,
         scheduledAt: true,
         durationMinutes: true,
+        isEmergency: true,
+        assignedCaregiverId: true,
+        assignedCaregiver: { select: { qualification: true } },
         patient: {
           select: {
             id: true,
@@ -118,6 +136,7 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
         totalCareMinutes: 0,
         uncheckedVisits: 0,
       },
+      staffing: emptyStaffing(route.caregiver),
     });
   }
 
@@ -164,6 +183,16 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
   // sähe nach dem Neuladen andere Zahlen als direkt nach der Optimierung.
   const feasibility = assessTour(visits, solution.order);
 
+  /*
+   * 3c) DARF sie die Tour fahren?
+   *
+   * Unabhaengig von der Reihenfolge: die Besetzungsregeln haengen an der
+   * Person und am Kalender, nicht am Weg. Der Optimierer kann eine Tour nicht
+   * regelkonform machen, indem er sie umsortiert -- und genau deshalb muss die
+   * Meldung neben dem Vorschlag stehen und nicht an seiner Stelle.
+   */
+  const staffing = assessStaffing(route.caregiver, visits);
+
   // 4) Regel 6: Fahrzeug mit den wenigsten genutzten km für die Strecke.
   const pick = pickVehicleForTrip(vehicles, solution.totalKm);
 
@@ -179,6 +208,7 @@ export async function optimizeRoute(ctx: TenantContext, routeId: string): Promis
     visitCount: visits.length,
     visitIds: visits.map((v) => v.id),
     feasibility,
+    staffing,
   });
 }
 
@@ -199,6 +229,14 @@ export interface RouteStatus {
    * "geht auf" sieht aus wie eine frische.
    */
   feasibility: FeasibilityReport;
+  /**
+   * Darf die eingeteilte Fachkraft diese Besuche fahren?
+   *
+   * Wie die Machbarkeit bei jedem Lesen neu gerechnet, und aus demselben
+   * Grund: ein Vertrag aendert sich, eine Stamm-Fachkraft wechselt, und die
+   * Tour von gestern bliebe sonst mit dem Urteil von gestern stehen.
+   */
+  staffing: StaffingReport;
 }
 
 /** Aktueller Zustand einer Tour (für Status-Polling durch das Frontend). */
@@ -215,6 +253,7 @@ export async function getRoute(ctx: TenantContext, routeId: string): Promise<Rou
         optimized: true,
         vrptwScore: true,
         totalKm: true,
+        caregiver: { select: { qualification: true, workDays: true } },
       },
     });
     if (!route) throw new AppError(404, "Tour nicht gefunden", "NotFound");
@@ -249,6 +288,7 @@ export async function getRoute(ctx: TenantContext, routeId: string): Promise<Rou
       vrptwScore: route.vrptwScore === null ? null : Number(route.vrptwScore),
       totalKm: route.totalKm === null ? null : Number(route.totalKm),
       feasibility: assessTour(visits, order.length > 0 ? order : null),
+      staffing: assessStaffing(route.caregiver, visits),
     };
   });
 }
@@ -305,6 +345,11 @@ const TOUR_VISIT_SELECT = {
   id: true,
   scheduledAt: true,
   durationMinutes: true,
+  // Fuer die Besetzungspruefung (tour.rules): die Notfall-Ausnahme und die
+  // Qualifikation der Stamm-Fachkraft, gegen die verglichen wird.
+  isEmergency: true,
+  assignedCaregiverId: true,
+  assignedCaregiver: { select: { qualification: true } },
   patient: {
     select: { firstName: true, lastName: true, careMinutes: true, latitude: true, longitude: true },
   },
@@ -355,6 +400,11 @@ export interface RouteRow {
   feasible: boolean;
   violationCount: number;
   uncheckedVisits: number;
+  /**
+   * Besuche, die diese Fachkraft nicht fahren duerfte -- freier Tag oder
+   * falsche Qualifikation. Die Gruende stehen in GET /routes/:id.
+   */
+  staffingIssueCount: number;
 }
 
 export interface RouteDay {
@@ -409,7 +459,15 @@ export async function listRoutesForDay(
           vrptwScore: true,
           totalKm: true,
           visitsOrder: true,
-          caregiver: { select: { id: true, firstName: true, lastName: true } },
+          caregiver: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              qualification: true,
+              workDays: true,
+            },
+          },
           _count: { select: { visits: true } },
         },
         skip: (page - 1) * pageSize,
@@ -455,7 +513,10 @@ export async function listRoutesForDay(
           (row.caregiverId !== null && visit.routeId === null && visit.caregiverId === row.caregiverId),
       );
       const order = Array.isArray(row.visitsOrder) ? (row.visitsOrder as string[]) : [];
-      return assessTour(own, order.length > 0 ? order : null);
+      return {
+        feasibility: assessTour(own, order.length > 0 ? order : null),
+        staffing: assessStaffing(row.caregiver, own),
+      };
     };
 
     return {
@@ -472,15 +533,25 @@ export async function listRoutesForDay(
         return {
           id: row.id,
           date: row.date.toISOString().slice(0, 10),
-          caregiver: row.caregiver,
+          // Ausdruecklich aufgezaehlt: die Abfrage holt fuer die Pruefung mehr
+          // Spalten (Qualifikation, Arbeitstage), und die haben in einer
+          // Tagesliste nichts verloren.
+          caregiver: row.caregiver
+            ? {
+                id: row.caregiver.id,
+                firstName: row.caregiver.firstName,
+                lastName: row.caregiver.lastName,
+              }
+            : null,
           vehicleId: row.vehicleId,
           optimized: row.optimized,
           vrptwScore: row.vrptwScore === null ? null : Number(row.vrptwScore),
           totalKm: row.totalKm === null ? null : Number(row.totalKm),
           visitCount: row._count.visits,
-          feasible: report.feasible,
-          violationCount: report.violations.length,
-          uncheckedVisits: report.uncheckedVisits,
+          feasible: report.feasibility.feasible,
+          violationCount: report.feasibility.violations.length,
+          uncheckedVisits: report.feasibility.uncheckedVisits,
+          staffingIssueCount: report.staffing.issues.length,
         };
       }),
       page,

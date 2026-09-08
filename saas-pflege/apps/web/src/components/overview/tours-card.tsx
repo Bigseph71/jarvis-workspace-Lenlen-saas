@@ -40,6 +40,19 @@ export interface TourFlags {
   violationCount: number;
   /** Besuche ohne Koordinaten – nicht geprüft, nicht "in Ordnung". */
   uncheckedVisits: number;
+  /** Besuche, die diese Fachkraft nicht fahren dürfte (freier Tag, Qualifikation). */
+  staffingIssues: number;
+  /**
+   * Welche EINE Meldung die Zeile trägt.
+   *
+   * Die Besetzung sticht die Zeit, und zwar nicht nach Anzahl: eine Tour, die
+   * jemand nicht fahren DARF, wird nicht dadurch zulässig, dass man sie
+   * umsortiert. Die zwölf Minuten Verspätung sind dann nicht das Problem.
+   *
+   * Und nur eine: zwei Warnpastillen nebeneinander lassen offen, welche zuerst
+   * dran ist -- die Zeile hat aber nur eine Entscheidung anzustossen.
+   */
+  alert: "staffing" | "time" | null;
 }
 
 /**
@@ -51,16 +64,27 @@ export interface TourFlags {
  * Hinweis: nach der dritten falschen Meldung sieht niemand mehr hin.
  */
 export function tourFlags(route: RouteRow): TourFlags {
+  const infeasible = route.feasible === false;
+  const staffingIssues = Math.max(0, route.staffingIssueCount ?? 0);
+
   return {
-    infeasible: route.feasible === false,
+    infeasible,
     violationCount: Math.max(0, route.violationCount ?? 0),
     uncheckedVisits: Math.max(0, route.uncheckedVisits ?? 0),
+    staffingIssues,
+    alert: staffingIssues > 0 ? "staffing" : infeasible ? "time" : null,
   };
 }
 
-/** Wie viele Touren des Tages nicht aufgehen. Steht im Untertitel der Karte. */
+/**
+ * Wie viele Touren des Tages eine Meldung tragen. Steht im Untertitel.
+ *
+ * Gezählt werden TOUREN, nicht Befunde: die Zahl beantwortet "wie viele muss
+ * ich anfassen", nicht "wie viele Einzelheiten gibt es". Eine Tour mit fünf
+ * Verstössen bleibt eine Tour.
+ */
 export function dayIssueCount(routes: readonly RouteRow[]): number {
-  return routes.filter((route) => tourFlags(route).infeasible).length;
+  return routes.filter((route) => tourFlags(route).alert !== null).length;
 }
 
 function TourRow({ route }: { route: RouteRow }) {
@@ -136,11 +160,13 @@ function TourRow({ route }: { route: RouteRow }) {
         wer disponiert, sucht die Touren, die nicht aufgehen, nicht die, die
         noch keinen Solver gesehen haben.
       */}
-      {flags.infeasible ? (
+      {flags.alert === null ? null : (
         <StatusPill tone="attention">
-          {t("state.infeasible", { count: format.number(flags.violationCount) })}
+          {flags.alert === "staffing"
+            ? t("state.staffing", { count: format.number(flags.staffingIssues) })
+            : t("state.infeasible", { count: format.number(flags.violationCount) })}
         </StatusPill>
-      ) : null}
+      )}
 
       <StatusPill tone={route.optimized ? "positive" : "neutral"}>
         {t(route.optimized ? "state.optimized" : "state.notOptimized")}

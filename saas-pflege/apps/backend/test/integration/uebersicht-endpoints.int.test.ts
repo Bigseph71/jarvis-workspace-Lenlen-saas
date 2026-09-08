@@ -42,10 +42,30 @@ interface Summary {
 interface RouteDay {
   date: string;
   totals: { routes: number; optimized: number; totalKm: number };
-  data: { id: string; totalKm: number | null; visitCount: number; optimized: boolean }[];
+  data: {
+    id: string;
+    totalKm: number | null;
+    visitCount: number;
+    optimized: boolean;
+    staffingIssueCount: number;
+  }[];
   total: number;
   totalPages: number;
   pageSize: number;
+}
+
+interface StaffingIssue {
+  visitId: string;
+  patientName: string;
+  reason: "off_day" | "qualification";
+  weekday?: string;
+  actualQualification?: string;
+  requiredQualification?: string;
+}
+
+interface Staffing {
+  checked: boolean;
+  issues: StaffingIssue[];
 }
 
 describe.skipIf(!runDbTests)("Endpunkte der Uebersicht (DB)", () => {
@@ -56,6 +76,10 @@ describe.skipIf(!runDbTests)("Endpunkte der Uebersicht (DB)", () => {
   let organizationId: string;
   let adminCtx: Ctx;
   let caregiverId: string;
+  /** Tour, deren Fachkraft am Tourtag laut Vertrag nicht arbeitet. */
+  let freierTagRouteId: string;
+  /** Tour, deren Fachkraft eine andere Qualifikation hat als die Stamm-Fachkraft. */
+  let qualifikationRouteId: string;
 
   beforeAll(async () => {
     assertLocalTestDatabase(process.env.DATABASE_URL);
@@ -150,6 +174,86 @@ describe.skipIf(!runDbTests)("Endpunkte der Uebersicht (DB)", () => {
     // Ein Besuch am Folgetag: er darf in keiner Zahl des Testtags auftauchen.
     await makeVisit("Folgetag", ANDERER_TAG);
 
+    /*
+     * Zwei Touren fuer die BESETZUNGS-Pruefung, an einem eigenen Tag
+     * (Freitag, 04.09.2026), damit sie keine Zahl des Testtags veraendern.
+     *
+     * Beide bilden denselben Vorgang ab: die Tour war beim Planen in Ordnung,
+     * und erst danach passte die Person nicht mehr zu ihr. Genau diese Luecke
+     * schliesst die Pruefung auf Tour-Ebene -- beim Anlegen EINES Besuchs
+     * wurde geprueft, aber danach fragt niemand je wieder.
+     *
+     * Die Zuordnung laeuft absichtlich ueber prisma und nicht ueber den
+     * Dienst: der Dienst weist genau das ab, was hier entstehen soll. Im
+     * Betrieb entsteht es trotzdem -- durch eine Vertragsaenderung oder einen
+     * Wechsel der Stamm-Fachkraft, lange nach dem Anlegen des Besuchs.
+     */
+    const FREITAG = new Date("2026-09-04T09:00:00.000Z");
+
+    const wochenendkraft = (await caregivers.createCaregiver(adminCtx, {
+      firstName: "Wilma",
+      lastName: "Wochenende",
+      // Dieselbe Qualifikation wie die Stamm-Fachkraft: hier stoert allein
+      // der Wochentag.
+      qualification: "PFLEGEFACHKRAFT",
+      contractType: "PART_50",
+      weeklyHours: 20,
+      workDays: ["SAT", "SUN"],
+      maxPatients: 20,
+      validFrom: new Date("2026-01-01T00:00:00.000Z"),
+    })) as { id: string };
+
+    const hilfskraft = (await caregivers.createCaregiver(adminCtx, {
+      firstName: "Hanna",
+      lastName: "Hilfe",
+      // Arbeitet freitags; allein die Qualifikation passt nicht.
+      qualification: "PFLEGEHILFSKRAFT",
+      contractType: "FULL_100",
+      weeklyHours: 39,
+      workDays: [...ALL_DAYS],
+      maxPatients: 20,
+      validFrom: new Date("2026-01-01T00:00:00.000Z"),
+    })) as { id: string };
+
+    // Eine halbe Stunde auseinander: beide Patienten sind derselben
+    // Stamm-Fachkraft zugeordnet, und der Doppelbuchungs-Schutz weist zwei
+    // Termine derselben Fachkraft binnen 15 Minuten zurecht ab.
+    const besuchAmFreitag = await makeVisit("Freitag", FREITAG);
+    const besuchAmFreitagZwei = await makeVisit(
+      "FreitagZwei",
+      new Date(FREITAG.getTime() + 30 * 60_000),
+    );
+
+    const freierTag = await prisma.route.create({
+      data: {
+        organizationId,
+        caregiverId: wochenendkraft.id,
+        date: new Date("2026-09-04"),
+        optimized: false,
+      },
+      select: { id: true },
+    });
+    const qualifikation = await prisma.route.create({
+      data: {
+        organizationId,
+        caregiverId: hilfskraft.id,
+        date: new Date("2026-09-04"),
+        optimized: false,
+      },
+      select: { id: true },
+    });
+    freierTagRouteId = freierTag.id;
+    qualifikationRouteId = qualifikation.id;
+
+    await prisma.visit.update({
+      where: { id: besuchAmFreitag },
+      data: { routeId: freierTagRouteId },
+    });
+    await prisma.visit.update({
+      where: { id: besuchAmFreitagZwei },
+      data: { routeId: qualifikationRouteId },
+    });
+
     // Zwei Touren am Testtag, eine am Folgetag.
     await prisma.route.createMany({
       data: [
@@ -242,5 +346,47 @@ describe.skipIf(!runDbTests)("Endpunkte der Uebersicht (DB)", () => {
     const day = await routeDay();
 
     expect(day.data.every((route) => typeof route.visitCount === "number")).toBe(true);
+  });
+
+  /*
+   * Besetzung: darf die eingeteilte Fachkraft diese Besuche ueberhaupt fahren?
+   *
+   * Die Regeln selbst sind im Einheitstest geprueft (vrptw-staffing). Hier
+   * geht es um das, was ein Einheitstest NICHT sehen kann: ob die Abfrage die
+   * Spalten mitbringt, die die Pruefung braucht. Eine vergessene Relation im
+   * select faellt sonst erst in der Produktion auf -- als Tour, die nie etwas
+   * beanstandet, was von einer fehlerfreien Tour nicht zu unterscheiden ist.
+   */
+  const staffingOf = async (routeId: string): Promise<Staffing> =>
+    ((await vrptw.getRoute(adminCtx, routeId)) as unknown as { staffing: Staffing }).staffing;
+
+  it("meldet einen Besuch an einem vertraglich freien Tag", async () => {
+    // Wilma arbeitet nur am Wochenende, die Tour liegt an einem Freitag.
+    const staffing = await staffingOf(freierTagRouteId);
+
+    expect(staffing.checked).toBe(true);
+    expect(staffing.issues).toHaveLength(1);
+    expect(staffing.issues[0]?.reason).toBe("off_day");
+    expect(staffing.issues[0]?.weekday).toBe("FRI");
+  });
+
+  it("meldet eine Fachkraft mit der falschen Qualifikation", async () => {
+    // Hanna arbeitet freitags, ist aber Hilfskraft -- der Patient ist einer
+    // Fachkraft zugeordnet.
+    const staffing = await staffingOf(qualifikationRouteId);
+
+    expect(staffing.issues).toHaveLength(1);
+    expect(staffing.issues[0]?.reason).toBe("qualification");
+    expect(staffing.issues[0]?.actualQualification).toBe("PFLEGEHILFSKRAFT");
+    expect(staffing.issues[0]?.requiredQualification).toBe("PFLEGEFACHKRAFT");
+  });
+
+  it("meldet je Tour, wie viele Besuche die Fachkraft nicht fahren duerfte", async () => {
+    // Die Touren des Testtags gehoeren einer Fachkraft, die an allen Tagen
+    // arbeitet und die passende Qualifikation hat. Steht hier etwas anderes
+    // als 0, meldet die Uebersicht Fehlalarme.
+    const day = await routeDay();
+
+    expect(day.data.every((route) => route.staffingIssueCount === 0)).toBe(true);
   });
 });

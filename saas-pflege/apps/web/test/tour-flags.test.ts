@@ -26,6 +26,7 @@ function route(over: Partial<RouteRow> = {}): RouteRow {
     feasible: true,
     violationCount: 0,
     uncheckedVisits: 0,
+    staffingIssueCount: 0,
     ...over,
   };
 }
@@ -36,7 +37,29 @@ describe("tourFlags", () => {
       infeasible: true,
       violationCount: 2,
       uncheckedVisits: 0,
+      staffingIssues: 0,
+      alert: "time",
     });
+  });
+
+  it("lässt die Besetzung die Zeit ausstechen", () => {
+    // Nicht nach Anzahl, sondern nach Art: eine Tour, die jemand nicht fahren
+    // DARF, wird nicht dadurch zulaessig, dass man sie umsortiert. Die
+    // Verspaetung ist dann nicht die Entscheidung, die ansteht.
+    const flags = tourFlags(route({ feasible: false, violationCount: 9, staffingIssueCount: 1 }));
+
+    expect(flags.alert).toBe("staffing");
+    // Die Zeit bleibt lesbar, sie tritt nur nicht in die Pastille.
+    expect(flags.infeasible).toBe(true);
+    expect(flags.violationCount).toBe(9);
+  });
+
+  it("meldet die Besetzung auch bei einwandfreier Zeitplanung", () => {
+    expect(tourFlags(route({ staffingIssueCount: 2 })).alert).toBe("staffing");
+  });
+
+  it("schweigt, wenn es nichts zu melden gibt", () => {
+    expect(tourFlags(route({ uncheckedVisits: 4 })).alert).toBeNull();
   });
 
   it("schweigt, wenn die Antwort das Feld gar nicht enthält", () => {
@@ -47,11 +70,14 @@ describe("tourFlags", () => {
     delete withoutCheck.feasible;
     delete withoutCheck.violationCount;
     delete withoutCheck.uncheckedVisits;
+    delete withoutCheck.staffingIssueCount;
 
     expect(tourFlags(withoutCheck as RouteRow)).toEqual({
       infeasible: false,
       violationCount: 0,
       uncheckedVisits: 0,
+      staffingIssues: 0,
+      alert: null,
     });
   });
 
@@ -74,6 +100,18 @@ describe("tourFlags", () => {
 });
 
 describe("dayIssueCount", () => {
+  it("zählt auch die Touren, die niemand fahren darf", () => {
+    // Sonst stuende im Untertitel eine kleinere Zahl als in der Liste, und die
+    // Karte widerspraeche sich selbst.
+    expect(
+      dayIssueCount([
+        route({ id: "a", staffingIssueCount: 1 }),
+        route({ id: "b", feasible: false, violationCount: 1 }),
+        route({ id: "c" }),
+      ]),
+    ).toBe(2);
+  });
+
   it("zählt die Touren, nicht die Verstösse", () => {
     // Der Untertitel beantwortet "wie viele Touren muss ich anfassen", nicht
     // "wie viele Anschluesse sind zu spaet". Eine Tour mit fuenf Verstoessen
