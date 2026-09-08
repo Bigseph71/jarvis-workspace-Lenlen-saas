@@ -1,5 +1,39 @@
 import { apiFetch } from "./client";
 
+/**
+ * Warum eine Tour in der vorgeschlagenen Reihenfolge nicht aufgeht.
+ *
+ * Nennt BEIDE Besuche: den zu spät erreichten und den davor, aus dem die
+ * Verspätung stammt. Ohne den Vorgänger bliebe offen, wo man ansetzen müsste.
+ */
+export interface FeasibilityViolation {
+  visitId: string;
+  patientName: string;
+  previousVisitId: string;
+  scheduledAt: string;
+  /** Frühestmögliche Ankunft nach Pflege und Fahrt. */
+  earliestArrival: string;
+  lateByMinutes: number;
+  travelMinutes: number;
+  previousDurationMinutes: number;
+}
+
+/**
+ * Geht die Tour zeitlich auf?
+ *
+ * Gerechnet wird Pflegezeit beim Patienten + Fahrzeit zur nächsten Adresse
+ * gegen den nächsten Termin. Die Fahrzeit ist eine deterministische Schätzung
+ * (Luftlinie, Umwegfaktor, Durchschnittsgeschwindigkeit), kein Routing-Dienst:
+ * sie kostet nichts, braucht kein Netz und liefert bei gleicher Eingabe
+ * dasselbe Ergebnis -- ohne das könnte man zwei Vorschläge nicht vergleichen.
+ */
+export interface FeasibilityReport {
+  feasible: boolean;
+  violations: FeasibilityViolation[];
+  totalTravelMinutes: number;
+  totalCareMinutes: number;
+}
+
 /** Zustand einer Tour (VRPTW-Ergebnis). */
 export interface RouteStatus {
   id: string;
