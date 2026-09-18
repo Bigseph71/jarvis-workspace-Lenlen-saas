@@ -113,35 +113,70 @@ LEFT JOIN pg_type typ
       AND typ.typnamespace = 'public'::regnamespace
 ORDER BY present, attendu.type_name;
 
--- ── 4. Policies RLS : une par table porteuse d'organization_id ───────────
--- Ici la liste des tables vient de la base elle-même, et non d'une liste
--- écrite à la main : une table à organization_id ajoutée plus tard sans
--- policy doit apparaître, et elle n'apparaîtrait pas dans un VALUES qu'on
--- aurait oublié de compléter.
---
+-- ── 4. Policies RLS : isolation tenant, table par table ─────────────────
 -- `isolated = false` → la table n'est pas isolée : sur le chemin applicatif
 -- (rôle app_user), elle laisserait un tenant lire les lignes d'un autre.
 -- C'est la vérification la plus importante de ce fichier.
 --
--- Attendu : toutes les tables de tenant_tables dans rls.sql, y compris
--- contracts, work_schedules, absences (posées par un bloc DO dans
--- 2026-08-01-add-hr-module.sql) et user_invitations.
+-- La policy attendue est vérifiée PAR SON NOM, et le nom dépend de la table.
+-- rls.sql en pose deux :
+--   tenant_isolation  sur les tables porteuses d'organization_id
+--   tenant_self       sur organizations, qui n'a pas cette colonne mais un id
+--                     et ne doit montrer que sa propre ligne
+--
+-- Contrôler l'existence d'une policy quelconque ne suffirait pas : une table
+-- ayant perdu son tenant_isolation mais gardé une autre policy passerait pour
+-- isolée. Une vérification qui rassure à tort est pire que pas de
+-- vérification.
+--
+-- Et organizations doit y figurer même si elle n'a pas d'organization_id :
+-- sur le seul critère de la colonne, la table centrale du multi-tenant
+-- sortait du contrôle.
+--
+-- La liste des autres tables vient de la base et non d'un VALUES : une table à
+-- organization_id ajoutée plus tard sans policy doit apparaître, et elle
+-- n'apparaîtrait pas dans une liste écrite à la main qu'on aurait oublié de
+-- compléter.
+--
+-- Une ligne par table, pas par policy : `policies_presentes` dit ce qui est
+-- réellement en place, sans démultiplier les lignes des tables qui en portent
+-- plusieurs.
 SELECT
-  cls.relname AS table_name,
-  cls.relrowsecurity AS rls_active,
-  pol.polname AS policy_name,
-  (cls.relrowsecurity AND pol.polname IS NOT NULL) AS isolated
+  cls.relname          AS table_name,
+  attendue.nom         AS policy_attendue,
+  cls.relrowsecurity   AS rls_active,
+  pol.presente         AS policy_presente,
+  (cls.relrowsecurity AND pol.presente) AS isolated,
+  pol.toutes           AS policies_presentes
 FROM pg_class cls
 JOIN pg_namespace nsp ON nsp.oid = cls.relnamespace
-LEFT JOIN pg_policy pol ON pol.polrelid = cls.oid
+CROSS JOIN LATERAL (
+  SELECT CASE WHEN cls.relname = 'organizations' THEN 'tenant_self'
+              ELSE 'tenant_isolation' END AS nom
+) AS attendue
+CROSS JOIN LATERAL (
+  SELECT
+    EXISTS (
+      SELECT 1 FROM pg_policy pp
+      WHERE pp.polrelid = cls.oid AND pp.polname::text = attendue.nom
+    ) AS presente,
+    COALESCE(
+      (SELECT string_agg(pp.polname::text, ', ' ORDER BY pp.polname)
+         FROM pg_policy pp WHERE pp.polrelid = cls.oid),
+      '(aucune)'
+    ) AS toutes
+) AS pol
 WHERE nsp.nspname = 'public'
   AND cls.relkind = 'r'
-  AND EXISTS (
-    SELECT 1 FROM pg_attribute att
-    WHERE att.attrelid = cls.oid
-      AND att.attname = 'organization_id'
-      AND att.attnum > 0
-      AND NOT att.attisdropped
+  AND (
+    cls.relname = 'organizations'
+    OR EXISTS (
+      SELECT 1 FROM pg_attribute att
+      WHERE att.attrelid = cls.oid
+        AND att.attname = 'organization_id'
+        AND att.attnum > 0
+        AND NOT att.attisdropped
+    )
   )
 ORDER BY isolated, cls.relname;
 
