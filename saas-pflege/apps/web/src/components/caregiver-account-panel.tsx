@@ -4,11 +4,11 @@ import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import {
   createFachkraftAccount,
-  resetFachkraftPassword,
+  reissueInvitation,
   ApiError,
   type UserRole,
 } from "@len-len/api-client";
-import { FachkraftAccessData } from "./fachkraft-access-data";
+import { FachkraftInvitation } from "./fachkraft-invitation";
 
 // Spiegelt die Rollen, die das Backend auf /users/* zulässt – damit kein
 // Button erscheint, der beim Klick zwangsläufig 403 liefert.
@@ -24,11 +24,12 @@ interface CaregiverAccountPanelProps {
   currentRole: UserRole | undefined;
 }
 
-/** Frisch erzeugte Zugangsdaten – aus dem Anlegen oder aus einem Reset. */
-interface IssuedCredentials {
+/** Frisch ausgestellte Einladung – aus dem Anlegen oder aus einem Neuausstellen. */
+interface IssuedInvitation {
   email: string;
-  temporaryPassword: string;
-  source: "created" | "reset";
+  invitationUrl: string;
+  invitationExpiresAt: string;
+  source: "created" | "reissued";
 }
 
 const fieldClass =
@@ -36,8 +37,8 @@ const fieldClass =
 
 /**
  * App-Zugang einer bestehenden Fachkraft: zeigt das verknüpfte Konto, legt
- * eines nach (für ohne E-Mail angelegte Fachkräfte) oder setzt das Passwort
- * zurück, wenn das temporäre Passwort nie ankam.
+ * eines nach (für ohne E-Mail angelegte Fachkräfte) oder stellt einen neuen
+ * Einladungslink aus, wenn der erste nie ankam oder das Gerät verloren ging.
  */
 export function CaregiverAccountPanel({
   caregiverId,
@@ -49,7 +50,7 @@ export function CaregiverAccountPanel({
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [issued, setIssued] = useState<IssuedCredentials | null>(null);
+  const [issued, setIssued] = useState<IssuedInvitation | null>(null);
 
   const canManage = currentRole != null && ACCOUNT_MANAGER_ROLES.includes(currentRole);
 
@@ -67,7 +68,8 @@ export function CaregiverAccountPanel({
       const result = await createFachkraftAccount({ caregiverId, email: mail });
       setIssued({
         email: result.user.email,
-        temporaryPassword: result.temporaryPassword,
+        invitationUrl: result.invitationUrl,
+        invitationExpiresAt: result.invitationExpiresAt,
         source: "created",
       });
     } catch (err) {
@@ -81,22 +83,23 @@ export function CaregiverAccountPanel({
     }
   }
 
-  async function handleReset(userId: string, accountEmail: string) {
-    // Der Reset macht das laufende Passwort und alle Sitzungen ungültig –
-    // deshalb bewusst mit Rückfrage.
-    if (!window.confirm(t("account.resetConfirm", { email: accountEmail }))) return;
+  async function handleReissue(userId: string, accountEmail: string) {
+    // Ein neuer Link beendet alle laufenden Sitzungen und entwertet den
+    // vorherigen Link – deshalb bewusst mit Rückfrage.
+    if (!window.confirm(t("account.inviteConfirm", { email: accountEmail }))) return;
 
     setError(null);
     setSubmitting(true);
     try {
-      const result = await resetFachkraftPassword(userId);
+      const result = await reissueInvitation(userId);
       setIssued({
         email: result.user.email,
-        temporaryPassword: result.temporaryPassword,
-        source: "reset",
+        invitationUrl: result.invitationUrl,
+        invitationExpiresAt: result.invitationExpiresAt,
+        source: "reissued",
       });
     } catch {
-      setError(t("account.resetFailed"));
+      setError(t("account.inviteFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -108,10 +111,11 @@ export function CaregiverAccountPanel({
 
       {issued ? (
         <div className="mt-3">
-          <FachkraftAccessData
+          <FachkraftInvitation
             email={issued.email}
-            temporaryPassword={issued.temporaryPassword}
-            hint={issued.source === "reset" ? t("account.resetHint") : undefined}
+            invitationUrl={issued.invitationUrl}
+            invitationExpiresAt={issued.invitationExpiresAt}
+            hint={issued.source === "reissued" ? t("account.inviteHint") : undefined}
           />
         </div>
       ) : account ? (
@@ -128,10 +132,10 @@ export function CaregiverAccountPanel({
             <button
               type="button"
               disabled={submitting}
-              onClick={() => handleReset(account.id, account.email)}
+              onClick={() => handleReissue(account.id, account.email)}
               className="mt-3 rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
             >
-              {submitting ? t("account.resetting") : t("account.reset")}
+              {submitting ? t("account.inviting") : t("account.invite")}
             </button>
           ) : null}
         </div>

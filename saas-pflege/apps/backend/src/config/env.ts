@@ -103,6 +103,14 @@ const schema = z.object({
   // gesetztes Limit ist schlimmer als ein fehlendes: es sieht nach Schutz aus.
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
 
+  // Gültigkeitsdauer eines Einladungslinks.
+  //
+  // Sieben Tage: lang genug, dass ein Link auch den Urlaub des Empfängers
+  // übersteht, kurz genug, dass ein in einer Chat-Gruppe vergessener Link
+  // nicht monatelang ein Konto öffnet. Ist er abgelaufen, stellt der Admin
+  // einen neuen aus – das kostet einen Klick.
+  INVITATION_TTL: z.string().default("7d"),
+
   // Obergrenze je Minute und IP für `/auth/refresh` und `/auth/logout`.
   //
   // Diese beiden Routen ruft das Web NICHT mehr aus dem Browser auf, sondern

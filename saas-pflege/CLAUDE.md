@@ -69,6 +69,9 @@ vehicles             id, organization_id, leasing_km_limit, leasing_km_used,
 routes               id, organization_id, caregiver_id, date, visits (JSON),
                      optimized (bool), vrptw_score, total_km
 
+user_invitations     id, organization_id, user_id, token_hash, expires_at,
+                     used_at, created_by_user_id
+
 translations         id, locale, key, value
 ```
 
@@ -262,7 +265,10 @@ intégrations sans refactoring.** Concrètement :
 
 ---
 
-## Module : Session web
+## Module : Session web et accès des fachkräfte
+
+Deux corrections d'un même défaut : un secret qui traînait là où il ne fallait
+pas.
 
 ### Le refresh token du web est dans un cookie httpOnly
 
@@ -276,6 +282,20 @@ intégrations sans refactoring.** Concrètement :
 | Panne backend | Un 5xx au refresh renvoie 502 et **laisse le cookie en place**. L'effacer ferait d'une minute d'indisponibilité une déconnexion générale. Seul un refus explicite (token expiré, révoqué, réutilisé) efface le cookie. |
 | Mobile | Inchangé : le refresh token vit dans `expo-secure-store`, hors de portée de JavaScript. Le contrat `SessionTransport` de l'`api-client` est optionnel, la mobile ne le fournit pas. |
 | Ce que ça ne fait pas | Un XSS actif peut toujours appeler `/api/auth/session/refresh` (le navigateur joint le cookie) et obtenir un access token. Ce qui est empêché, c'est l'emport du jeton longue durée : volé, il servait ailleurs pendant des jours ; capturé sur la page, il meurt avec l'onglet. |
+
+### Aucun mot de passe en clair ne sort de l'API
+
+| Aspect | Décision |
+|---|---|
+| Problème | `POST /users/fachkraft` renvoyait un mot de passe temporaire en clair. Le coordinateur connaissait donc le secret de la fachkraft et pouvait se connecter en son nom **avant elle** : tout ce qui figure ensuite sous son nom dans l'audit log ne lui est plus opposable. |
+| Remplacement | Un lien d'invitation à usage unique (`INVITATION_TTL`, 7 jours). La fachkraft choisit son mot de passe ; personne d'autre ne le connaît jamais. |
+| Endpoints | `POST /users/fachkraft` et `POST /users/:id/invitation` (remplace `/reset-password`), rôles Struktur-Admin et HR. Publics : `GET` et `POST /auth/invitation/:token`, dans un plugin séparé — `user.routes.ts` pose `authenticate` sur tout son périmètre, et y loger une exception la rendrait invisible. |
+| Stockage | Table dédiée `user_invitations`, token **haché** (HMAC-SHA256, domaine `invitation:` pour ne pas collisionner avec les refresh tokens qui partagent le secret). |
+| Pourquoi une table et pas deux colonnes sur `users` | La requête de login lit `users` **sans `select` explicite** : Prisma y énumère chaque colonne du modèle. Ajouter une colonne à `users` modifierait donc le SQL d'authentification — exactement ce qui a déjà mis la production à terre via le pooler Supabase. Avec une table à part, une migration oubliée casse l'invitation, pas la connexion. |
+| Compte avant acceptation | `password_hash` reçoit le hash de 32 octets aléatoires jetés. La colonne reste `NOT NULL` : la rendre nullable ferait dépendre le chemin d'authentification d'un cas qui ne l'atteint jamais. Le compte n'est pas connectable tant que le lien n'est pas consommé. |
+| Validité | Quatre conditions, dans `invitation.rules.ts` donc testables sans base : non consommé, non expiré, compte actif, organisation non supprimée. Tous les échecs renvoient le **même** 404 — distinguer les cas ferait de l'endpoint un service de renseignement sur les tokens ayant existé. |
+| Réémission | Un nouveau lien invalide le précédent et révoque toutes les sessions. Le motif habituel est un appareil perdu ; deux liens valides en parallèle seraient précisément ce qu'on cherche à éviter. Le mot de passe en cours, lui, reste valide jusqu'à la consommation du nouveau lien : un lien perdu en route ne doit pas mettre une fachkraft dehors. |
+| Pas de connexion à l'arrivée | Consommer le lien ne crée pas de session. Une fachkraft n'a accès à rien sur le web (RBAC) ; l'écran la renvoie vers l'application mobile. |
 
 ---
 
@@ -452,6 +472,8 @@ Conséquences, à respecter pour toute évolution :
 - [ ] XSS : output encoding + CSP + Helmet.js
 - [x] Refresh token hors de portée de JavaScript : cookie httpOnly côté web,
       expo-secure-store côté mobile. Jamais en localStorage
+- [x] Aucun mot de passe en clair dans une réponse d'API : lien d'invitation
+      à usage unique, le compte choisit son propre secret
 - [ ] JWT 15 min + refresh rotation
 - [ ] MFA optionnel (TOTP)
 - [ ] Zod validation sur tous les endpoints

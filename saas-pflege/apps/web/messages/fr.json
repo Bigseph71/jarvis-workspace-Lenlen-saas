@@ -51,6 +51,25 @@
       "toLogin": "Se connecter"
     }
   },
+  "invitation": {
+    "title": "Définir le mot de passe",
+    "subtitle": "Accès à l'application de {organization}.",
+    "password": "Nouveau mot de passe",
+    "passwordRule": "Au moins 12 caractères, avec une majuscule, une minuscule et un chiffre.",
+    "confirmation": "Répéter le mot de passe",
+    "submit": "Définir le mot de passe",
+    "submitting": "Enregistrement …",
+    "doneTitle": "Mot de passe défini",
+    "doneHint": "Vous pouvez maintenant vous connecter dans l'application mobile, avec votre adresse e-mail et ce mot de passe.",
+    "toLogin": "Vers la connexion",
+    "invalidTitle": "Lien expiré",
+    "invalidHint": "Ce lien d'invitation a expiré ou a déjà été utilisé. Demandez-en un nouveau à votre responsable.",
+    "errors": {
+      "tooShort": "Au moins 12 caractères.",
+      "missingClass": "Au moins une majuscule, une minuscule et un chiffre.",
+      "mismatch": "Les deux mots de passe ne correspondent pas."
+    }
+  },
   "nav": {
     "dashboard": "Tableau de bord",
     "patients": "Patients",
@@ -446,12 +465,13 @@
       "loadError": "Impossible de charger le soignant.",
       "limitReached": "Limite du plan atteinte. Veuillez mettre à niveau l'abonnement.",
       "optional": "(facultatif)",
-      "accountHint": "Avec un e-mail, un compte avec mot de passe temporaire est créé pour l'app mobile. Sans e-mail, seule la fiche personnel est créée, sans accès à l'app.",
+      "accountHint": "Avec une adresse e-mail, un compte pour l'application mobile est créé. Vous recevez un lien d'invitation à transmettre ; le mot de passe est choisi par la soignante. Sans adresse e-mail, seul le dossier du personnel est créé, sans accès à l'application.",
       "accountCreatedTitle": "Soignant et compte créés",
-      "accountCreatedHint": "Ces identifiants ne sont affichés qu'une seule fois. Transmettez-les maintenant au soignant.",
+      "accountCreatedHint": "Ce lien n'est affiché qu'une seule fois. Transmettez-le maintenant à la soignante : il lui permet de définir son mot de passe.",
       "accountEmail": "E-mail",
-      "accountPassword": "Mot de passe temporaire",
-      "accountCopy": "Copier le mot de passe",
+      "accountLink": "Lien d'invitation",
+      "accountExpires": "Valable jusqu'au",
+      "accountCopy": "Copier le lien",
       "accountCopied": "Copié",
       "accountDone": "Retour à la liste",
       "accountFailedTitle": "Compte non créé",
@@ -475,11 +495,11 @@
       "creating": "Création …",
       "emailTaken": "Cet e-mail est déjà utilisé dans cette organisation.",
       "failed": "L'accès n'a pas pu être créé. Veuillez réessayer plus tard.",
-      "reset": "Réinitialiser le mot de passe",
-      "resetting": "Réinitialisation …",
-      "resetConfirm": "Générer un nouveau mot de passe temporaire pour {email} ? L'ancien mot de passe sera invalidé et toutes les sessions actives seront fermées.",
-      "resetHint": "Nouveau mot de passe temporaire. Il n'est affiché qu'une fois, l'ancien est désormais invalide.",
-      "resetFailed": "Le mot de passe n'a pas pu être réinitialisé. Veuillez réessayer plus tard."
+      "invite": "Créer un nouveau lien d'accès",
+      "inviting": "Création …",
+      "inviteConfirm": "Créer un nouveau lien d'accès pour {email} ? Tout lien déjà envoyé devient invalide et toutes les sessions actives prennent fin.",
+      "inviteHint": "Nouveau lien d'invitation. Il n'est affiché qu'une fois ; tout lien envoyé auparavant est désormais invalide.",
+      "inviteFailed": "Le lien d'accès n'a pas pu être créé. Veuillez réessayer plus tard."
     },
     "history": {
       "title": "Historique des contrats",

@@ -3,7 +3,7 @@ import { Locale } from "@len-len/database";
 
 /**
  * Anlegen eines Fachkraft-Kontos zu einer bereits bestehenden Fachkraft.
- * Das Passwort wird serverseitig erzeugt und nie vom Client geliefert.
+ * Es wird kein Passwort erzeugt: die Antwort enthält einen Einladungslink.
  */
 export const createFachkraftUserSchema = z.object({
   caregiverId: z.string().uuid(),
@@ -11,7 +11,7 @@ export const createFachkraftUserSchema = z.object({
   language: z.nativeEnum(Locale).default(Locale.DE),
 });
 
-/** Route-Parameter beim Zurücksetzen des Passworts (User-ID, nicht Caregiver-ID). */
+/** Route-Parameter beim Ausstellen einer Einladung (User-ID, nicht Caregiver-ID). */
 export const userIdParamSchema = z.object({
   id: z.string().uuid(),
 });

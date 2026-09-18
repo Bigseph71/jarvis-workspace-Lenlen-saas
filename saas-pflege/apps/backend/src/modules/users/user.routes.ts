@@ -4,7 +4,7 @@ import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
 import type { TenantContext } from "../../lib/context.js";
 import { createFachkraftUserSchema, userIdParamSchema } from "./user.schemas.js";
-import { createFachkraftUser, resetFachkraftPassword } from "./user.service.js";
+import { createFachkraftUser, reissueInvitation } from "./user.service.js";
 
 // Kontenverwaltung ist Admin-/HR-Sache – identisch zum Schreibrecht auf
 // Fachkräfte, damit der Anlage-Flow (Fachkraft + Konto) in einer Rolle bleibt.
@@ -23,7 +23,8 @@ function ctxFrom(req: { user?: { userId: string; organizationId: string } }): Te
 export async function userRoutes(app: FastifyInstance): Promise<void> {
   app.addHook("preHandler", authenticate);
 
-  // Konto für eine bestehende Fachkraft anlegen (Passwort wird generiert).
+  // Konto für eine bestehende Fachkraft anlegen. Kein Passwort: die Antwort
+  // enthält einen Einladungslink, über den die Fachkraft ihres selbst setzt.
   app.post(
     "/users/fachkraft",
     { ...strictLimit, preHandler: [canManageAccounts] },
@@ -34,13 +35,15 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  // Neues temporäres Passwort für ein bestehendes Fachkraft-Konto.
+  // Neuer Einladungslink für ein bestehendes Fachkraft-Konto. Trat an die
+  // Stelle von /reset-password: dort gab der Server ein Passwort im Klartext
+  // zurück, das der Admin damit kannte.
   app.post(
-    "/users/:id/reset-password",
+    "/users/:id/invitation",
     { ...strictLimit, preHandler: [canManageAccounts] },
     async (request) => {
       const { id } = userIdParamSchema.parse(request.params);
-      return resetFachkraftPassword(ctxFrom(request), id);
+      return reissueInvitation(ctxFrom(request), id);
     },
   );
 }

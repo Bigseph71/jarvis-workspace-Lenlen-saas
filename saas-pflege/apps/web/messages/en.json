@@ -51,6 +51,25 @@
       "toLogin": "Sign in"
     }
   },
+  "invitation": {
+    "title": "Set password",
+    "subtitle": "Access to the app of {organization}.",
+    "password": "New password",
+    "passwordRule": "At least 12 characters, with an upper-case letter, a lower-case letter and a digit.",
+    "confirmation": "Repeat password",
+    "submit": "Set password",
+    "submitting": "Saving …",
+    "doneTitle": "Password set",
+    "doneHint": "You can now sign in to the mobile app – with your email address and this password.",
+    "toLogin": "To sign-in",
+    "invalidTitle": "Link no longer valid",
+    "invalidHint": "This invitation link has expired or has already been used. Please ask your manager for a new one.",
+    "errors": {
+      "tooShort": "At least 12 characters.",
+      "missingClass": "At least one upper-case letter, one lower-case letter and one digit.",
+      "mismatch": "The two passwords do not match."
+    }
+  },
   "nav": {
     "dashboard": "Overview",
     "patients": "Patients",
@@ -446,12 +465,13 @@
       "loadError": "Caregiver could not be loaded.",
       "limitReached": "Plan limit reached. Please upgrade the subscription.",
       "optional": "(optional)",
-      "accountHint": "With an email, an account with a temporary password is created for the mobile app. Without one, only the personnel record is created, with no app access.",
+      "accountHint": "With an email address, an account for the mobile app is created. You receive an invitation link to pass on; the caregiver chooses the password. Without an email address, only the personnel record is created, with no app access.",
       "accountCreatedTitle": "Caregiver and account created",
-      "accountCreatedHint": "These credentials are shown only once. Please pass them on to the caregiver now.",
+      "accountCreatedHint": "This link is shown only once. Please pass it on to the caregiver now – they will set their password with it.",
       "accountEmail": "Email",
-      "accountPassword": "Temporary password",
-      "accountCopy": "Copy password",
+      "accountLink": "Invitation link",
+      "accountExpires": "Valid until",
+      "accountCopy": "Copy link",
       "accountCopied": "Copied",
       "accountDone": "Back to list",
       "accountFailedTitle": "Account not created",
@@ -475,11 +495,11 @@
       "creating": "Creating …",
       "emailTaken": "This email is already taken in this organisation.",
       "failed": "The access could not be created. Please try again later.",
-      "reset": "Reset password",
-      "resetting": "Resetting …",
-      "resetConfirm": "Generate a new temporary password for {email}? The current password becomes invalid and all active sessions are ended.",
-      "resetHint": "New temporary password. It is shown only once, and the previous one is now invalid.",
-      "resetFailed": "The password could not be reset. Please try again later."
+      "invite": "Create new access link",
+      "inviting": "Creating …",
+      "inviteConfirm": "Create a new access link for {email}? Any link already sent becomes invalid and all active sessions end.",
+      "inviteHint": "New invitation link. It is shown only once; any link sent earlier is now invalid.",
+      "inviteFailed": "The access link could not be created. Please try again later."
     },
     "history": {
       "title": "Contract history",

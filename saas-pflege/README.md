@@ -88,6 +88,12 @@ travers le pooler Supabase, et le CI ne joue aucune migration.
   l'**emport** du token longue durée : volé, il servait ailleurs et pendant
   des jours ;
   capturé sur la page, il meurt avec l'onglet.
+- **Aucun mot de passe en clair ne sort de l'API.** Créer un compte fachkraft
+  produit un lien d'invitation à usage unique (7 jours) ; la fachkraft choisit
+  son mot de passe. Avant, l'API renvoyait un mot de passe temporaire : le
+  coordinateur connaissait alors le secret de la fachkraft et pouvait se
+  connecter en son nom avant elle, ce qui rendait l'audit log non opposable.
+  Le token n'est stocké que haché (HMAC-SHA256).
 - **Chiffrement au repos** : assuré par l'hébergeur (Supabase / AWS chiffre les
   volumes de stockage), et TLS pour les données en transit. Il n'y a **pas** de
   chiffrement applicatif champ par champ : les adresses, coordonnées GPS et noms
