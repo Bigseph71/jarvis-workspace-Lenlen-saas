@@ -60,6 +60,20 @@ Lire la note d'application en tête de `2026-07-04-add-pointage-gps.sql` avant
 d'en créer ou d'en rejouer une : `prisma db execute` ne fonctionne plus à
 travers le pooler Supabase, et le CI ne joue aucune migration.
 
+**Pas de bloc `DO $$ ... $$` dans ces fichiers.** Le script `apply:sql` découpe
+sur `;`, et un bloc PL/pgSQL en contient plusieurs : il partirait en morceaux
+invalides, en s'arrêtant au milieu de la migration. Pour poser une contrainte
+de façon idempotente, écrire `DROP CONSTRAINT IF EXISTS` puis `ADD CONSTRAINT`,
+deux instructions élémentaires. Le script refuse désormais ces fichiers avant
+d'exécuter quoi que ce soit, au lieu d'échouer à mi-parcours ; trois migrations
+antérieures en contiennent encore et demandent `psql`.
+
+Pour savoir ce qui est réellement en place dans une base, jouer
+`prisma/sql/CONTROLE-etat-schema.sql` (lecture seule) dans l'éditeur SQL de
+Supabase. Il liste les clés étrangères, index, types énumérés et policies RLS
+attendus, et dit quoi faire de chaque manque. Le CI ne répond pas à cette
+question : il construit sa base avec `prisma db push`, sans jouer ces fichiers.
+
 ## Multi-tenant & sécurité
 
 - Chaque table métier porte `organization_id`.

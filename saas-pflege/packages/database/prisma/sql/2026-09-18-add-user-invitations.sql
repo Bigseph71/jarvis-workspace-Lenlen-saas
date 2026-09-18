@@ -1,5 +1,5 @@
--- Einladungen: Zugang zu einem Konto, ohne dass je ein Passwort im Klartext
--- durch die API geht.
+-- Invitations : donner accès à un compte sans qu'un mot de passe en clair
+-- transite jamais par l'API.
 -- Additif et idempotent.
 --
 --     pnpm --filter @len-len/database apply:sql prisma/sql/2026-09-18-add-user-invitations.sql
@@ -38,38 +38,40 @@ CREATE INDEX IF NOT EXISTS "user_invitations_organization_id_idx"
 CREATE INDEX IF NOT EXISTS "user_invitations_user_id_idx"
   ON "public"."user_invitations" ("user_id");
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'user_invitations_organization_id_fkey'
-  ) THEN
-    ALTER TABLE "public"."user_invitations"
-      ADD CONSTRAINT "user_invitations_organization_id_fkey"
-      FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id")
-      ON DELETE CASCADE ON UPDATE CASCADE;
-  END IF;
+-- Les trois clés étrangères, en DROP IF EXISTS puis ADD.
+--
+-- Pas de bloc DO $$ ... $$ : apply:sql découpe le fichier sur « ; », et un
+-- bloc PL/pgSQL en contient plusieurs. Il partirait en morceaux, chacun
+-- invalide, et le script s'arrêterait à la première erreur — après avoir créé
+-- la table, donc en laissant une table sans ses contraintes. DROP puis ADD
+-- donne le même résultat idempotent en instructions élémentaires.
+--
+-- Le DROP ne coûte rien ici : la table vient d'être créée et est vide, donc
+-- le ADD ne revalide aucune ligne.
 
-  -- CASCADE : une invitation sans compte n'a plus d'objet.
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'user_invitations_user_id_fkey'
-  ) THEN
-    ALTER TABLE "public"."user_invitations"
-      ADD CONSTRAINT "user_invitations_user_id_fkey"
-      FOREIGN KEY ("user_id") REFERENCES "public"."users"("id")
-      ON DELETE CASCADE ON UPDATE CASCADE;
-  END IF;
+ALTER TABLE "public"."user_invitations"
+  DROP CONSTRAINT IF EXISTS "user_invitations_organization_id_fkey";
+ALTER TABLE "public"."user_invitations"
+  ADD CONSTRAINT "user_invitations_organization_id_fkey"
+  FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id")
+  ON DELETE CASCADE ON UPDATE CASCADE;
 
-  -- SET NULL : le départ de l'admin qui a invité ne doit pas effacer la trace
-  -- de l'invitation elle-même.
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'user_invitations_created_by_user_id_fkey'
-  ) THEN
-    ALTER TABLE "public"."user_invitations"
-      ADD CONSTRAINT "user_invitations_created_by_user_id_fkey"
-      FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id")
-      ON DELETE SET NULL ON UPDATE CASCADE;
-  END IF;
-END $$;
+-- CASCADE : une invitation sans compte n'a plus d'objet.
+ALTER TABLE "public"."user_invitations"
+  DROP CONSTRAINT IF EXISTS "user_invitations_user_id_fkey";
+ALTER TABLE "public"."user_invitations"
+  ADD CONSTRAINT "user_invitations_user_id_fkey"
+  FOREIGN KEY ("user_id") REFERENCES "public"."users"("id")
+  ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- SET NULL : le départ de l'admin qui a invité ne doit pas effacer la trace
+-- de l'invitation elle-même.
+ALTER TABLE "public"."user_invitations"
+  DROP CONSTRAINT IF EXISTS "user_invitations_created_by_user_id_fkey";
+ALTER TABLE "public"."user_invitations"
+  ADD CONSTRAINT "user_invitations_created_by_user_id_fkey"
+  FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id")
+  ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- RLS, comme toute table porteuse d'organization_id. Les deux endpoints
 -- publics (consultation et consommation du lien) passent par le chemin
@@ -86,3 +88,7 @@ CREATE POLICY tenant_isolation ON "public"."user_invitations"
 --     FROM information_schema.columns
 --    WHERE table_name = 'user_invitations'
 --    ORDER BY ordinal_position;
+--
+--   SELECT conname FROM pg_constraint
+--    WHERE conrelid = 'public.user_invitations'::regclass AND contype = 'f';
+--   -- attendu : les trois _fkey
