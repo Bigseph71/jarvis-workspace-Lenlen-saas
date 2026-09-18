@@ -262,6 +262,23 @@ intégrations sans refactoring.** Concrètement :
 
 ---
 
+## Module : Session web
+
+### Le refresh token du web est dans un cookie httpOnly
+
+| Aspect | Décision |
+|---|---|
+| Stockage | Cookie `lenlen_rt`, `httpOnly`, `SameSite=Strict`, `Path=/api/auth`, posé par des Route Handlers Next sous `/api/auth`. Il était en `localStorage` : un seul XSS suffisait à l'emporter et à tenir la session sept jours, rotation comprise. |
+| Pourquoi pas le backend | Web et API sont sur deux domaines Railway distincts, donc un cookie du backend serait un cookie tiers, déjà bloqué par Safari. Et `.up.railway.app` est sur la Public Suffix List : aucun cookie parent possible. Avec un domaine propre (`app.` / `api.`), le chemin direct redeviendrait praticable. |
+| Login, register, change-password | **Appels directs** navigateur → backend. Relayés, ils arriveraient tous depuis l'adresse du serveur web et la limite de `/auth/login` (10/min/IP) deviendrait un compteur partagé : dix fautes de frappe verrouilleraient une organisation entière. Le refresh token traverse donc le JS une fois, sans jamais y être stocké, puis part au cookie. |
+| Refresh, logout | Passent par les Route Handlers : seul le serveur lit le cookie. C'est le point qui compte, car ce jeton est disponible en permanence, contrairement au moment du login. |
+| Rate limit | `/auth/refresh` et `/auth/logout` reçoivent une limite propre (`AUTH_REFRESH_RATE_MAX`, 300/min). Derrière le relais, la clé IP ne distingue plus personne ; avec les 10/min des autres routes d'auth, la plateforme se déconnecterait en bloc. Le mobile continue d'appeler ces routes directement. |
+| Panne backend | Un 5xx au refresh renvoie 502 et **laisse le cookie en place**. L'effacer ferait d'une minute d'indisponibilité une déconnexion générale. Seul un refus explicite (token expiré, révoqué, réutilisé) efface le cookie. |
+| Mobile | Inchangé : le refresh token vit dans `expo-secure-store`, hors de portée de JavaScript. Le contrat `SessionTransport` de l'`api-client` est optionnel, la mobile ne le fournit pas. |
+| Ce que ça ne fait pas | Un XSS actif peut toujours appeler `/api/auth/session/refresh` (le navigateur joint le cookie) et obtenir un access token. Ce qui est empêché, c'est l'emport du jeton longue durée : volé, il servait ailleurs pendant des jours ; capturé sur la page, il meurt avec l'onglet. |
+
+---
+
 ## Rôles RBAC
 
 | Rôle | Périmètre |
@@ -433,6 +450,8 @@ Conséquences, à respecter pour toute évolution :
 - [ ] Rate limiting Redis sur tous les endpoints
 - [ ] CSRF (double-submit cookie)
 - [ ] XSS : output encoding + CSP + Helmet.js
+- [x] Refresh token hors de portée de JavaScript : cookie httpOnly côté web,
+      expo-secure-store côté mobile. Jamais en localStorage
 - [ ] JWT 15 min + refresh rotation
 - [ ] MFA optionnel (TOTP)
 - [ ] Zod validation sur tous les endpoints

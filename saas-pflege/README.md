@@ -68,6 +68,26 @@ travers le pooler Supabase, et le CI ne joue aucune migration.
   `app.current_org` au niveau transaction.
 - TypeScript strict partout, validation Zod côté API, Argon2id pour les mots de
   passe.
+- **Session web** : le refresh token est dans un cookie `httpOnly`, posé par
+  des Route Handlers Next sous `/api/auth` (voir
+  `apps/web/src/lib/server/session-cookie.ts`). Il était auparavant en
+  `localStorage`, où un seul XSS suffisait à le voler et à tenir la session
+  sept jours. L'app mobile n'est pas concernée : son token vit dans
+  `expo-secure-store`, hors de portée de JavaScript.
+
+  La connexion, elle, part **directement** du navigateur vers l'API, sans
+  passer par ce relais. Relayée, elle arriverait au backend depuis l'adresse du
+  serveur web, et la limite anti-force-brute de `/auth/login` (10 par minute et
+  par IP) deviendrait un compteur partagé : dix erreurs de frappe verrouillant
+  toute une organisation. Le refresh token traverse donc le JavaScript une fois,
+  à la connexion, sans jamais y être stocké.
+
+  Ce que cela ne protège pas, pour que personne ne s'y trompe : un XSS actif
+  peut toujours appeler `/api/auth/session/refresh` — le navigateur joint le
+  cookie de lui-même — et obtenir un access token. Ce qui est empêché, c'est
+  l'**emport** du token longue durée : volé, il servait ailleurs et pendant
+  des jours ;
+  capturé sur la page, il meurt avec l'onglet.
 - **Chiffrement au repos** : assuré par l'hébergeur (Supabase / AWS chiffre les
   volumes de stockage), et TLS pour les données en transit. Il n'y a **pas** de
   chiffrement applicatif champ par champ : les adresses, coordonnées GPS et noms

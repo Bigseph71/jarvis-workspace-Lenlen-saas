@@ -1,15 +1,21 @@
 /**
  * Token-Speicher für den Browser.
  *
- * MVP-Entscheidung: Access-Token im Speicher (verschwindet beim Reload),
- * Refresh-Token in localStorage, damit die Sitzung einen Reload überlebt.
+ * Der Access-Token lebt im Speicher und verschwindet beim Neuladen – er gilt
+ * 15 Minuten, und die Sitzung wird beim Start ohnehin aus dem Cookie
+ * wiederhergestellt.
  *
- * TODO (Produktion / Härtung): Refresh-Token in ein httpOnly-Cookie verlagern
- * (via Next.js Route Handler), um XSS-Diebstahl zu verhindern. Siehe
- * Sicherheits-Checkliste im CLAUDE.md (JWT 15 min + Refresh-Rotation).
+ * Das Refresh-Token steht hier bewusst NICHT mehr. Es lag früher in
+ * localStorage, wo jedes Skript auf der Seite es lesen konnte; heute hält es
+ * ein httpOnly-Cookie, das nur der Web-Server sieht (siehe
+ * lib/server/session-cookie.ts und lib/auth/session-transport.ts).
+ *
+ * Die beiden Refresh-Methoden bleiben erhalten, weil der gemeinsame
+ * API-Client sie verlangt – dieselbe Schnittstelle bedient auch die
+ * Mobile-App, die ihr Token in expo-secure-store hält. Im Web tun sie nichts:
+ * `get` liefert immer null, `set` verwirft. Das ist kein Übersehen, sondern
+ * die Aussage "hier wird nichts gespeichert".
  */
-const REFRESH_KEY = "lenlen.refreshToken";
-
 let accessToken: string | null = null;
 
 export function getAccessToken(): string | null {
@@ -20,21 +26,16 @@ export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
-export function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(REFRESH_KEY);
+/** Immer null: im Web kennt JavaScript das Refresh-Token nicht. */
+export function getRefreshToken(): null {
+  return null;
 }
 
-export function setRefreshToken(token: string | null): void {
-  if (typeof window === "undefined") return;
-  if (token) {
-    window.localStorage.setItem(REFRESH_KEY, token);
-  } else {
-    window.localStorage.removeItem(REFRESH_KEY);
-  }
+/** Ohne Wirkung: das Cookie setzt und löscht ausschliesslich der Server. */
+export function setRefreshToken(_token: string | null): void {
+  // absichtlich leer
 }
 
 export function clearTokens(): void {
   accessToken = null;
-  setRefreshToken(null);
 }

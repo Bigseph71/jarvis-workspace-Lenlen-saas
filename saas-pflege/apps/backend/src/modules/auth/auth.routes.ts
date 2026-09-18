@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { UserRole } from "@len-len/database";
+import { env } from "../../config/env.js";
 import { authenticate } from "../../plugins/authenticate.js";
 import { requireRole } from "../../plugins/rbac.js";
 import {
@@ -18,8 +19,17 @@ import {
   changePassword,
 } from "./auth.service.js";
 
-// Strengeres Limit für Auth-Endpoints (Brute-Force-Schutz).
+// Strengeres Limit für Auth-Endpoints (Brute-Force-Schutz). Gilt für alles,
+// was ein Passwort entgegennimmt, und zählt auf die Adresse des Absenders.
 const strictLimit = { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } };
+
+// Eigenes, weites Limit für Rotation und Abmeldung. Begründung ausführlich bei
+// AUTH_REFRESH_RATE_MAX in config/env.ts: das Web ruft diese beiden Routen aus
+// seinem Route Handler auf, für das Backend also alle von derselben Adresse.
+// Ein Limit je Route ERSETZT das globale (100/min) – hier ist das gewollt.
+const sessionLimit = {
+  config: { rateLimit: { max: env.AUTH_REFRESH_RATE_MAX, timeWindow: "1 minute" } },
+};
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   // Bootstrap: neue Organisation + erster Struktur-Admin (öffentlich).
@@ -37,14 +47,14 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Refresh-Rotation.
-  app.post("/auth/refresh", strictLimit, async (request, reply) => {
+  app.post("/auth/refresh", sessionLimit, async (request, reply) => {
     const { refreshToken } = refreshSchema.parse(request.body);
     const result = await rotateRefreshToken(refreshToken);
     return reply.send(result);
   });
 
   // Logout (widerruft das Refresh-Token).
-  app.post("/auth/logout", async (request, reply) => {
+  app.post("/auth/logout", sessionLimit, async (request, reply) => {
     const { refreshToken } = logoutSchema.parse(request.body);
     await logout(refreshToken);
     return reply.status(204).send();
