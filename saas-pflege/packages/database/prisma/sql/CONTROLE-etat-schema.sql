@@ -6,6 +6,17 @@
 -- À coller dans l'éditeur SQL de Supabase (ou psql). Ne pas passer par
 -- apply:sql, qui est fait pour appliquer, pas pour lire.
 --
+-- COMMENT LIRE LE RÉSULTAT
+--
+-- Chaque section rend UNE LIGNE PAR OBJET ATTENDU, avec une colonne `present`.
+-- Il n'y a donc rien à compter ni à comparer de tête : ce qui manque est écrit
+-- `false`, et le tri remonte ces lignes en premier. Si la première ligne d'une
+-- section est `true`, la section entière est bonne.
+--
+-- Les sections listaient auparavant ce qui EXISTE, et un objet manquant se
+-- lisait à l'absence d'une ligne. C'est la lecture où l'on se trompe : on voit
+-- trois lignes, on ne les compte pas, on conclut que tout va bien.
+--
 -- POURQUOI CE FICHIER EXISTE
 --
 -- Le script apply:sql découpe les fichiers sur « ; ». Un bloc
@@ -33,88 +44,118 @@
 -- `prisma db push`, à partir du schéma, sans jouer un seul de ces fichiers.
 
 -- ── 1. Clés étrangères attendues ─────────────────────────────────────────
--- Une ligne par contrainte trouvée. Une ligne absente = contrainte manquante.
+-- `present = false` → contrainte absente. La colonne `migration` dit quoi
+-- rejouer. La requête tient même si la table n'existe pas du tout.
 SELECT
-  rel.relname        AS table_name,
-  con.conname        AS constraint_name,
+  attendu.table_name,
+  attendu.constraint_name,
+  (con.oid IS NOT NULL)         AS present,
+  attendu.migration,
   pg_get_constraintdef(con.oid) AS definition
-FROM pg_constraint con
-JOIN pg_class rel ON rel.oid = con.conrelid
-JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
-WHERE nsp.nspname = 'public'
-  AND con.contype = 'f'
-  AND con.conname IN (
-    -- 2026-08-30-add-incident-ack.sql
-    'visits_incident_ack_by_user_id_fkey',
-    -- 2026-09-18-add-user-invitations.sql
-    'user_invitations_organization_id_fkey',
-    'user_invitations_user_id_fkey',
-    'user_invitations_created_by_user_id_fkey'
-  )
-ORDER BY rel.relname, con.conname;
+FROM (VALUES
+  ('visits',           'visits_incident_ack_by_user_id_fkey',
+   '2026-09-19-repair-incident-ack.sql'),
+  ('user_invitations', 'user_invitations_organization_id_fkey',
+   '2026-09-18-add-user-invitations.sql'),
+  ('user_invitations', 'user_invitations_user_id_fkey',
+   '2026-09-18-add-user-invitations.sql'),
+  ('user_invitations', 'user_invitations_created_by_user_id_fkey',
+   '2026-09-18-add-user-invitations.sql')
+) AS attendu(table_name, constraint_name, migration)
+LEFT JOIN pg_constraint con
+       ON con.conname::text = attendu.constraint_name
+      AND con.contype = 'f'
+      AND con.connamespace = 'public'::regnamespace
+-- Les manquants en premier : c'est une liste de travail, pas un inventaire.
+ORDER BY present, attendu.table_name, attendu.constraint_name;
 
 -- ── 2. Index attendus ────────────────────────────────────────────────────
-SELECT tablename, indexname
-FROM pg_indexes
-WHERE schemaname = 'public'
-  AND indexname IN (
-    'visits_organization_id_incident_ack_at_idx',
-    'user_invitations_token_hash_key',
-    'user_invitations_organization_id_idx',
-    'user_invitations_user_id_idx'
-  )
-ORDER BY tablename, indexname;
+SELECT
+  attendu.table_name,
+  attendu.index_name,
+  (idx.indexname IS NOT NULL) AS present,
+  attendu.migration
+FROM (VALUES
+  ('visits',           'visits_organization_id_incident_ack_at_idx',
+   '2026-09-19-repair-incident-ack.sql'),
+  ('user_invitations', 'user_invitations_token_hash_key',
+   '2026-09-18-add-user-invitations.sql'),
+  ('user_invitations', 'user_invitations_organization_id_idx',
+   '2026-09-18-add-user-invitations.sql'),
+  ('user_invitations', 'user_invitations_user_id_idx',
+   '2026-09-18-add-user-invitations.sql')
+) AS attendu(table_name, index_name, migration)
+LEFT JOIN pg_indexes idx
+       ON idx.schemaname = 'public'
+      AND idx.indexname::text = attendu.index_name
+ORDER BY present, attendu.table_name, attendu.index_name;
 
 -- ── 3. Types énumérés des blocs DO antérieurs au script ──────────────────
--- Attendu : InvoiceStatus, AbsenceType, AbsenceStatus, ExternalSource.
--- Un manque ici veut dire que le bloc DO correspondant n'est jamais passé, et
--- alors les tables qui suivaient dans le même fichier manquent aussi.
-SELECT t.typname
-FROM pg_type t
-JOIN pg_namespace n ON n.oid = t.typnamespace
-WHERE n.nspname = 'public'
-  AND t.typname IN ('InvoiceStatus', 'AbsenceType', 'AbsenceStatus', 'ExternalSource')
-ORDER BY t.typname;
+-- Un `false` ici veut dire que le bloc DO correspondant n'est jamais passé, et
+-- alors les tables qui suivaient dans le même fichier manquent aussi : c'est
+-- le manque le plus grave que ce contrôle puisse révéler.
+--
+-- Volontairement limité aux types créés par ces trois fichiers. Les autres
+-- énumérés du schéma viennent du `prisma migrate` initial et ne sont pas en
+-- cause ici.
+SELECT
+  attendu.type_name,
+  (typ.oid IS NOT NULL) AS present,
+  attendu.migration
+FROM (VALUES
+  ('InvoiceStatus',  '2026-07-15-add-billing.sql'),
+  ('AbsenceType',    '2026-08-01-add-hr-module.sql'),
+  ('AbsenceStatus',  '2026-08-01-add-hr-module.sql'),
+  ('ExternalSource', '2026-08-01-add-hr-module.sql')
+) AS attendu(type_name, migration)
+LEFT JOIN pg_type typ
+       ON typ.typname::text = attendu.type_name
+      AND typ.typnamespace = 'public'::regnamespace
+ORDER BY present, attendu.type_name;
 
 -- ── 4. Policies RLS : une par table porteuse d'organization_id ───────────
--- Attendu : une ligne « tenant_isolation » pour chacune des tables listées
--- dans rls.sql, y compris contracts, work_schedules, absences (posées par un
--- bloc DO dans 2026-08-01-add-hr-module.sql) et user_invitations.
+-- Ici la liste des tables vient de la base elle-même, et non d'une liste
+-- écrite à la main : une table à organization_id ajoutée plus tard sans
+-- policy doit apparaître, et elle n'apparaîtrait pas dans un VALUES qu'on
+-- aurait oublié de compléter.
 --
--- Une table à organization_id SANS policy n'est pas isolée : sur le chemin
--- applicatif (rôle app_user), elle laisserait un tenant lire les lignes d'un
--- autre. C'est la vérification la plus importante de ce fichier.
+-- `isolated = false` → la table n'est pas isolée : sur le chemin applicatif
+-- (rôle app_user), elle laisserait un tenant lire les lignes d'un autre.
+-- C'est la vérification la plus importante de ce fichier.
+--
+-- Attendu : toutes les tables de tenant_tables dans rls.sql, y compris
+-- contracts, work_schedules, absences (posées par un bloc DO dans
+-- 2026-08-01-add-hr-module.sql) et user_invitations.
 SELECT
-  c.relname AS table_name,
-  c.relrowsecurity AS rls_active,
-  p.polname AS policy_name
-FROM pg_class c
-JOIN pg_namespace n ON n.oid = c.relnamespace
-LEFT JOIN pg_policy p ON p.polrelid = c.oid
-WHERE n.nspname = 'public'
-  AND c.relkind = 'r'
+  cls.relname AS table_name,
+  cls.relrowsecurity AS rls_active,
+  pol.polname AS policy_name,
+  (cls.relrowsecurity AND pol.polname IS NOT NULL) AS isolated
+FROM pg_class cls
+JOIN pg_namespace nsp ON nsp.oid = cls.relnamespace
+LEFT JOIN pg_policy pol ON pol.polrelid = cls.oid
+WHERE nsp.nspname = 'public'
+  AND cls.relkind = 'r'
   AND EXISTS (
-    SELECT 1 FROM information_schema.columns col
-    WHERE col.table_schema = 'public'
-      AND col.table_name = c.relname
-      AND col.column_name = 'organization_id'
+    SELECT 1 FROM pg_attribute att
+    WHERE att.attrelid = cls.oid
+      AND att.attname = 'organization_id'
+      AND att.attnum > 0
+      AND NOT att.attisdropped
   )
-ORDER BY c.relname;
+ORDER BY isolated, cls.relname;
 
 -- ── Que faire du résultat ────────────────────────────────────────────────
 --
--- Section 1 ou 2 incomplète pour « visits » :
---   appliquer 2026-09-19-repair-incident-ack.sql
+-- Sections 1 à 3, `present = false` : appliquer le fichier nommé dans la
+-- colonne `migration`. Les deux migrations de 2026-09 passent par le script,
+-- elles sont idempotentes :
+--   pnpm --filter @len-len/database apply:sql prisma/sql/<fichier>.sql
 --
--- Section 1 ou 2 incomplète pour « user_invitations » :
---   la migration 2026-09-18-add-user-invitations.sql n'a pas été appliquée,
---   ou pas jusqu'au bout. La rejouer : elle est idempotente.
+-- Sauf pour les fichiers de la section 3 : leurs blocs DO sont hors de portée
+-- du script, qui les refuse. Ceux-là demandent psql :
+--   psql "$DATABASE_URL" -f prisma/sql/<fichier>.sql
 --
--- Section 3 incomplète :
---   la migration correspondante n'est pas passée du tout. À appliquer avec
---   psql (ces blocs DO sont hors de portée d'apply:sql) :
---     psql "$DATABASE_URL" -f prisma/sql/<fichier>.sql
---
--- Section 4 : une table avec rls_active = false ou policy_name = NULL :
---   rejouer rls.sql, qui repose toutes les policies et est idempotent :
---     psql "$DATABASE_URL" -f prisma/rls.sql
+-- Section 4, `isolated = false` : rejouer rls.sql, qui repose toutes les
+-- policies et est idempotent :
+--   psql "$DATABASE_URL" -f prisma/rls.sql
