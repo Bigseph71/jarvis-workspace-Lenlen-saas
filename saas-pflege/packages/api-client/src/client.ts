@@ -19,7 +19,26 @@ interface RefreshResult {
 let refreshPromise: Promise<boolean> | null = null;
 
 async function doRefresh(): Promise<boolean> {
-  const { baseUrl, storage } = getApiConfig();
+  const { baseUrl, storage, session } = getApiConfig();
+
+  // Web: die Rotation läuft über den eigenen Route Handler, der das
+  // Refresh-Token im httpOnly-Cookie hält. Hier ist es nicht verfügbar – und
+  // genau das ist beabsichtigt.
+  if (session) {
+    try {
+      const result = await session.refresh();
+      if (!result) {
+        await clearTokens();
+        return false;
+      }
+      await storage.setAccessToken(result.accessToken);
+      return true;
+    } catch {
+      await clearTokens();
+      return false;
+    }
+  }
+
   const refreshToken = await storage.getRefreshToken();
   if (!refreshToken) return false;
   try {
@@ -57,7 +76,7 @@ function refreshAccessToken(): Promise<boolean> {
  */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth = true, signal } = options;
-  const { baseUrl, storage } = getApiConfig();
+  const { baseUrl, storage, session } = getApiConfig();
 
   const send = async (): Promise<Response> => {
     const headers: Record<string, string> = {};
@@ -75,7 +94,15 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   let res = await send();
 
   // Access abgelaufen -> einmal refreshen und Request wiederholen.
-  if (res.status === 401 && auth && (await storage.getRefreshToken())) {
+  //
+  // Mit SessionTransport lässt sich vorher nicht feststellen, ob überhaupt
+  // eine Sitzung besteht: das Cookie ist von hier aus unsichtbar. Der Versuch
+  // wird deshalb unternommen und der Server entscheidet. Das kostet im
+  // ungünstigen Fall einen zusätzlichen Aufruf, der mit "keine Sitzung"
+  // antwortet – gegenüber einem lokalen Merker, der mit der Wahrheit im
+  // Cookie auseinanderlaufen kann, der ehrlichere Weg.
+  const mayRefresh = session !== undefined || (await storage.getRefreshToken()) !== null;
+  if (res.status === 401 && auth && mayRefresh) {
     const ok = await refreshAccessToken();
     if (ok) res = await send();
   }

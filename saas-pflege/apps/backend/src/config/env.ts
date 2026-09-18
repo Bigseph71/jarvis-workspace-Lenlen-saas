@@ -103,6 +103,32 @@ const schema = z.object({
   // gesetztes Limit ist schlimmer als ein fehlendes: es sieht nach Schutz aus.
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
 
+  // Gültigkeitsdauer eines Einladungslinks.
+  //
+  // Sieben Tage: lang genug, dass ein Link auch den Urlaub des Empfängers
+  // übersteht, kurz genug, dass ein in einer Chat-Gruppe vergessener Link
+  // nicht monatelang ein Konto öffnet. Ist er abgelaufen, stellt der Admin
+  // einen neuen aus – das kostet einen Klick.
+  INVITATION_TTL: z.string().default("7d"),
+
+  // Obergrenze je Minute und IP für `/auth/refresh` und `/auth/logout`.
+  //
+  // Diese beiden Routen ruft das Web NICHT mehr aus dem Browser auf, sondern
+  // aus seinem eigenen Route Handler – nur der Server kann das httpOnly-Cookie
+  // lesen, in dem das Refresh-Token seit der XSS-Härtung liegt. Für das
+  // Backend kommen damit ALLE Rotationen des Webs von einer einzigen Adresse.
+  //
+  // Mit dem strengen Limit der übrigen Auth-Routen (10/min) wäre nach zehn
+  // Erneuerungen je Minute Schluss – plattformweit. Da jede Sitzung alle 15
+  // Minuten und bei jedem Seitenaufruf erneuert, wären das ein paar Dutzend
+  // gleichzeitige Benutzer, danach fliegen alle heraus.
+  //
+  // Warum trotzdem eine Grenze: der Endpunkt ist öffentlich, und die
+  // Mobile-App ruft ihn weiter direkt auf, also mit echten Adressen. Sie
+  // schützt gegen Lärm, nicht gegen Rateversuche – dagegen schützt das Token
+  // selbst (256 Bit, Wiederverwendung beendet die Sitzung).
+  AUTH_REFRESH_RATE_MAX: z.coerce.number().int().min(10).default(300),
+
   // Ursprung (Origin) des Web-Frontends – für CORS und für die Rückkehr-URLs
   // aus Stripe (Checkout/Portal führen nach /{locale}/billing zurück).
   // NICHT die API-URL: NEXT_PUBLIC_API_URL gehört dem Web und wird dort direkt

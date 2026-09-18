@@ -7,12 +7,13 @@ import {
   CaregiverCreateForm,
   type CaregiverCreateSubmit,
 } from "@/components/caregiver-create-form";
-import { FachkraftAccessData } from "@/components/fachkraft-access-data";
+import { FachkraftInvitation } from "@/components/fachkraft-invitation";
 import { createCaregiver, createFachkraftAccount, ApiError } from "@len-len/api-client";
 
 interface CreatedAccount {
   email: string;
-  temporaryPassword: string;
+  invitationUrl: string;
+  invitationExpiresAt: string;
 }
 
 export default function NewCaregiverPage() {
@@ -56,7 +57,11 @@ export default function NewCaregiverPage() {
     // sonst legt der Admin die Fachkraft ein zweites Mal an.
     try {
       const result = await createFachkraftAccount({ caregiverId: createdId, email });
-      setAccount({ email: result.user.email, temporaryPassword: result.temporaryPassword });
+      setAccount({
+        email: result.user.email,
+        invitationUrl: result.invitationUrl,
+        invitationExpiresAt: result.invitationExpiresAt,
+      });
     } catch (err) {
       setAccountError(
         err instanceof ApiError && err.status === 409 ? t("accountEmailTaken") : t("accountFailed"),
@@ -88,15 +93,17 @@ export default function NewCaregiverPage() {
     );
   }
 
-  // Erfolgsansicht: das Passwort ist nur hier sichtbar und nirgends abrufbar.
+  // Erfolgsansicht: der Einladungslink ist nur hier sichtbar und danach
+  // nirgends mehr abrufbar.
   if (account) {
     return (
       <section>
         <h1 className="text-2xl font-bold text-gray-900">{t("accountCreatedTitle")}</h1>
         <div className="mt-4 max-w-lg">
-          <FachkraftAccessData
+          <FachkraftInvitation
             email={account.email}
-            temporaryPassword={account.temporaryPassword}
+            invitationUrl={account.invitationUrl}
+            invitationExpiresAt={account.invitationExpiresAt}
           />
           <button
             type="button"

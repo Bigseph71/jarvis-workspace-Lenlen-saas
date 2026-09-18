@@ -1,55 +1,52 @@
 import { apiFetch } from "./client";
 import { clearTokens, getApiConfig } from "./config";
+import type {
+  AuthResult,
+  AuthUser,
+  ChangePasswordInput,
+  LoginCredentials,
+  RegisterOrganizationInput,
+  SessionResult,
+} from "./auth-types";
 
-// Rollen wie im Backend (lokal gespiegelt, um keine Backend-Pakete in die
-// Clients zu ziehen).
-export type UserRole = "SUPER_ADMIN" | "STRUKTUR_ADMIN" | "KOORDINATOR" | "HR" | "FACHKRAFT";
+// Weiterhin von hier exportiert, damit bestehende Importe gültig bleiben.
+export type {
+  AuthResult,
+  AuthUser,
+  ChangePasswordInput,
+  LoginCredentials,
+  RegisterOrganizationInput,
+  SessionResult,
+  UserRole,
+} from "./auth-types";
 
-export interface AuthUser {
-  id: string;
-  email: string;
-  role: UserRole;
-  organizationId: string;
-  /**
-   * true = das Konto hat ein temporäres Passwort. Bis zum Wechsel per
-   * changePassword() beantwortet das Backend jeden anderen Endpoint mit 403
-   * (Code "PasswordChangeRequired").
-   */
-  mustChangePassword: boolean;
-}
-
-interface AuthResult {
-  accessToken: string;
-  refreshToken: string;
-  user: AuthUser;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-  /** Nur nötig, wenn dieselbe E-Mail in mehreren Organisationen existiert. */
-  organizationId?: string;
+/**
+ * Übernimmt das Ergebnis einer Anmeldung in die lokale Ablage.
+ *
+ * Zwei Wege, ein Ergebnis: mit SessionTransport liegt das Refresh-Token im
+ * Cookie und es gibt hier nichts zu speichern ausser dem Access-Token; ohne
+ * ihn (Mobile) werden beide abgelegt.
+ */
+async function persist(result: AuthResult | SessionResult): Promise<AuthUser> {
+  const { storage } = getApiConfig();
+  await storage.setAccessToken(result.accessToken);
+  if ("refreshToken" in result) {
+    await storage.setRefreshToken(result.refreshToken);
+  }
+  return result.user;
 }
 
 /** Anmeldung: persistiert die Token und liefert den Benutzer. */
 export async function login(credentials: LoginCredentials): Promise<AuthUser> {
+  const { session } = getApiConfig();
+  if (session) return persist(await session.login(credentials));
+
   const result = await apiFetch<AuthResult>("/auth/login", {
     method: "POST",
     body: credentials,
     auth: false,
   });
-  const { storage } = getApiConfig();
-  await storage.setAccessToken(result.accessToken);
-  await storage.setRefreshToken(result.refreshToken);
-  return result.user;
-}
-
-export interface RegisterOrganizationInput {
-  organizationName: string;
-  /** ISO-3166-1 alpha-2, Vorgabe DE. */
-  country?: string;
-  adminEmail: string;
-  adminPassword: string;
+  return persist(result);
 }
 
 /**
@@ -63,20 +60,15 @@ export interface RegisterOrganizationInput {
 export async function registerOrganization(
   input: RegisterOrganizationInput,
 ): Promise<AuthUser> {
+  const { session } = getApiConfig();
+  if (session) return persist(await session.register(input));
+
   const result = await apiFetch<AuthResult>("/auth/register-organization", {
     method: "POST",
     body: input,
     auth: false,
   });
-  const { storage } = getApiConfig();
-  await storage.setAccessToken(result.accessToken);
-  await storage.setRefreshToken(result.refreshToken);
-  return result.user;
-}
-
-export interface ChangePasswordInput {
-  currentPassword: string;
-  newPassword: string;
+  return persist(result);
 }
 
 /**
@@ -86,19 +78,28 @@ export interface ChangePasswordInput {
  * also angemeldet.
  */
 export async function changePassword(input: ChangePasswordInput): Promise<AuthUser> {
+  const { session } = getApiConfig();
+  if (session) return persist(await session.changePassword(input));
+
   const result = await apiFetch<AuthResult>("/auth/change-password", {
     method: "POST",
     body: input,
   });
-  const { storage } = getApiConfig();
-  await storage.setAccessToken(result.accessToken);
-  await storage.setRefreshToken(result.refreshToken);
-  return result.user;
+  return persist(result);
 }
 
 /** Abmeldung: widerruft das Refresh-Token (best effort) und leert den Speicher. */
 export async function logout(): Promise<void> {
-  const { storage } = getApiConfig();
+  const { session, storage } = getApiConfig();
+  if (session) {
+    // Der Endpoint löscht das Cookie und widerruft das Token serverseitig.
+    // Schlägt er fehl, wird trotzdem lokal abgemeldet: eine Abmeldung, die
+    // an einer Netzstörung scheitert, liesse den Benutzer angemeldet zurück.
+    await session.logout().catch(() => undefined);
+    await clearTokens();
+    return;
+  }
+
   const refreshToken = await storage.getRefreshToken();
   if (refreshToken) {
     await apiFetch<void>("/auth/logout", {
@@ -111,11 +112,29 @@ export async function logout(): Promise<void> {
 }
 
 /**
- * Stellt beim App-Start eine Sitzung aus dem Refresh-Token wieder her.
- * Liefert null, wenn kein gültiges Token vorhanden ist.
+ * Stellt beim App-Start eine Sitzung wieder her.
+ * Liefert null, wenn keine gültige Sitzung vorhanden ist.
  */
 export async function restoreSession(): Promise<AuthUser | null> {
-  const { storage } = getApiConfig();
+  const { session, storage } = getApiConfig();
+
+  if (session) {
+    // Kein lokales Vorab-Wissen möglich: ob eine Sitzung besteht, weiss nur
+    // der Server, der das Cookie hält. Der Aufruf ist deshalb der Normalfall
+    // bei jedem Seitenaufruf – auch beim allerersten ohne Anmeldung.
+    try {
+      const result = await session.refresh();
+      if (!result) {
+        await clearTokens();
+        return null;
+      }
+      return persist(result);
+    } catch {
+      await clearTokens();
+      return null;
+    }
+  }
+
   const refreshToken = await storage.getRefreshToken();
   if (!refreshToken) return null;
   try {
@@ -124,9 +143,7 @@ export async function restoreSession(): Promise<AuthUser | null> {
       body: { refreshToken },
       auth: false,
     });
-    await storage.setAccessToken(result.accessToken);
-    await storage.setRefreshToken(result.refreshToken);
-    return result.user;
+    return persist(result);
   } catch {
     await clearTokens();
     return null;

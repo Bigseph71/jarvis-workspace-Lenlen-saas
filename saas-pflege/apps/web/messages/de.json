@@ -51,6 +51,25 @@
       "toLogin": "Anmelden"
     }
   },
+  "invitation": {
+    "title": "Passwort festlegen",
+    "subtitle": "Zugang zur App von {organization}.",
+    "password": "Neues Passwort",
+    "passwordRule": "Mindestens 12 Zeichen, mit Gross-, Kleinbuchstabe und Ziffer.",
+    "confirmation": "Passwort wiederholen",
+    "submit": "Passwort festlegen",
+    "submitting": "Wird gespeichert …",
+    "doneTitle": "Passwort festgelegt",
+    "doneHint": "Sie können sich jetzt in der mobilen App anmelden – mit Ihrer E-Mail-Adresse und diesem Passwort.",
+    "toLogin": "Zur Anmeldung",
+    "invalidTitle": "Link nicht mehr gültig",
+    "invalidHint": "Dieser Einladungslink ist abgelaufen oder wurde bereits benutzt. Bitte bei Ihrer Leitung einen neuen anfordern.",
+    "errors": {
+      "tooShort": "Mindestens 12 Zeichen.",
+      "missingClass": "Mindestens ein Gross-, ein Kleinbuchstabe und eine Ziffer.",
+      "mismatch": "Die beiden Passwörter stimmen nicht überein."
+    }
+  },
   "nav": {
     "dashboard": "Übersicht",
     "patients": "Patienten",
@@ -446,12 +465,13 @@
       "loadError": "Fachkraft konnte nicht geladen werden.",
       "limitReached": "Plan-Limit erreicht. Bitte das Abonnement upgraden.",
       "optional": "(optional)",
-      "accountHint": "Mit E-Mail wird ein Konto mit temporärem Passwort für die mobile App angelegt. Ohne E-Mail entsteht nur die Personalakte, ohne App-Zugang.",
+      "accountHint": "Mit E-Mail entsteht ein Konto für die mobile App. Sie erhalten einen Einladungslink zum Weitergeben; das Passwort wählt die Fachkraft selbst. Ohne E-Mail entsteht nur die Personalakte, ohne App-Zugang.",
       "accountCreatedTitle": "Fachkraft und Konto angelegt",
-      "accountCreatedHint": "Diese Zugangsdaten werden nur einmal angezeigt. Bitte jetzt an die Fachkraft weitergeben.",
+      "accountCreatedHint": "Dieser Link wird nur einmal angezeigt. Bitte jetzt an die Fachkraft weitergeben – sie setzt darüber ihr Passwort.",
       "accountEmail": "E-Mail",
-      "accountPassword": "Temporäres Passwort",
-      "accountCopy": "Passwort kopieren",
+      "accountLink": "Einladungslink",
+      "accountExpires": "Gültig bis",
+      "accountCopy": "Link kopieren",
       "accountCopied": "Kopiert",
       "accountDone": "Zur Übersicht",
       "accountFailedTitle": "Konto nicht angelegt",
@@ -475,11 +495,11 @@
       "creating": "Wird angelegt …",
       "emailTaken": "Diese E-Mail ist in dieser Organisation bereits vergeben.",
       "failed": "Der Zugang konnte nicht angelegt werden. Bitte später erneut versuchen.",
-      "reset": "Passwort zurücksetzen",
-      "resetting": "Wird zurückgesetzt …",
-      "resetConfirm": "Neues temporäres Passwort für {email} erzeugen? Das bisherige Passwort wird ungültig und alle aktiven Sitzungen werden beendet.",
-      "resetHint": "Neues temporäres Passwort. Es wird nur einmal angezeigt, das bisherige ist ab sofort ungültig.",
-      "resetFailed": "Das Passwort konnte nicht zurückgesetzt werden. Bitte später erneut versuchen."
+      "invite": "Neuen Zugangslink erstellen",
+      "inviting": "Wird erstellt …",
+      "inviteConfirm": "Neuen Zugangslink für {email} erstellen? Ein bereits verschickter Link wird ungültig und alle aktiven Sitzungen werden beendet.",
+      "inviteHint": "Neuer Einladungslink. Er wird nur einmal angezeigt; ein früher verschickter Link ist ab sofort ungültig.",
+      "inviteFailed": "Der Zugangslink konnte nicht erstellt werden. Bitte später erneut versuchen."
     },
     "history": {
       "title": "Vertragshistorie",

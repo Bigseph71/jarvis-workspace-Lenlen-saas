@@ -45,7 +45,11 @@ DECLARE
     'gps_positions', 'gps_consents', 'invoices',
     -- HR-Modul. Auch die Integrationspfade (CSV-Import, Personio) laufen
     -- über withTenant() und unterliegen diesen Policies.
-    'contracts', 'work_schedules', 'absences'
+    'contracts', 'work_schedules', 'absences',
+    -- Einladungen: tragen organization_id wie alles andere. Die beiden
+    -- öffentlichen Endpoints lesen sie über den System-Pfad, wie der Login –
+    -- zu dem Zeitpunkt ist der Tenant noch nicht bekannt.
+    'user_invitations'
   ];
 BEGIN
   FOREACH tbl IN ARRAY tenant_tables LOOP

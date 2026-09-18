@@ -60,6 +60,20 @@ Lire la note d'application en tête de `2026-07-04-add-pointage-gps.sql` avant
 d'en créer ou d'en rejouer une : `prisma db execute` ne fonctionne plus à
 travers le pooler Supabase, et le CI ne joue aucune migration.
 
+**Pas de bloc `DO $$ ... $$` dans ces fichiers.** Le script `apply:sql` découpe
+sur `;`, et un bloc PL/pgSQL en contient plusieurs : il partirait en morceaux
+invalides, en s'arrêtant au milieu de la migration. Pour poser une contrainte
+de façon idempotente, écrire `DROP CONSTRAINT IF EXISTS` puis `ADD CONSTRAINT`,
+deux instructions élémentaires. Le script refuse désormais ces fichiers avant
+d'exécuter quoi que ce soit, au lieu d'échouer à mi-parcours ; trois migrations
+antérieures en contiennent encore et demandent `psql`.
+
+Pour savoir ce qui est réellement en place dans une base, jouer
+`prisma/sql/CONTROLE-etat-schema.sql` (lecture seule) dans l'éditeur SQL de
+Supabase. Il liste les clés étrangères, index, types énumérés et policies RLS
+attendus, et dit quoi faire de chaque manque. Le CI ne répond pas à cette
+question : il construit sa base avec `prisma db push`, sans jouer ces fichiers.
+
 ## Multi-tenant & sécurité
 
 - Chaque table métier porte `organization_id`.
@@ -68,6 +82,32 @@ travers le pooler Supabase, et le CI ne joue aucune migration.
   `app.current_org` au niveau transaction.
 - TypeScript strict partout, validation Zod côté API, Argon2id pour les mots de
   passe.
+- **Session web** : le refresh token est dans un cookie `httpOnly`, posé par
+  des Route Handlers Next sous `/api/auth` (voir
+  `apps/web/src/lib/server/session-cookie.ts`). Il était auparavant en
+  `localStorage`, où un seul XSS suffisait à le voler et à tenir la session
+  sept jours. L'app mobile n'est pas concernée : son token vit dans
+  `expo-secure-store`, hors de portée de JavaScript.
+
+  La connexion, elle, part **directement** du navigateur vers l'API, sans
+  passer par ce relais. Relayée, elle arriverait au backend depuis l'adresse du
+  serveur web, et la limite anti-force-brute de `/auth/login` (10 par minute et
+  par IP) deviendrait un compteur partagé : dix erreurs de frappe verrouillant
+  toute une organisation. Le refresh token traverse donc le JavaScript une fois,
+  à la connexion, sans jamais y être stocké.
+
+  Ce que cela ne protège pas, pour que personne ne s'y trompe : un XSS actif
+  peut toujours appeler `/api/auth/session/refresh` — le navigateur joint le
+  cookie de lui-même — et obtenir un access token. Ce qui est empêché, c'est
+  l'**emport** du token longue durée : volé, il servait ailleurs et pendant
+  des jours ;
+  capturé sur la page, il meurt avec l'onglet.
+- **Aucun mot de passe en clair ne sort de l'API.** Créer un compte fachkraft
+  produit un lien d'invitation à usage unique (7 jours) ; la fachkraft choisit
+  son mot de passe. Avant, l'API renvoyait un mot de passe temporaire : le
+  coordinateur connaissait alors le secret de la fachkraft et pouvait se
+  connecter en son nom avant elle, ce qui rendait l'audit log non opposable.
+  Le token n'est stocké que haché (HMAC-SHA256).
 - **Chiffrement au repos** : assuré par l'hébergeur (Supabase / AWS chiffre les
   volumes de stockage), et TLS pour les données en transit. Il n'y a **pas** de
   chiffrement applicatif champ par champ : les adresses, coordonnées GPS et noms

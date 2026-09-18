@@ -1,4 +1,5 @@
 import { configureApiClient } from "@len-len/api-client";
+import { webSessionTransport } from "./auth/session-transport";
 import {
   getAccessToken,
   getRefreshToken,
@@ -17,4 +18,7 @@ configureApiClient({
   // anspricht.
   baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000",
   storage: { getAccessToken, setAccessToken, getRefreshToken, setRefreshToken },
+  // Setzt das Refresh-Token ins httpOnly-Cookie statt in localStorage.
+  // Die Mobile-App lässt dieses Feld weg: dort liegt es in expo-secure-store.
+  session: webSessionTransport,
 });

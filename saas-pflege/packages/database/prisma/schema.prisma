@@ -171,6 +171,7 @@ model Organization {
   // immer die gelöschten heraus.
   @@index([deletedAt, subscriptionStatus])
   @@map("organizations")
+  invitations     UserInvitation[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -201,6 +202,8 @@ model User {
   sentMessages    Message[]
   decidedAbsences Absence[]      @relation("AbsenceDecider")
   acknowledgedIncidents Visit[]  @relation("IncidentAcknowledger")
+  invitations     UserInvitation[] @relation("InvitedUser")
+  issuedInvitations UserInvitation[] @relation("InvitationIssuer")
 
   // E-Mail eindeutig pro Tenant
   @@unique([organizationId, email])
@@ -225,6 +228,41 @@ model RefreshToken {
 // ─────────────────────────────────────────────────────────────────────────
 //  Fachkräfte
 // ─────────────────────────────────────────────────────────────────────────
+
+// Einladung: erlaubt EINMAL, das Passwort eines Kontos zu setzen.
+//
+// WARUM EINE EIGENE TABELLE statt zweier Spalten auf `users`: der Login liest
+// `users` OHNE explizites select, Prisma listet also jede Spalte des Modells
+// im SQL auf. Eine neue Spalte dort änderte damit die Anmelde-Abfrage – genau
+// die Konstellation, die schon einmal die Produktion lahmgelegt hat, als der
+// Supabase-Pooler einen Plan von vor der Migration weiterreichte. Eine eigene
+// Tabelle lässt das Anmelde-SQL Zeichen für Zeichen unverändert: wird die
+// Migration vergessen, fällt die Einladung aus, nicht das Produkt.
+//
+// Das Token steht NUR gehasht hier (HMAC-SHA256). Wer die Datenbank liest,
+// kann damit kein Konto übernehmen.
+model UserInvitation {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  tokenHash      String    @unique @map("token_hash")
+  expiresAt      DateTime  @map("expires_at")
+  // Gesetzt, sobald das Passwort damit vergeben wurde. Der Datensatz bleibt
+  // erhalten: sonst wäre hinterher nicht mehr feststellbar, ob eine Einladung
+  // je benutzt wurde, und der Audit-Log verwiese ins Leere.
+  usedAt         DateTime? @map("used_at")
+  // Wer eingeladen hat. Bleibt bei dessen Löschung erhalten (SET NULL).
+  createdByUserId String?  @map("created_by_user_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation("InvitedUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("InvitationIssuer", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("user_invitations")
+}
 
 model Caregiver {
   id             String        @id @default(uuid()) @db.Uuid
